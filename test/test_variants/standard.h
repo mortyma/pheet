@@ -69,6 +69,7 @@ const size_t sssp_sim_p = 200;
 const double sssp_sim_theory_p = 0.1;
 const double sssp_sim_theory_div = 100000000;
 
+<<<<<<< HEAD
 #define UTS_TEST      true
 const procs_t uts_test_cpus[] = {1, 2, 4, 8};
 const size_t uts_test_repetitions = 1;
@@ -84,9 +85,11 @@ const size_t uts_test_repetitions = 1;
 // 8 # (T1XL) Geometric [fixed] ----- Tree size = 1635119272, tree depth = 15, num leaves = 1308100063 (80.00%)
 const unsigned int uts_test_standardworkloads[] = {0, 3};
 
+=======
+#define MSP_TEST (true)
+>>>>>>> MSP: Initial infrastructure
 
 //#define SORANDUTS
-
 
 }
 
