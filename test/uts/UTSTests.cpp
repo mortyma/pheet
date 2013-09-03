@@ -36,7 +36,6 @@ namespace pheet {
 	template <class Pheet, template <class> class Test>
 	void UTSTests::test()
 	{
-#ifdef UTS_TEST
 		typename Pheet::MachineModel mm;
 		procs_t max_cpus = std::min(mm.get_num_leaves(), Pheet::Environment::max_cpus);
 
@@ -60,21 +59,20 @@ namespace pheet {
 				}
 			}
 		}
-#endif
 	}
 
 	void UTSTests::run_test()
 	{
-#ifdef UTS_TEST
-		test<Pheet::WithScheduler<StrategyScheduler2>,
-			 Strategy2UTS>();
-		test<Pheet::WithScheduler<StrategyScheduler2>,
-			 UTSRun>();
-		test<Pheet::WithScheduler<BasicScheduler>,
-			 UTSRun>();
-		test<Pheet::WithScheduler<SynchroneousScheduler>,
-			 UTSRun>();
-#endif
-	}
 
+		if(uts_test) {
+			test<Pheet::WithScheduler<StrategyScheduler2>,
+					Strategy2UTS>();
+			test<Pheet::WithScheduler<StrategyScheduler2>,
+					UTSRun>();
+			test<Pheet::WithScheduler<BasicScheduler>,
+					UTSRun>();
+			test<Pheet::WithScheduler<SynchroneousScheduler>,
+					UTSRun>();
+		}
+	}
 }
