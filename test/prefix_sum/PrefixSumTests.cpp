@@ -108,7 +108,7 @@ void PrefixSumTests::run_test() {
 						StrategyRecursiveParallelPrefixSum2>();
 
 //	this->run_prefix_sum<	Pheet::WithScheduler<BasicScheduler>::WithMachineModel<HWLocSMTMachineModel>,
-//						RecursiveParallelPrefixSif(uts_test) {um>();
+//						RecursiveParallelPrefixSum>();
 /*
 	this->run_prefix_sum<	Pheet::WithScheduler<BasicScheduler>,
 						RecursiveParallelVectorizedPrefixSum>();
