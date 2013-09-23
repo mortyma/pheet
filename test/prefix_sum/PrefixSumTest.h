@@ -22,8 +22,6 @@
 
 namespace pheet {
 
-
-
 template <class Pheet, template <class P> class Algorithm>
 class PrefixSumTest : Test {
 public:
@@ -33,9 +31,7 @@ public:
 	void run_test();
 
 private:
-	typedef aligned_data<unsigned int, 64> TestData;
-
-	void generate_data(TestData*);
+	unsigned int* generate_data();
 	bool is_correct(unsigned int* data);
 
 	procs_t cpus;
@@ -63,8 +59,10 @@ PrefixSumTest<Pheet, Algorithm>::~PrefixSumTest() {
 
 template <class Pheet, template <class P> class Algorithm>
 void PrefixSumTest<Pheet, Algorithm>::run_test() {
-	TestData* data = new TestData[num_problems];
-	generate_data(data);
+	unsigned int** data = new unsigned int*[num_problems];
+	for(size_t i = 0; i < num_problems; ++i) {
+		data[i] = generate_data();
+	}
 
 	typename Pheet::Environment::PerformanceCounters pc;
 	typename Algorithm<Pheet>::PerformanceCounters apc;
@@ -76,7 +74,7 @@ void PrefixSumTest<Pheet, Algorithm>::run_test() {
 		{typename Pheet::Finish f;
 			for(size_t i = 0; i < num_problems; ++i) {
 				Pheet::template
-					spawn<Algorithm<Pheet> >(data[i].ptr(), size, apc);
+					spawn<Algorithm<Pheet> >(data[i], size, apc);
 			}
 		}
 
@@ -85,7 +83,7 @@ void PrefixSumTest<Pheet, Algorithm>::run_test() {
 
 	bool correctness = true;
 	for(size_t i = 0; i < num_problems; ++i) {
-		correctness &= is_correct(data[i].ptr());
+		correctness &= is_correct(data[i]);
 	}
 	double seconds = calculate_seconds(start, end);
 	std::cout << "test\talgorithm\tscheduler\tnum_problems\ttype\tsize\tseed\tcpus\ttotal_time\tcorrect\t";
@@ -98,21 +96,40 @@ void PrefixSumTest<Pheet, Algorithm>::run_test() {
 	pc.print_values();
 	apc.print_values();
 	std::cout << std::endl;
-	
+	for(size_t i = 0; i < num_problems; ++i) {
+		free(data[i]);
+	}
 	delete[] data;
 }
 
 
 template <class Pheet, template <class P> class Algorithm>
-void PrefixSumTest<Pheet, Algorithm>::generate_data(TestData* data) {
-	typename Pheet::Environment env(cpus);
-	for(size_t i = 0; i < num_problems; ++i) {
-		TestData testData(size);
-		unsigned int* d = testData.ptr();
+unsigned int* PrefixSumTest<Pheet, Algorithm>::generate_data() {
+	unsigned int* data;
+	int rv = posix_memalign((void**)&data, 64, size * sizeof(*data));
 
-		Pheet::template finish<PrefixSumInitTask<Pheet> >(d, size, type);
-		data[i] = std::move(testData);
+	if(rv != 0) {
+		throw "Memory alignment failed";
 	}
+
+//	std::mt19937 rng;
+//	rng.seed(seed);
+
+	switch(type) {
+	case 0:
+		// 1s
+	{
+		for(size_t i = 0; i < size; i++) {
+			data[i] = 1;
+		}
+	}
+		break;
+	break;
+	default:
+		throw "unknown type for prefix sum";
+	}
+
+	return data;
 }
 
 template <class Pheet, template <class P> class Algorithm>
