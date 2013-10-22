@@ -740,7 +740,7 @@ private:
 		}
 
 		while(prev != nullptr && !merged->empty() &&
-				(merged->get_level() >= prev->get_level() || merged->get_max_level() == prev->get_max_level())) {
+				(merged->get_level() >= prev->get_level() || merged->get_max_level() >= prev->get_max_level())) {
 			last_merge = prev;
 
 			if(!last_merge->empty()) {
@@ -965,7 +965,7 @@ private:
 				b->reset();
 				b = next;
 			}
-			else if(prev != nullptr && b->get_level() >= prev->get_level()) {
+			else if(prev != nullptr && (b->get_level() >= prev->get_level() || b->get_max_level() <= prev->get_level())) {
 				b = merge_shared(b);
 
 				// Repeat cycle since block might now be empty

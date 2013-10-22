@@ -241,7 +241,7 @@ public:
 	}
 
 	void set_prev(Self* prev) {
-		pheet_assert(prev == nullptr || prev->get_max_level() >= get_max_level());
+		pheet_assert(prev == nullptr || prev->get_max_level() >= get_max_level() || prev->get_level() <= get_level());
 		this->prev = prev;
 	}
 
