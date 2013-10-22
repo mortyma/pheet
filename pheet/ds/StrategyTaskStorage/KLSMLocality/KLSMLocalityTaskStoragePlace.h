@@ -611,8 +611,6 @@ private:
 				// the same block size
 				pheet_assert(l < merged->get_max_level() + 1);
 				pheet_assert(last_merge->get_max_level() == l);
-				pheet_assert(last_merge->get_prev() != nullptr);
-				pheet_assert(last_merge->get_prev()->get_max_level() == l);
 				// We can assume that there will be a block available since a block may only occur
 				// at most once in the shared list, and twice in the local list
 				merged2 = find_free_block(l + 1);
