@@ -777,6 +777,7 @@ private:
 			prev = last_merge->get_prev();
 			pheet_assert(prev == nullptr || prev->get_next() == last_merge);
 		}
+		pheet_assert(prev == nullptr || merged->get_max_level() <= prev->get_max_level());
 
 		// Will be released when merged block is made visible through update of top block or next pointer
 		merged->set_next(block->get_next());
