@@ -26,7 +26,7 @@ public:
 	}
 
 	void reset() {
-		pheet_assert(is_reusable());
+//		pheet_assert(is_reusable());
 //		block.store(nullptr, std::memory_order_relaxed);
 		// The thread linking the new item does not decrement registered, so we only need P-1
 		registered.store(Pheet::get_num_places() - 1, std::memory_order_relaxed);

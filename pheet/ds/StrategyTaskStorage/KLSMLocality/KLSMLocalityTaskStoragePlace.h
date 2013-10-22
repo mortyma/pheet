@@ -952,7 +952,7 @@ private:
 				b->reset();
 				b = next;
 			}
-			else if(prev != nullptr && (b->get_level() >= prev->get_level() || b->get_max_level() >= prev->get_level())) {
+			else if(prev != nullptr && (b->get_level() >= prev->get_level() || b->get_max_level() >= prev->get_max_level())) {
 				b = merge_shared(b);
 
 				// Repeat cycle since block might now be empty
