@@ -748,8 +748,8 @@ private:
 				size_t l = std::max(last_merge->get_level() + 1, merged->get_level() + 1);
 				Block* merged2 = find_free_block(l);
 				if(merged2 == nullptr) {
-					// May happen if both blocks have same level, and 2 blocks of same size are used in local list
-					pheet_assert(l == last_merge->get_max_level());
+					// May happen if one block of same size as merged block is in list, and 2 blocks of same
+					// size are used in local list
 					pheet_assert(l == merged->get_max_level());
 					// A block with l + 1 is guaranteed to be available (the 4th block is only for merging,
 					// so, conflict only occurs when a merged block is merged again)
