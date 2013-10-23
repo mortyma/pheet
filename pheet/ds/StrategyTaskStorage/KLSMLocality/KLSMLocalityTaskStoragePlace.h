@@ -512,14 +512,24 @@ private:
 				block = merge_shared(block);
 
 				if(block->empty()) {
-					bottom_block_shared = block->get_prev();
-					if(bottom_block_shared != nullptr) {
-						bottom_block_shared->set_next(nullptr);
+					Block* p = block->get_prev();
+					Block* n = block->get_next();
+					if(n != nullptr) {
+						n->set_prev(p);
 					}
 					else {
-						top_block_shared = nullptr;
+						pheet_assert(bottom_block_shared == block);
+						bottom_block_shared = p;
+					}
+					if(p != nullptr) {
+						p->set_next(n);
+					}
+					else {
+						pheet_assert(top_block_shared == block);
+						top_block_shared = n;
 					}
 					block->reset();
+					pheet_assert(bottom_block_shared != nullptr || top_block_shared == nullptr);
 				}
 			}
 		}
