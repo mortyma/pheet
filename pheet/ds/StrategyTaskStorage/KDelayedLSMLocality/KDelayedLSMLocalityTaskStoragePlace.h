@@ -518,13 +518,24 @@ private:
 
 			if(b->get_level() <= block->get_level() || b->get_max_level() <= block->get_max_level()) {
 				block = merge_shared(block);
+
+				if(block->empty()) {
+					bottom_block_shared = block->get_prev();
+					if(bottom_block_shared != nullptr) {
+						bottom_block_shared->set_next(nullptr);
+					}
+					else {
+						top_block_shared = nullptr;
+					}
+					block->reset();
+				}
 			}
 		}
 		pheet_assert(block->get_prev() == nullptr || block->get_prev()->get_max_level() > block->get_max_level());
 		pheet_assert(block->get_next() == nullptr || block->get_next()->get_max_level() < block->get_max_level());
 
-		pheet_assert(bottom_block_shared->get_next() == nullptr);
-		pheet_assert(top_block_shared->get_prev() == nullptr);
+		pheet_assert(bottom_block_shared == nullptr || bottom_block_shared->get_next() == nullptr);
+		pheet_assert(top_block_shared == nullptr || top_block_shared->get_prev() == nullptr);
 	}
 
 	void put(Item* item) {
