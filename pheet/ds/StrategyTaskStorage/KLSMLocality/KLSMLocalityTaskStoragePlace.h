@@ -732,9 +732,14 @@ private:
 		Block* last_merge = block->get_prev();
 		pheet_assert(!last_merge->empty());
 		pheet_assert(block == last_merge->get_next());
+
+		// Never go below this level to ensure we never destroy the guarantees that max_levels are strictly
+		// increasing and that never more than 2 blocks in local list have the same max_level
+		size_t l_min = std::min(block->get_max_level(), last_merge->get_max_level());
+
 		// Choose a block big enough to fit data of both blocks, but never smaller than the smaller of
 		// the two blocks (No point in using a smaller block, larger is definitely free)
-		Block* merged = find_free_block(std::max(std::max(block->get_level() + 1, last_merge->get_level() + 1), std::min(block->get_max_level(), last_merge->get_max_level())));
+		Block* merged = find_free_block(std::max(std::max(block->get_level() + 1, last_merge->get_level() + 1), l_min));
 		merged->merge_into(last_merge, block, this, frame_regs);
 		merged->mark_in_use();
 		pheet_assert(merged->get_filled() <= last_merge->get_filled() + block->get_filled());
@@ -755,7 +760,7 @@ private:
 
 			if(!last_merge->empty()) {
 				// Only merge if the other block is not empty
-				size_t l = std::max(last_merge->get_level() + 1, merged->get_level() + 1);
+				size_t l = std::max(l_min, std::max(last_merge->get_level() + 1, merged->get_level() + 1));
 				Block* merged2 = find_free_block(l);
 				if(merged2 == nullptr) {
 					// May happen if one block of same size as merged block is in list, and 2 blocks of same
