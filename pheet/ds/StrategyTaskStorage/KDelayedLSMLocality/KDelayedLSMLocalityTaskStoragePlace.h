@@ -517,7 +517,7 @@ private:
 			b->set_next(block);
 
 			if(b->get_level() <= block->get_level() || b->get_max_level() <= block->get_max_level()) {
-				merge_shared(block);
+				block = merge_shared(block);
 			}
 		}
 		pheet_assert(block->get_prev() == nullptr || block->get_prev()->get_max_level() > block->get_max_level());
