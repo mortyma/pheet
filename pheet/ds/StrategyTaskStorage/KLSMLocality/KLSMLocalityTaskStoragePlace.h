@@ -513,7 +513,7 @@ private:
 			}
 		}
 		pheet_assert(block->get_prev() == nullptr || block->get_prev()->get_max_level() > block->get_max_level());
-		pheet_assert(block->get_next() == nullptr || block->get_next()->get_max_level() > block->get_max_level());
+		pheet_assert(block->get_next() == nullptr || block->get_next()->get_max_level() < block->get_max_level());
 
 		pheet_assert(bottom_block_shared->get_next() == nullptr);
 		pheet_assert(top_block_shared->get_prev() == nullptr);
