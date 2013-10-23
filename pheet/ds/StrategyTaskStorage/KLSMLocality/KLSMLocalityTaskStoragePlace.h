@@ -512,6 +512,9 @@ private:
 				merge_shared(block);
 			}
 		}
+		pheet_assert(block->get_prev() == nullptr || block->get_prev()->get_max_level() > block->get_max_level());
+		pheet_assert(block->get_next() == nullptr || block->get_next()->get_max_level() > block->get_max_level());
+
 		pheet_assert(bottom_block_shared->get_next() == nullptr);
 		pheet_assert(top_block_shared->get_prev() == nullptr);
 	}
@@ -610,7 +613,6 @@ private:
 				// Can sometimes happen if previous merge used exactly the same block size and both predecessors have
 				// the same block size
 				pheet_assert(l < merged->get_max_level() + 1);
-				pheet_assert(last_merge->get_max_level() == l);
 				// We can assume that there will be a block available since a block may only occur
 				// at most once in the shared list, and twice in the local list
 				merged2 = find_free_block(l + 1);
