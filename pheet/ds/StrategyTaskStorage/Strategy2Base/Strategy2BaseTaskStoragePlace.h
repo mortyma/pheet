@@ -541,7 +541,7 @@ private:
 				// Update the list
 				// (It is necessary to recheck if it fits before the first iteration,
 				// since the top block might have changed)
-				while(!db->fits(t)) {
+				while(db->compare(t) == 1) {
 					DataBlock* next = db->get_next();
 					pheet_assert(next != nullptr);
 					pheet_assert(((ptrdiff_t)(t - next->get_block_offset())) >= 0);

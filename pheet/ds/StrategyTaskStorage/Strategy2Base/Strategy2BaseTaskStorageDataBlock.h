@@ -96,7 +96,7 @@ public:
 		if(diff < 0) {
 			return -1;
 		}
-		else if(diff >= BlockSize) {
+		else if(diff >= (ptrdiff_t)BlockSize) {
 			return 1;
 		}
 		return 0;
