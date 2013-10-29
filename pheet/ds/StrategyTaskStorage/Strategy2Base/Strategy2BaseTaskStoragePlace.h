@@ -509,6 +509,23 @@ private:
 			return ret_data;
 		}
 
+		if(t != old_t) {
+			// If we skipped some items we need to update top before we do anything else
+			// We allow for spurious failures, so weak is enough
+			if(!top.compare_exchange_weak(old_t, t, std::memory_order_seq_cst, std::memory_order_relaxed)) {
+				return nullable_traits<T>::null_value;
+			}
+
+			// Reload bottom to check if we can still increment t
+			b = bottom.load(std::memory_order_relaxed);
+
+			ptrdiff_t diff = (ptrdiff_t)(b-t);
+			if(diff <= 0) {
+				// Empty now
+				return nullable_traits<T>::null_value;
+			}
+		}
+
 		T ret_data = ret->data;
 
 		// Steal is allowed to spuriously fail so weak is enough
