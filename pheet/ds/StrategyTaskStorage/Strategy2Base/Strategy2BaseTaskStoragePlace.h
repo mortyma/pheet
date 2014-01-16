@@ -178,6 +178,7 @@ public:
 			//		pheet_assert(all_taken_local(b, t));
 					// If we fail, some other thread will succeed
 					// If afterwards still t != b we can just CAS again
+					// TODO: Should be ok to changes this to a simple assignment, as in the dissertation, but first need to check if this is really safe
 					top.compare_exchange_weak(t, b, std::memory_order_acq_rel);
 				}
 
@@ -473,6 +474,12 @@ private:
 
 			ret = db->direct_acquire(t - offset, valid);
 		}
+		// We need to make sure block has not suddenly been reused
+		// Never occured, and probably never would, but still needed to be sure
+		if(db->get_block_offset() != offset) {
+			return nullable_traits<T>::null_value;
+		}
+
 		// If we are skipping items we need to be sure that we are still in the same phase
 		if(t != old_t && p != phase.load(std::memory_order_relaxed)) {
 			// Phase changed. Might lead to an ABA problem where we skip some items removed by a pop
