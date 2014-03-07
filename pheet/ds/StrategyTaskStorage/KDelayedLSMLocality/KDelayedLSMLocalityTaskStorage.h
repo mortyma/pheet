@@ -37,7 +37,8 @@ public:
 
 	~KDelayedLSMLocalityTaskStorage() {
 		delete[] places;
-		singleton = nullptr;
+		if(singleton.load(std::memory_order_relaxed) == this)
+			singleton = nullptr;
 	}
 
 	/*
