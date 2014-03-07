@@ -25,7 +25,7 @@ public:
 	typedef LSMLocalityTaskStoragePlace<Pheet, Self, typename ParentTaskStorage::Place, Strategy> Place;
 
 	LSMLocalityTaskStorage(ParentTaskStorage* parent)
-	:parent(parent) {
+	:parent(parent), failed(false) {
 		procs_t num_places = Pheet::get_num_places();
 		places = new std::atomic<Place*>[num_places];
 		for(procs_t i = 0; i < num_places; ++i) {
@@ -35,7 +35,8 @@ public:
 
 	~LSMLocalityTaskStorage() {
 		delete[] places;
-		singleton = nullptr;
+		if(!failed)
+			singleton = nullptr;
 	}
 
 	/*
@@ -56,6 +57,7 @@ public:
 			else {
 				// Conflict on initialization, need to delete doubly initialized object
 				created = false;
+				ret->creation_failed();
 				delete ret;
 				pheet_assert(expected != nullptr);
 				pheet_assert(expected != ret);
@@ -106,8 +108,13 @@ public:
 		std::cout << "LSMLocalityTaskStorage";
 	}
 
+	void creation_failed() {
+		failed = true;
+	}
+
 private:
 	static std::atomic<Self*> singleton;
+	bool failed;
 
 	ParentTaskStorage* parent;
 
