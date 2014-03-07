@@ -779,12 +779,10 @@ public:
 	T pop();
 //	T& peek();
 
-	bool empty() {
-		return is_empty();
-	}
-	bool is_empty();
-	size_t size() { return total_size; }
-	size_t transitive_weight() { return total_weight; }
+	bool empty() const { return is_empty(); }
+	bool is_empty() const;
+	size_t size() const { return total_size; }
+	size_t transitive_weight() const { return total_weight; }
 
 	static void print_name();
 
@@ -851,7 +849,7 @@ TT& VolatileStrategyHeap2<Pheet, TT, StrategyRetriever>::peek() {
 }*/
 
 template <class Pheet, typename TT, class StrategyRetriever>
-bool VolatileStrategyHeap2<Pheet, TT, StrategyRetriever>::is_empty() {
+bool VolatileStrategyHeap2<Pheet, TT, StrategyRetriever>::is_empty() const {
 	pheet_assert((total_size == 0) == (total_weight == 0));
 //	pheet_assert((total_weight == 0) == root_heap.is_empty());
 	return total_size == 0;

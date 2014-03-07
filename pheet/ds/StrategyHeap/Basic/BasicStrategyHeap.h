@@ -108,7 +108,7 @@ public:
 		parent = static_cast<BasicStrategyHeapHeap<Pheet, T, BaseStrategy, typename Strategy::BaseStrategy, StrategyRetriever>*>(base);
 	}
 
-	bool is_empty() {
+	bool is_empty() const {
 		return heap.empty();
 	}
 /*
@@ -222,7 +222,7 @@ public:
 
 	}
 
-	bool is_empty() {
+	bool is_empty() const {
 		return heap.empty();
 	}
 
@@ -321,7 +321,7 @@ public:
 		parent = static_cast<BasicStrategyHeapHeap<Pheet, T, BaseStrategy, Strategy, StrategyRetriever>*>(base);
 	}
 
-	bool is_empty() {
+	bool is_empty() const {
 		return heap.empty();
 	}
 /*
@@ -440,9 +440,9 @@ public:
 	T pop();
 	T& peek();
 
-	bool empty() { return is_empty(); }
-	bool is_empty();
-	size_t size() { return total_size; }
+	bool empty() const { return is_empty(); }
+	bool is_empty() const;
+	size_t size() const { return total_size; }
 
 	static void print_name();
 
@@ -500,7 +500,7 @@ TT& BasicStrategyHeap<Pheet, TT, StrategyRetriever>::peek() {
 }
 
 template <class Pheet, typename TT, class StrategyRetriever>
-bool BasicStrategyHeap<Pheet, TT, StrategyRetriever>::is_empty() {
+bool BasicStrategyHeap<Pheet, TT, StrategyRetriever>::is_empty() const {
 	pheet_assert((total_size == 0) == root_heap.is_empty());
 	return root_heap.is_empty();
 }

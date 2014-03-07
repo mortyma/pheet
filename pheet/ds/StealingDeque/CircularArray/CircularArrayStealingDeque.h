@@ -45,9 +45,9 @@ public:
 
 	T steal_push(CircularArrayStealingDequeImpl<Pheet, TT, CircularArray> &other);
 
-	size_t get_length();
-	bool is_empty();
-	bool is_full();
+	size_t get_length() const;
+	bool is_empty() const;
+	bool is_full() const;
 
 private:
 	size_t top;
@@ -237,17 +237,17 @@ TT CircularArrayStealingDequeImpl<Pheet, TT, CircularArray>::steal_push(Circular
 }
 
 template <class Pheet, typename TT, template <class P, typename S> class CircularArray>
-size_t CircularArrayStealingDequeImpl<Pheet, TT, CircularArray>::get_length() {
+size_t CircularArrayStealingDequeImpl<Pheet, TT, CircularArray>::get_length() const {
 	return (bottom - (top & top_mask));
 }
 
 template <class Pheet, typename TT, template <class P, typename S> class CircularArray>
-bool CircularArrayStealingDequeImpl<Pheet, TT, CircularArray>::is_empty() {
+bool CircularArrayStealingDequeImpl<Pheet, TT, CircularArray>::is_empty() const {
 	return get_length() == 0;
 }
 
 template <class Pheet, typename TT, template <class P, typename S> class CircularArray>
-bool CircularArrayStealingDequeImpl<Pheet, TT, CircularArray>::is_full() {
+bool CircularArrayStealingDequeImpl<Pheet, TT, CircularArray>::is_full() const {
 	return (!data.is_growable()) && (get_length() >= data.get_capacity());
 }
 

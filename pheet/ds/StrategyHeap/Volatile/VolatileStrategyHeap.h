@@ -50,10 +50,10 @@ public:
 	virtual Node* pop() = 0;
 
 
-	bool empty() {
+	bool empty() const {
 		return max == nullptr;
 	}
-	bool is_empty() {
+	bool is_empty() const {
 		return empty();
 	}
 
@@ -603,12 +603,10 @@ public:
 	T pop();
 	T& peek();
 
-	bool empty() {
-		return is_empty();
-	}
-	bool is_empty();
-	size_t size() { return total_size; }
-	size_t transitive_weight() { return total_weight; }
+	bool empty() const { return is_empty(); }
+	bool is_empty() const;
+	size_t size() const { return total_size; }
+	size_t transitive_weight() const { return total_weight; }
 
 	static void print_name();
 
@@ -671,7 +669,7 @@ TT& VolatileStrategyHeap<Pheet, TT, StrategyRetriever>::peek() {
 }
 
 template <class Pheet, typename TT, class StrategyRetriever>
-bool VolatileStrategyHeap<Pheet, TT, StrategyRetriever>::is_empty() {
+bool VolatileStrategyHeap<Pheet, TT, StrategyRetriever>::is_empty() const {
 	pheet_assert((total_size == 0) == root_heap.is_empty());
 	pheet_assert((total_weight == 0) == root_heap.is_empty());
 	return root_heap.is_empty();

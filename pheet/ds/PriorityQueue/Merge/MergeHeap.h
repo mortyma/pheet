@@ -188,14 +188,14 @@ public:
 		return ret;
 	}
 
-	size_t get_length() {
+	size_t get_length() const {
 		return filled;
 	}
 
-	bool is_empty() {
+	bool is_empty() const {
 		return filled == 0;
 	}
-	inline bool empty() {
+	inline bool empty() const {
 		return is_empty();
 	}
 

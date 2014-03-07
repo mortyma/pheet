@@ -103,16 +103,16 @@ public:
 		return ret;
 	}
 
-	bool empty() {
+	bool empty() const {
 		return _size == 0;
 	}
-	bool is_empty() {
+	bool is_empty() const {
 		return empty();
 	}
-	size_t size() {
+	size_t size() const {
 		return _size;
 	}
-	size_t get_length() {
+	size_t get_length() const {
 		return _size;
 	}
 

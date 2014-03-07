@@ -51,17 +51,11 @@ public:
 	T pop();
 	T& peek();
 
-	inline size_t size() {
-		return get_length();
-	}
-	size_t get_length();
-	inline bool empty() {
-		return is_empty();
-	}
-	bool is_empty();
-	inline bool is_full() {
-		return false;
-	}
+	inline size_t size() const { return get_length(); }
+	size_t get_length() const;
+	inline bool empty() const { return is_empty(); }
+	bool is_empty() const;
+	inline bool is_full() const { return false; }
 
 	static void print_name();
 private:
@@ -107,12 +101,12 @@ TT& LocalStrategyTaskStorageImpl<Pheet, TT, StrategyHeapT>::peek() {
 }
 
 template <class Pheet, typename TT, template <class SP, typename ST, class SR> class StrategyHeapT>
-bool LocalStrategyTaskStorageImpl<Pheet, TT, StrategyHeapT>::is_empty() {
+bool LocalStrategyTaskStorageImpl<Pheet, TT, StrategyHeapT>::is_empty() const {
 	return sz == 0;
 }
 
 template <class Pheet, typename TT, template <class SP, typename ST, class SR> class StrategyHeapT>
-size_t LocalStrategyTaskStorageImpl<Pheet, TT, StrategyHeapT>::get_length() {
+size_t LocalStrategyTaskStorageImpl<Pheet, TT, StrategyHeapT>::get_length() const {
 	return sz;
 }
 

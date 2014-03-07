@@ -29,8 +29,8 @@ public:
 	T peek();
 	T pop();
 
-	size_t get_length();
-	bool is_empty();
+	size_t get_length() const;
+	bool is_empty() const;
 
 	static void print_name();
 
@@ -74,12 +74,12 @@ TT STLPriorityQueueWrapper<Pheet, TT, Comparator>::pop() {
 }
 
 template <class Pheet, typename TT, class Comparator>
-size_t STLPriorityQueueWrapper<Pheet, TT, Comparator>::get_length() {
+size_t STLPriorityQueueWrapper<Pheet, TT, Comparator>::get_length() const {
 	return stl_pq.size();
 }
 
 template <class Pheet, typename TT, class Comparator>
-bool STLPriorityQueueWrapper<Pheet, TT, Comparator>::is_empty() {
+bool STLPriorityQueueWrapper<Pheet, TT, Comparator>::is_empty() const {
 	return stl_pq.empty();
 }
 

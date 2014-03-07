@@ -45,12 +45,12 @@ public:
 	T steal_push(Self& other, StealerDescriptor& sd);
 	T steal_push(Self& other, StealerDescriptor& sd, PerformanceCounters& pc);
 
-	size_t get_length();
-	size_t get_length(PerformanceCounters& pc);
-	bool is_empty();
-	bool is_empty(PerformanceCounters& pc);
-	bool is_full();
-	bool is_full(PerformanceCounters& pc);
+	size_t get_length() const;
+	size_t get_length(PerformanceCounters& pc) const;
+	bool is_empty() const;
+	bool is_empty(PerformanceCounters& pc) const;
+	bool is_full() const;
+	bool is_full(PerformanceCounters& pc) const;
 
 	// Can be called by the scheduler every time it is idle to perform some routine maintenance
 	void perform_maintenance(PerformanceCounters& pc);
@@ -143,35 +143,35 @@ inline TT ModularTaskStorageImpl<Pheet, TT, PrimaryT, SecondaryT>::steal_push(Se
 }
 
 template <class Pheet, typename TT, template <class SP, typename S> class PrimaryT, template <class SP, typename S, template <class ES, typename Q> class P> class SecondaryT>
-inline size_t ModularTaskStorageImpl<Pheet, TT, PrimaryT, SecondaryT>::get_length() {
+inline size_t ModularTaskStorageImpl<Pheet, TT, PrimaryT, SecondaryT>::get_length() const {
 	PerformanceCounters pc;
 	return primary.get_length(pc.primary_perf_count);
 }
 
 template <class Pheet, typename TT, template <class SP, typename S> class PrimaryT, template <class SP, typename S, template <class ES, typename Q> class P> class SecondaryT>
-inline size_t ModularTaskStorageImpl<Pheet, TT, PrimaryT, SecondaryT>::get_length(PerformanceCounters& pc) {
+inline size_t ModularTaskStorageImpl<Pheet, TT, PrimaryT, SecondaryT>::get_length(PerformanceCounters& pc) const {
 	return primary.get_length(pc.primary_perf_count);
 }
 
 template <class Pheet, typename TT, template <class SP, typename S> class PrimaryT, template <class SP, typename S, template <class ES, typename Q> class P> class SecondaryT>
-inline bool ModularTaskStorageImpl<Pheet, TT, PrimaryT, SecondaryT>::is_empty() {
+inline bool ModularTaskStorageImpl<Pheet, TT, PrimaryT, SecondaryT>::is_empty() const {
 	PerformanceCounters pc;
 	return primary.is_empty(pc.primary_perf_count);
 }
 
 template <class Pheet, typename TT, template <class SP, typename S> class PrimaryT, template <class SP, typename S, template <class ES, typename Q> class P> class SecondaryT>
-inline bool ModularTaskStorageImpl<Pheet, TT, PrimaryT, SecondaryT>::is_empty(PerformanceCounters& pc) {
+inline bool ModularTaskStorageImpl<Pheet, TT, PrimaryT, SecondaryT>::is_empty(PerformanceCounters& pc) const {
 	return primary.is_empty(pc.primary_perf_count);
 }
 
 template <class Pheet, typename TT, template <class SP, typename S> class PrimaryT, template <class SP, typename S, template <class ES, typename Q> class P> class SecondaryT>
-inline bool ModularTaskStorageImpl<Pheet, TT, PrimaryT, SecondaryT>::is_full() {
+inline bool ModularTaskStorageImpl<Pheet, TT, PrimaryT, SecondaryT>::is_full() const {
 	PerformanceCounters pc;
 	return primary.is_full(pc.primary_perf_count);
 }
 
 template <class Pheet, typename TT, template <class SP, typename S> class PrimaryT, template <class SP, typename S, template <class ES, typename Q> class P> class SecondaryT>
-inline bool ModularTaskStorageImpl<Pheet, TT, PrimaryT, SecondaryT>::is_full(PerformanceCounters& pc) {
+inline bool ModularTaskStorageImpl<Pheet, TT, PrimaryT, SecondaryT>::is_full(PerformanceCounters& pc) const {
 	return primary.is_full(pc.primary_perf_count);
 }
 

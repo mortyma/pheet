@@ -205,7 +205,7 @@ public:
 		heap.template push<Strategy>(std::move(r));
 	}
 
-	bool is_full() {
+	bool is_full() const {
 		return false;
 	}
 
@@ -213,7 +213,7 @@ public:
 		return task_storage;
 	}
 
-	size_t size() {
+	size_t size() const {
 		return heap.size();
 	}
 private:

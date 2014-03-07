@@ -39,8 +39,8 @@ public:
 	T peek_min();
 	T pop_min();
 
-	size_t get_length();
-	bool is_empty();
+	size_t get_length() const;
+	bool is_empty() const;
 
 	static void print_name();
 
@@ -237,12 +237,12 @@ TT SortedArrayHeap<Pheet, TT, Comparator>::pop_min() {
 }
 
 template <class Pheet, typename TT, class Comparator>
-size_t SortedArrayHeap<Pheet, TT, Comparator>::get_length() {
+size_t SortedArrayHeap<Pheet, TT, Comparator>::get_length() const {
 	return length;
 }
 
 template <class Pheet, typename TT, class Comparator>
-bool SortedArrayHeap<Pheet, TT, Comparator>::is_empty() {
+bool SortedArrayHeap<Pheet, TT, Comparator>::is_empty() const {
 	return length == 0;
 }
 
