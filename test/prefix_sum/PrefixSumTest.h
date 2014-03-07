@@ -31,12 +31,15 @@ public:
 	aligned_data(size_t elements)
 	{
 		size_t size = sizeof(T) * elements;
-		size_t totalSize = size + alignment;
+		size_t totalSize = size + alignment - 1;
 		raw = malloc(totalSize);
 		aligned = raw;
-		aligned = std::align(alignment, size, aligned, totalSize);
+		// Since std::align is not yet supported in GCC we do this manually. Assumes alignment is power of two
+		aligned = reinterpret_cast<void*>(reinterpret_cast<size_t>(static_cast<char *>(raw)+alignment - 1) & ~ (static_cast<size_t>(alignment) - 1));
+
+/*		aligned = std::align(alignment, size, aligned, totalSize);
 		if (aligned == 0)
-			throw std::runtime_error("Alignment of allocation failed");
+			throw std::runtime_error("Alignment of allocation failed");*/
 	}
 
 	aligned_data(aligned_data && other) :
