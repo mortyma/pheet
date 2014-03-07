@@ -11,9 +11,9 @@
 
 #include <stdlib.h>
 #include <iostream>
-#include <memory>
 #include <stdexcept>
 #include <pheet/pheet.h>
+#include <pheet/misc/align.h>
 #include "../Test.h"
 
 #include "PrefixSumInitTask.h"
@@ -22,48 +22,7 @@
 
 namespace pheet {
 
-template <typename T, unsigned alignment>
-class aligned_data
-{
-	void* raw;
-	void* aligned;
-public:
-	aligned_data(): raw(), aligned() {}
 
-	aligned_data(size_t elements)
-	{
-		size_t size = sizeof(T) * elements;
-		size_t totalSize = size + alignment - 1;
-		raw = malloc(totalSize);
-		aligned = raw;
-		// Since std::align is not yet supported in GCC we do this manually. Assumes alignment is power of two
-		aligned = reinterpret_cast<void*>(reinterpret_cast<size_t>(static_cast<char *>(raw)+alignment - 1) & ~ (static_cast<size_t>(alignment) - 1));
-
-/*		aligned = std::align(alignment, size, aligned, totalSize);
-		if (aligned == 0)
-			throw std::runtime_error("Alignment of allocation failed");*/
-	}
-
-	aligned_data(aligned_data && other) :
-		raw(std::move(other.raw)),
-		aligned(std::move(other.aligned))
-	{
-		other.raw = nullptr;
-		other.aligned = nullptr;
-	}
-
-	aligned_data& operator=(aligned_data&& other) {
-		raw = std::move(other.raw);
-		aligned = std::move(other.aligned);
-		other.raw = nullptr;
-		other.aligned = nullptr;
-		return *this;
-	}
-
-	~aligned_data() { free(raw); }
-
-	T* ptr() { return static_cast<T*>(aligned); }
-};
 
 template <class Pheet, template <class P> class Algorithm>
 class PrefixSumTest : Test {
@@ -76,7 +35,7 @@ public:
 private:
 	typedef aligned_data<unsigned int, 64> TestData;
 
-	TestData generate_data();
+	void generate_data(TestData*);
 	bool is_correct(unsigned int* data);
 
 	procs_t cpus;
@@ -105,9 +64,7 @@ PrefixSumTest<Pheet, Algorithm>::~PrefixSumTest() {
 template <class Pheet, template <class P> class Algorithm>
 void PrefixSumTest<Pheet, Algorithm>::run_test() {
 	TestData* data = new TestData[num_problems];
-	for(size_t i = 0; i < num_problems; ++i) {
-		data[i] = generate_data();
-	}
+	generate_data(data);
 
 	typename Pheet::Environment::PerformanceCounters pc;
 	typename Algorithm<Pheet>::PerformanceCounters apc;
@@ -147,15 +104,15 @@ void PrefixSumTest<Pheet, Algorithm>::run_test() {
 
 
 template <class Pheet, template <class P> class Algorithm>
-typename PrefixSumTest<Pheet, Algorithm>::TestData PrefixSumTest<Pheet, Algorithm>::generate_data() {
-
-	TestData testData(size);
-	unsigned int* data = testData.ptr();
-	
+void PrefixSumTest<Pheet, Algorithm>::generate_data(TestData* data) {
 	typename Pheet::Environment env(cpus);
-	Pheet::template finish<PrefixSumInitTask<Pheet> >(data, size, type);
+	for(size_t i = 0; i < num_problems; ++i) {
+		TestData testData(size);
+		unsigned int* d = testData.ptr();
 
-	return testData;
+		Pheet::template finish<PrefixSumInitTask<Pheet> >(d, size, type);
+		data[i] = std::move(testData);
+	}
 }
 
 template <class Pheet, template <class P> class Algorithm>

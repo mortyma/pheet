@@ -12,8 +12,11 @@
 #include "Sequential/SequentialPrefixSum.h"
 #include "NaiveParallel/NaiveParallelPrefixSum.h"
 #include "RecursiveParallel/RecursiveParallelPrefixSum.h"
+#include "RecursiveParallel2/RecursiveParallelPrefixSum2.h"
 #include "RecursiveParallelVectorized/RecursiveParallelVectorizedPrefixSum.h"
+#include "SmartRecursiveParallel2/SmartRecursiveParallelPrefixSum2.h"
 #include "StrategyRecursiveParallel/StrategyRecursiveParallelPrefixSum.h"
+#include "StrategyRecursiveParallel2/StrategyRecursiveParallelPrefixSum2.h"
 #include "Parallel/ParallelPrefixSum.h"
 #include "Strategy/StrategyPrefixSum.h"
 
@@ -40,6 +43,7 @@
 #include <pheet/sched/Centralized/CentralizedScheduler.h>
 #include <pheet/sched/CentralizedPriority/CentralizedPriorityScheduler.h>
 #include <pheet/sched/Strategy/StrategyScheduler.h>
+#include <pheet/sched/Strategy2/StrategyScheduler2.h>
 #include <pheet/sched/BStrategy/BStrategyScheduler.h>
 #include <pheet/sched/Synchroneous/SynchroneousScheduler.h>
 #include <pheet/sched/MixedMode/MixedModeScheduler.h>
@@ -64,7 +68,7 @@ void PrefixSumTests::run_test() {
 	std::cout << "----" << std::endl;
 
 	// default tests
-	this->run_prefix_sum<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<DistKStrategyTaskStorage>,
+/*	this->run_prefix_sum<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<DistKStrategyTaskStorage>,
 							StrategyRecursiveParallelPrefixSum>();
 	this->run_prefix_sum<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<DistKStrategyTaskStorageLocalK>,
 							StrategyRecursiveParallelPrefixSum>();
@@ -89,20 +93,35 @@ void PrefixSumTests::run_test() {
 	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler>,
 						RecursiveParallelPrefixSum>();
 	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler>::WithMachineModel<HWLocSMTMachineModel>,
-						RecursiveParallelPrefixSum>();						
+						RecursiveParallelPrefixSum>();		*/
 
 	this->run_prefix_sum<	Pheet::WithScheduler<BasicScheduler>,
 						RecursiveParallelPrefixSum>();
-	this->run_prefix_sum<	Pheet::WithScheduler<BasicScheduler>::WithMachineModel<HWLocSMTMachineModel>,
-						RecursiveParallelPrefixSum>();
+	this->run_prefix_sum<	Pheet::WithScheduler<BasicScheduler>,
+						RecursiveParallelPrefixSum2>();
+	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler2>,
+						RecursiveParallelPrefixSum2>();
+	this->run_prefix_sum<	Pheet::WithScheduler<BasicScheduler>,
+						SmartRecursiveParallelPrefixSum2>();
+	this->run_prefix_sum<	Pheet::WithScheduler<BStrategyScheduler>,
+						SmartRecursiveParallelPrefixSum2>();
+	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler2>,
+						SmartRecursiveParallelPrefixSum2>();
+	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler2>,
+						StrategyRecursiveParallelPrefixSum2>();
 
+//	this->run_prefix_sum<	Pheet::WithScheduler<BasicScheduler>::WithMachineModel<HWLocSMTMachineModel>,
+//						RecursiveParallelPrefixSum>();
+/*
 	this->run_prefix_sum<	Pheet::WithScheduler<BasicScheduler>,
 						RecursiveParallelVectorizedPrefixSum>();
 	this->run_prefix_sum<	Pheet::WithScheduler<BasicScheduler>::WithMachineModel<HWLocSMTMachineModel>,
-						RecursiveParallelVectorizedPrefixSum>();
+						RecursiveParallelVectorizedPrefixSum>();*/
 
 	this->run_prefix_sum<	Pheet::WithScheduler<SynchroneousScheduler>,
-						RecursiveParallelPrefixSum>();
+						RecursiveParallelPrefixSum2>();
+	this->run_prefix_sum<	Pheet::WithScheduler<SynchroneousScheduler>,
+						SequentialPrefixSum>();
 #endif
 }
 

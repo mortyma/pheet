@@ -10,16 +10,21 @@
 #define SEQUENTIALPREFIXSUM_H_
 
 #include <pheet/pheet.h>
+#include <pheet/primitives/PerformanceCounter/DummyPerformanceCounters.h>
 
 namespace pheet {
 
 template <class Pheet>
 class SequentialPrefixSum : public Pheet::Task {
 public:
+	typedef DummyPerformanceCounters<Pheet> PerformanceCounters;
+
 	SequentialPrefixSum(unsigned int* data, size_t length)
 	:data(data), length(length) {
 
 	}
+	SequentialPrefixSum(unsigned int* data, size_t length, PerformanceCounters&p)
+		:data(data), length(length) {}
 	virtual ~SequentialPrefixSum() {}
 
 	virtual void operator()() {
