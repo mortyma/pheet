@@ -49,7 +49,7 @@ public:
 			ret = new Self(parent);
 
 			Self* expected = nullptr;
-			if(singleton.compare_exchange_strong(expected, ret, std::memory_order_acq_rel, std::memory_order_relaxed)) {
+			if(singleton.compare_exchange_strong(expected, ret, std::memory_order_acq_rel, std::memory_order_acquire)) {
 				created = true;
 			}
 			else {
@@ -57,6 +57,8 @@ public:
 				created = false;
 				delete ret;
 				pheet_assert(expected != nullptr);
+				pheet_assert(expected != ret);
+				pheet_assert(expected == singleton.load(std::memory_order_relaxed));
 				ret = expected;
 			}
 		}
