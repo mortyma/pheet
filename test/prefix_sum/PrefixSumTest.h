@@ -16,6 +16,8 @@
 #include <pheet/pheet.h>
 #include "../Test.h"
 
+#include "PrefixSumInitTask.h"
+
 //using namespace std;
 
 namespace pheet {
@@ -150,22 +152,8 @@ typename PrefixSumTest<Pheet, Algorithm>::TestData PrefixSumTest<Pheet, Algorith
 	TestData testData(size);
 	unsigned int* data = testData.ptr();
 	
-//	std::mt19937 rng;
-//	rng.seed(seed);
-
-	switch(type) {
-	case 0:
-		// 1s
-	{
-		for(size_t i = 0; i < size; i++) {
-			data[i] = 1;
-		}
-	}
-		break;
-	break;
-	default:
-		throw "unknown type for prefix sum";
-	}
+	typename Pheet::Environment env(cpus);
+	Pheet::template finish<PrefixSumInitTask<Pheet> >(data, size, type);
 
 	return testData;
 }
