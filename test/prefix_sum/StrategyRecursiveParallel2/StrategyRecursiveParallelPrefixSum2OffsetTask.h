@@ -19,9 +19,10 @@ class StrategyRecursiveParallelPrefixSum2OffsetTask : public Pheet::Task {
 public:
 	typedef StrategyRecursiveParallelPrefixSum2OffsetTask<Pheet, BlockSize, Inclusive> Self;
 	typedef StrategyRecursiveParallelPrefixSum2Strategy<Pheet> Strategy;
+	typedef typename Pheet::Place Place;
 
-	StrategyRecursiveParallelPrefixSum2OffsetTask(unsigned int* data, unsigned int* auxiliary_data, size_t blocks, size_t length, size_t block_id, std::atomic<size_t>& sequential)
-	:data(data), auxiliary_data(auxiliary_data), blocks(blocks), length(length), block_id(block_id), sequential(sequential) {}
+	StrategyRecursiveParallelPrefixSum2OffsetTask(unsigned int* data, unsigned int* auxiliary_data, size_t blocks, size_t length, size_t block_id, std::atomic<size_t>& sequential, Place* owner)
+	:data(data), auxiliary_data(auxiliary_data), blocks(blocks), length(length), block_id(block_id), sequential(sequential), owner(owner) {}
 	virtual ~StrategyRecursiveParallelPrefixSum2OffsetTask() {}
 
 	virtual void operator()() {
@@ -55,14 +56,12 @@ public:
 			size_t half = blocks >> 1;
 			size_t half_l = half * BlockSize;
 
-			typename Pheet::Place* in_order = (sequential.load(std::memory_order_relaxed) == block_id)?Pheet::get_place():nullptr;
-
 			Pheet::template
-				spawn_s<Self>(Strategy(block_id + half, in_order),
-						data, auxiliary_data, blocks - half, length - half_l, block_id + half, sequential);
+				spawn_s<Self>(Strategy(block_id + half, owner, false),
+						data, auxiliary_data, blocks - half, length - half_l, block_id + half, sequential, owner);
 			Pheet::template
-				spawn_s<Self>(Strategy(block_id, in_order),
-						data, auxiliary_data, half, half_l, block_id, sequential);
+				spawn_s<Self>(Strategy(block_id, owner, sequential.load(std::memory_order_relaxed) == block_id),
+						data, auxiliary_data, half, half_l, block_id, sequential, owner);
 		}
 	}
 private:
@@ -72,6 +71,7 @@ private:
 	size_t length;
 	size_t block_id;
 	std::atomic<size_t>& sequential;
+	Place* owner;
 };
 
 } /* namespace pheet */

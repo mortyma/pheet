@@ -74,7 +74,7 @@ public:
 			std::atomic<size_t> sequential(0);
 
 			// Calculate offsets
-			Pheet::template finish<OffsetTask>(data, auxiliary_data.ptr(), num_blocks, length, 0, sequential);
+			Pheet::template finish<OffsetTask>(data, auxiliary_data.ptr(), num_blocks, length, 0, sequential, Pheet::get_place());
 			size_t seq = sequential.load(std::memory_order_relaxed);
 			pc.blocks.add(num_blocks);
 			pc.preprocessed_blocks.add(seq);

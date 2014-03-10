@@ -9,7 +9,7 @@
 #ifndef STRATEGYRECURSIVEPARALLELPREFIXSUM2STRATEGY_H_
 #define STRATEGYRECURSIVEPARALLELPREFIXSUM2STRATEGY_H_
 
-#include <pheet/ds/StrategyTaskStorage/LSMLocality/LSMLocalityTaskStorage.h>
+#include <pheet/ds/StrategyTaskStorage/KLSMLocality/KLSMLocalityTaskStorage.h>
 
 namespace pheet {
 
@@ -19,57 +19,60 @@ public:
 	typedef StrategyRecursiveParallelPrefixSum2Strategy<Pheet> Self;
 	typedef typename Pheet::Environment::BaseStrategy BaseStrategy;
 
-	typedef LSMLocalityTaskStorage<Pheet, Self> TaskStorage;
+	typedef KLSMLocalityTaskStorage<Pheet, Self> TaskStorage;
 	typedef typename TaskStorage::Place TaskStoragePlace;
 	typedef typename Pheet::Place Place;
 
 	StrategyRecursiveParallelPrefixSum2Strategy() {}
 
-	StrategyRecursiveParallelPrefixSum2Strategy(size_t block_id, Place* in_order)
-	: block_id(block_id), in_order(in_order) {}
+	StrategyRecursiveParallelPrefixSum2Strategy(size_t block_id, Place* owner, bool in_order)
+	: block_id(block_id), owner(owner), in_order(in_order) {}
 
 	StrategyRecursiveParallelPrefixSum2Strategy(Self& other)
-	: BaseStrategy(other), block_id(other.block_id), in_order(other.in_order) {}
+	: BaseStrategy(other), block_id(other.block_id), owner(other.owner) {}
 
 	StrategyRecursiveParallelPrefixSum2Strategy(Self&& other)
-	: BaseStrategy(other), block_id(other.block_id), in_order(other.in_order) {}
+	: BaseStrategy(other), block_id(other.block_id), owner(other.owner) {}
 
 	~StrategyRecursiveParallelPrefixSum2Strategy() {}
 
 	Self& operator=(Self&& other) {
 		block_id = other.block_id;
-		in_order = other.in_order;
+		owner = other.owner;
 		return *this;
 	}
 
 
 	bool prioritize(Self& other) {
-		if(in_order != nullptr || other.in_order != nullptr) {
-			Place* p = Pheet::get_place();
-			if(in_order == p) {
-				if(other.in_order != p) {
-					return true;
-				}
-				return block_id < other.block_id;
-			}
-			else if(other.in_order == p) {
+		Place* p = Pheet::get_place();
+		if(owner == p) {
+			if(other.owner != p) {
 				return true;
 			}
+			return block_id < other.block_id;
+		}
+		else if(other.owner == p) {
+			return false;
 		}
 		return block_id > other.block_id;
 	}
 
 	bool can_call(TaskStoragePlace*) {
-		return false;
+		return in_order;
 	}
 
 	bool dead_task() {
 		return false;
 	}
 
+	size_t get_k() {
+		return 8;
+	}
+
 private:
 	size_t block_id;
-	Place* in_order;
+	Place* owner;
+	bool in_order;
 };
 
 } /* namespace pheet */
