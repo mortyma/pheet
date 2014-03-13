@@ -22,6 +22,7 @@
 #include <pheet/sched/BStrategy/BStrategyScheduler.h>
 #include <pheet/sched/Synchroneous/SynchroneousScheduler.h>
 #include <pheet/ds/StrategyTaskStorage/CentralK/CentralKStrategyTaskStorage.h>
+#include <pheet/ds/StrategyTaskStorage/CentralK11/CentralKStrategyTaskStorage.h>
 #include <pheet/ds/StrategyTaskStorage/DistK/DistKStrategyTaskStorage.h>
 #endif
 
@@ -60,7 +61,11 @@ void SsspTests::run_test() {
 	this->run_algorithm<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<DistKStrategyTaskStorageLocalK>,
 							StrategySssp>();
 	this->run_algorithm<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<CentralKStrategyTaskStorage>,
+								StrategySssp>();
+
+	this->run_algorithm<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<cpp11::CentralKStrategyTaskStorage>,
 							StrategySssp>();
+
 //  this->run_algorithm<	Pheet::WithScheduler<BStrategyScheduler>,
 //							AdaptiveSssp>();
 //	this->run_algorithm<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<CentralKStrategyTaskStorageMergeHeap>,
