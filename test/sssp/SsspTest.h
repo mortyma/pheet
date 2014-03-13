@@ -22,6 +22,8 @@
 
 #include "SsspInitTask.h"
 
+#include <pheet/sched/Synchroneous/SynchroneousScheduler.h>
+
 namespace pheet {
 
 template <class Pheet, template <class P> class Algorithm>
@@ -121,9 +123,11 @@ SsspGraphVertex* SsspTest<Pheet, Algorithm>::generate_data() {
 			}
 		}
 	}
-	{typename Pheet::Environment env(cpus);
-		Pheet::template
-			finish<SsspInitTask<Pheet> >(data, edges, 0, size - 1);
+	{typedef typename Pheet::template WithScheduler<SynchroneousScheduler> SPheet;
+		typename SPheet::Environment env(cpus);
+
+		SPheet::template
+			finish<SsspInitTask<SPheet> >(data, edges, 0, size - 1);
 	}
 	data[0].distance = 0;
 	delete[] edges;

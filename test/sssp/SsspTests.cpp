@@ -47,8 +47,8 @@ void SsspTests::run_test() {
 
 	this->run_algorithm<	Pheet::WithScheduler<StrategyScheduler2>,
 							Strategy2Sssp>();
-	this->run_algorithm<	Pheet::WithScheduler<StrategyScheduler2>,
-							Strategy2SsspDelayedK>();
+//	this->run_algorithm<	Pheet::WithScheduler<StrategyScheduler2>,
+//							Strategy2SsspDelayedK>();
 	this->run_algorithm<	Pheet::WithScheduler<StrategyScheduler2>,
 							Strategy2SsspNoK>();
 	this->run_algorithm<	Pheet::WithScheduler<SynchroneousScheduler>,
@@ -57,16 +57,16 @@ void SsspTests::run_test() {
 //							AdaptiveSssp>();
 	this->run_algorithm<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<DistKStrategyTaskStorage>,
 							StrategySssp>();
-	this->run_algorithm<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<DistKStrategyTaskStorageLocalK>,
-							StrategySssp>();
+//	this->run_algorithm<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<DistKStrategyTaskStorageLocalK>,
+//							StrategySssp>();
 	this->run_algorithm<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<CentralKStrategyTaskStorage>,
 							StrategySssp>();
 //  this->run_algorithm<	Pheet::WithScheduler<BStrategyScheduler>,
 //							AdaptiveSssp>();
 //	this->run_algorithm<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<CentralKStrategyTaskStorageMergeHeap>,
 //							StrategySssp>();
-	this->run_algorithm<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<CentralKStrategyTaskStorageLocalK>,
-							StrategySssp>();
+//	this->run_algorithm<	Pheet::WithScheduler<BStrategyScheduler>::WithTaskStorage<CentralKStrategyTaskStorageLocalK>,
+//							StrategySssp>();
 	this->run_algorithm<	Pheet::WithScheduler<StrategyScheduler>,
 							StrategySssp>();
 /*
