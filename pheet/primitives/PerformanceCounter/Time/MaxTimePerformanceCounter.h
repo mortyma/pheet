@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include <iostream>
-#include <sys/time.h>
+#include <chrono>
 
 #include "../../../settings.h"
 #include "../../Reducer/Max/MaxReducer.h"
@@ -91,7 +91,8 @@ public:
 	static void print_header(char const* const string);
 private:
 	MaxReducer<Pheet, double> reducer;
-	struct timeval start_time;
+	using Clock = std::chrono::high_resolution_clock;
+	Clock::time_point start_time;
 #ifdef PHEET_DEBUG_MODE
 	bool is_active;
 #endif
@@ -131,15 +132,14 @@ void MaxTimePerformanceCounter<Pheet, true>::start_timer() {
 	pheet_assert(!is_active);
 	is_active = true;
 #endif
-	gettimeofday(&start_time, NULL);
+	start_time = Clock::now();
 }
 
 template <class Pheet>
 inline
 void MaxTimePerformanceCounter<Pheet, true>::stop_timer() {
-	struct timeval stop_time;
-	gettimeofday(&stop_time, NULL);
-	double time = (stop_time.tv_sec - start_time.tv_sec) + 1.0e-6 * stop_time.tv_usec - 1.0e-6 * start_time.tv_usec;
+	auto stop_time = Clock::now();
+	double time = 1.0e-6 * std::chrono::duration_cast<std::chrono::microseconds>(stop_time - start_time).count();
 	reducer.add(time);
 #ifdef PHEET_DEBUG_MODE
 	pheet_assert(is_active);
