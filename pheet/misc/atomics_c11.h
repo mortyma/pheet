@@ -18,17 +18,16 @@ inline bool generic_cas(T* p, U old_v, V new_v)
 	T local_old = old_v;
 	return std::atomic_compare_exchange_strong(reinterpret_cast<std::atomic<T>*>(p), &local_old, static_cast<T>(new_v));
 }
-#define GENERIC_CAS(p, old_v, new_v)	(generic_cas(p, old_v, new_v))
-#define PTR_CAS(p, old_v, new_v)		GENERIC_CAS(p, old_v, new_v)
-#define INT_CAS(p, old_v, new_v)		GENERIC_CAS(p, old_v, new_v))
-#define INT32_CAS(p, old_v, new_v)		GENERIC_CAS(p, old_v, new_v)
-#define INT64_CAS(p, old_v, new_v)		GENERIC_CAS(p, old_v, new_v)
-#define UINT64_CAS(p, old_v, new_v)		GENERIC_CAS(p, old_v, new_v)
-#define UINT_CAS(p, old_v, new_v)		GENERIC_CAS(p, old_v, new_v)
-#define LONG_CAS(p, old_v, new_v)		GENERIC_CAS(p, old_v, new_v)
-#define ULONG_CAS(p, old_v, new_v)		GENERIC_CAS(p, old_v, new_v)
-#define SIZET_CAS(p, old_v, new_v)		GENERIC_CAS(p, old_v, new_v)
-#define PTRDIFFT_CAS(p, old_v, new_v)	GENERIC_CAS(p, old_v, new_v)
+#define PTR_CAS(p, old_v, new_v)		(generic_cas(p, old_v, new_v))
+#define INT_CAS(p, old_v, new_v)		(generic_cas(p, old_v, new_v))
+#define INT32_CAS(p, old_v, new_v)		(generic_cas(p, old_v, new_v))
+#define INT64_CAS(p, old_v, new_v)		(generic_cas(p, old_v, new_v))
+#define UINT64_CAS(p, old_v, new_v)		(generic_cas(p, old_v, new_v))
+#define UINT_CAS(p, old_v, new_v)		(generic_cas(p, old_v, new_v))
+#define LONG_CAS(p, old_v, new_v)		(generic_cas(p, old_v, new_v))
+#define ULONG_CAS(p, old_v, new_v)		(generic_cas(p, old_v, new_v))
+#define SIZET_CAS(p, old_v, new_v)		(generic_cas(p, old_v, new_v))
+#define PTRDIFFT_CAS(p, old_v, new_v)	(generic_cas(p, old_v, new_v))
 
 template <typename T, typename U>
 inline T atomic_add(T* p, U val)
