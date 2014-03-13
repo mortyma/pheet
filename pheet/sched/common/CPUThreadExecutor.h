@@ -52,7 +52,7 @@ template <class T>
 void CPUThreadExecutor<T>::run() {
 //	std::cout << "calling run" << std::endl;
 //	pthread_create(&thread, NULL, execute_cpu_thread<T>, work);
-	std::thread t(execute_cpu_thread<T>, work);
+	std::thread t(&execute_cpu_thread<T>, work);
 	thread = std::move(t);
 }
 

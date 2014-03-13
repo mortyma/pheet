@@ -20,6 +20,8 @@
 #include <random>
 #include <limits>
 
+#include "SsspInitTask.h"
+
 namespace pheet {
 
 template <class Pheet, template <class P> class Algorithm>
@@ -118,19 +120,12 @@ SsspGraphVertex* SsspTest<Pheet, Algorithm>::generate_data() {
 				edges[j].push_back(e);
 			}
 		}
-		data[i].num_edges = edges[i].size();
-		if(edges[i].size() > 0) {
-			data[i].edges = new SsspGraphEdge[edges[i].size()];
-			for(size_t j = 0; j < edges[i].size(); ++j) {
-				data[i].edges[j] = edges[i][j];
-			}
-		}
-		else {
-			data[i].edges = NULL;
-		}
-		data[i].distance = std::numeric_limits<size_t>::max();
 	}
 	data[0].distance = 0;
+	{typename Pheet::Environment env(cpus);
+		Pheet::template
+			finish<SsspInitTask<Pheet> >(data, edges, 0, size - 1);
+	}
 	delete[] edges;
 
 	return data;
