@@ -121,11 +121,11 @@ SsspGraphVertex* SsspTest<Pheet, Algorithm>::generate_data() {
 			}
 		}
 	}
-	data[0].distance = 0;
 	{typename Pheet::Environment env(cpus);
 		Pheet::template
 			finish<SsspInitTask<Pheet> >(data, edges, 0, size - 1);
 	}
+	data[0].distance = 0;
 	delete[] edges;
 
 	return data;
