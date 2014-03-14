@@ -92,7 +92,7 @@ public:
 		parent = static_cast<MergeStrategyHeapHeap<Pheet, T, BaseStrategy, typename Strategy::BaseStrategy, StrategyRetriever>*>(base);
 	}
 
-	bool is_empty() {
+	bool is_empty() const {
 		return heap.empty();
 	}
 /*
@@ -206,7 +206,7 @@ public:
 
 	}
 
-	bool is_empty() {
+	bool is_empty() const {
 		return heap.empty();
 	}
 

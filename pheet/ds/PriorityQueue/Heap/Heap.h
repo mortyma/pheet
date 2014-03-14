@@ -34,11 +34,9 @@ public:
 	T peek();
 	T pop();
 
-	size_t get_length();
-	bool is_empty();
-	inline bool empty() {
-		return is_empty();
-	}
+	size_t get_length() const;
+	bool is_empty() const;
+	inline bool empty() const { return is_empty(); }
 
 	static void print_name();
 
@@ -103,12 +101,12 @@ TT Heap<Pheet, TT, Comparator>::pop() {
 }
 
 template <class Pheet, typename TT, class Comparator>
-size_t Heap<Pheet, TT, Comparator>::get_length() {
+size_t Heap<Pheet, TT, Comparator>::get_length() const {
 	return length;
 }
 
 template <class Pheet, typename TT, class Comparator>
-bool Heap<Pheet, TT, Comparator>::is_empty() {
+bool Heap<Pheet, TT, Comparator>::is_empty() const {
 	return length == 0;
 }
 

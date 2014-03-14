@@ -138,17 +138,11 @@ public:
 	void make_empty();
 	T& peek();
 
-	inline size_t size() {
-		return get_length();
-	}
-	size_t get_length() { return heap.size(); }
-	inline bool empty() {
-		return is_empty();
-	}
-	bool is_empty() { return heap.is_empty(); }
-	inline bool is_full() {
-		return false;
-	}
+	inline size_t size() const { return get_length(); }
+	size_t get_length() const { return heap.size(); }
+	inline bool empty() const { return is_empty(); }
+	bool is_empty() const { return heap.is_empty(); }
+	inline bool is_full() const { return false; }
 
 	inline DataBlock* const& get_front_block() { return front; }
 	inline DataBlock* create_block() {

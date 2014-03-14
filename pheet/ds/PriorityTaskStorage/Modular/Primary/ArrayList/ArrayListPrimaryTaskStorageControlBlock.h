@@ -37,8 +37,8 @@ public:
 	void deregister_iterator();
 
 	Item* get_data();
-	size_t get_length();
-	size_t get_new_item_index();
+	size_t get_length() const;
+	size_t get_new_item_index() const;
 
 	size_t configure_as_successor(ThisType* prev, std::vector<typename Storage::Item*>& block_reuse);
 	void init_empty(size_t offset, std::vector<typename Storage::Item*>& block_reuse);
@@ -91,12 +91,12 @@ inline ArrayListPrimaryTaskStorageControlBlockItem<Storage>* ArrayListPrimaryTas
 }
 
 template <class Storage>
-inline size_t ArrayListPrimaryTaskStorageControlBlock<Storage>::get_length() {
+inline size_t ArrayListPrimaryTaskStorageControlBlock<Storage>::get_length() const {
 	return length;
 }
 
 template <class Storage>
-inline size_t ArrayListPrimaryTaskStorageControlBlock<Storage>::get_new_item_index() {
+inline size_t ArrayListPrimaryTaskStorageControlBlock<Storage>::get_new_item_index() const {
 	return new_item_index;
 }
 

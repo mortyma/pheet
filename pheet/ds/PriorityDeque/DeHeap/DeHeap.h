@@ -36,8 +36,8 @@ public:
 	T replace_min(T item);
 	T replace_max(T item);
 
-	size_t get_length();
-	bool is_empty();
+	size_t get_length() const;
+	bool is_empty() const;
 
 	static void print_name();
 
@@ -178,12 +178,12 @@ TT DeHeap<Pheet, TT, Comparator>::replace_max(T item) {
 }
 
 template <class Pheet, typename TT, class Comparator>
-size_t DeHeap<Pheet, TT, Comparator>::get_length() {
+size_t DeHeap<Pheet, TT, Comparator>::get_length() const {
 	return length;
 }
 
 template <class Pheet, typename TT, class Comparator>
-bool DeHeap<Pheet, TT, Comparator>::is_empty() {
+bool DeHeap<Pheet, TT, Comparator>::is_empty() const {
 	return length == 0;
 }
 

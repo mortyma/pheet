@@ -10,6 +10,7 @@
 #define TASLOCK_H_
 
 #include <iostream>
+#include <chrono>
 #include "../common/BasicLockGuard.h"
 
 namespace pheet {
@@ -58,14 +59,11 @@ bool TASLock<Pheet>::try_lock() {
 
 template <class Pheet>
 bool TASLock<Pheet>::try_lock(long int time_ms) {
-	struct timeval begin;
-	gettimeofday(&begin, NULL);
-	long int begin_ms = (begin.tv_usec / 1000) + (begin.tv_sec * 1000);
+	auto start_time = std::chrono::high_resolution_clock::now();
 	while(!INT_CAS(&locked, 0, 1)) {
-		struct timeval current;
-		gettimeofday(&current, NULL);
-		long int current_ms = (current.tv_usec / 1000) + (current.tv_sec * 1000);
-		if(current_ms - begin_ms >= time_ms) {
+		auto stop_time = std::chrono::high_resolution_clock::now();
+		long int cur_time = std::chrono::duration_cast<std::chrono::milliseconds>(stop_time - start_time).count();
+		if(cur_time >= time_ms) {
 			return false;
 		}
 	};

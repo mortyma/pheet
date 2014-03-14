@@ -9,87 +9,77 @@
 #define EVENTSLIST_H_
 
 #include "../../Reducer/List/ListReducer.h"
+#include <chrono>
 
 namespace pheet {
 
 
-  template <typename E>
-    class Event
+template <typename E>
+class Event
+{
+private:
+	std::chrono::high_resolution_clock::time_point start;
+	E value;
+
+public:
+	Event(struct timeval start, E value)
+	:start(start),value(value) {}
+
+	void print(std::chrono::high_resolution_clock::time_point expstart)
     {
-      struct timeval start;
-      E value;
-    public:
-    Event(struct timeval start, E value):start(start),value(value)
-      {}
-      void print(struct timeval expstart)
-      {
-	double time = (start.tv_sec - expstart.tv_sec) + 1.0e-6 * start.tv_usec - 1.0e-6 * expstart.tv_usec;
+		double time = 1.0e-6 * std::chrono::duration_cast<std::chrono::microseconds>(start - expstart).count();
+		std::cout << time << ": " << value << std::endl;
+    }
+};
 
-	std::cout << time << ": " << value << std::endl;
-      }
-    };
-
-  template <class Pheet, typename E, bool enabled>
-    class EventsList;
+template <class Pheet, typename E, bool enabled>
+class EventsList;
 
 
-  template <class Pheet, typename E>
-    class EventsList<Pheet, E, true>
+template <class Pheet, typename E>
+class EventsList<Pheet, E, true>
+{
+private:
+	ListReducer<Pheet, Event<E> > events;
+	std::chrono::high_resolution_clock::time_point start;
+
+public:
+	EventsList()
+	: start(std::chrono::high_resolution_clock::now()) {}
+
+    inline EventsList(EventsList<Pheet, E, true> const& other)
+    :events(other.events) {}
+
+    void add(E const& value)
     {
-      ListReducer<Pheet, Event<E> > events;
-      struct timeval start;
-    public:
-      EventsList()
-	{
-	  gettimeofday(&start,0);
-	}
+    	Event<E> e(std::chrono::high_resolution_clock::now(),value);
+    	events.add(e);
+    }
 
-      inline EventsList(EventsList<Pheet, E, true> const& other):events(other.events)
-      {
-
-      }
-
-      void add(E const& value)
-      {
-	struct timeval currtime;
-	gettimeofday(&currtime,0);
-
-	Event<E> e(currtime,value);
-	events.add(e);
-      }
-
-      void print()
-      {
-	std::vector<Event<E> > eventslist = events.get_list();
-	for(size_t i=0;i<eventslist.size();i++)
-	  eventslist[i].print(start);
-      }
-
-    };
-
-  template <class Pheet, typename E>
-    class EventsList<Pheet, E, false>
+    void print()
     {
-    public:
-      EventsList()
-	{
-	}
+    	std::vector<Event<E> > eventslist = events.get_list();
+    	for(size_t i=0; i<eventslist.size(); ++i)
+    		eventslist[i].print(start);
+    }
+};
 
-      inline EventsList(EventsList<Pheet, E, false> const&)
-      {
+template <class Pheet, typename E>
+class EventsList<Pheet, E, false>
+{
+public:
+	EventsList() {}
 
-      }
+	inline EventsList(EventsList<Pheet, E, false> const&) {}
 
-      void add(E const&)
-      {
-      }
+	void add(E const&) {}
 
-      void print() {}
+	void print() {}
+};
 
-    };
+template <class Pheet, typename E, bool enabled>
+using EventsListPerformanceCounter = EventsList<Pheet, E, enabled>;
 
-  template <class Pheet, typename E, bool enabled>
-  using EventsListPerformanceCounter = EventsList<Pheet, E, enabled>;
 }
 
 #endif /* EVENTSLIST_H_ */

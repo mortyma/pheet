@@ -139,17 +139,17 @@ public:
 		}
 	}
 
-	bool empty() {
+	bool empty() const {
 		pheet_assert((max == nullptr) == (_size == 0));
 		return max == nullptr;
 	}
-	bool is_empty() {
+	bool is_empty() const {
 		return empty();
 	}
-	size_t size() {
+	size_t size() const {
 		return _size;
 	}
-	size_t get_length() {
+	size_t get_length() const {
 		return _size;
 	}
 

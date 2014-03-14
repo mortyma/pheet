@@ -78,7 +78,7 @@ public:
 		}
 	}
 
-	bool is_empty() {
+	bool is_empty() const {
 		return filled == 0;
 	}
 

@@ -45,9 +45,9 @@ public:
 
 	T steal_push(CircularArrayStealingDeque11Impl<Pheet, TT, CircularArray> &other);
 
-	size_t get_length();
-	bool is_empty();
-	bool is_full();
+	size_t get_length() const;
+	bool is_empty() const;
+	bool is_full() const;
 
 private:
 	std::atomic<size_t> top;
@@ -246,17 +246,17 @@ TT CircularArrayStealingDeque11Impl<Pheet, TT, CircularArray>::steal_push(Circul
 }
 
 template <class Pheet, typename TT, template <class P, typename S> class CircularArray>
-size_t CircularArrayStealingDeque11Impl<Pheet, TT, CircularArray>::get_length() {
+size_t CircularArrayStealingDeque11Impl<Pheet, TT, CircularArray>::get_length() const {
 	return (bottom - (top & top_mask));
 }
 
 template <class Pheet, typename TT, template <class P, typename S> class CircularArray>
-bool CircularArrayStealingDeque11Impl<Pheet, TT, CircularArray>::is_empty() {
+bool CircularArrayStealingDeque11Impl<Pheet, TT, CircularArray>::is_empty() const {
 	return get_length() == 0;
 }
 
 template <class Pheet, typename TT, template <class P, typename S> class CircularArray>
-bool CircularArrayStealingDeque11Impl<Pheet, TT, CircularArray>::is_full() {
+bool CircularArrayStealingDeque11Impl<Pheet, TT, CircularArray>::is_full() const {
 	return (!data.is_growable()) && (get_length() >= data.get_capacity());
 }
 

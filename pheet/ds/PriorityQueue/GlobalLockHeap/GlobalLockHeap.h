@@ -38,8 +38,8 @@ public:
 	T peek();
 	T pop();
 
-	size_t get_length();
-	bool is_empty();
+	size_t get_length() const;
+	bool is_empty() const;
 
 	static void print_name();
 
@@ -118,12 +118,12 @@ TT GlobalLockHeap<Pheet, TT, Comparator>::pop() {
 }
 
 template <class Pheet, typename TT, class Comparator>
-size_t GlobalLockHeap<Pheet, TT, Comparator>::get_length() {
+size_t GlobalLockHeap<Pheet, TT, Comparator>::get_length() const {
 	return length;
 }
 
 template <class Pheet, typename TT, class Comparator>
-bool GlobalLockHeap<Pheet, TT, Comparator>::is_empty() {
+bool GlobalLockHeap<Pheet, TT, Comparator>::is_empty() const {
 	return length == 0;
 }
 

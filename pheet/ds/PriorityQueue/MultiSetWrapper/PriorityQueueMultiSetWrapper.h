@@ -31,15 +31,15 @@ public:
 		return data.pop_max();
 	}
 
-	inline size_t get_length() {
+	inline size_t get_length() const {
 		return data.get_length();
 	}
 
-	inline size_t size() {
+	inline size_t size() const {
 		return get_length();
 	}
 
-	inline bool is_empty() {
+	inline bool is_empty() const {
 		return data.is_empty();
 	}
 

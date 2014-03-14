@@ -1,20 +1,23 @@
 /*
  * CentralKStrategyTaskStoragePlace.h
  *
- *  Created on: 24.10.2012
- *      Author: mwimmer
+ *  Created on: 03.10.2013
+ *      Author: mwimmer, mpoeter
  */
 
-#ifndef CENTRALKSTRATEGYTASKSTORAGEPLACE_H_
-#define CENTRALKSTRATEGYTASKSTORAGEPLACE_H_
+#ifndef CENTRALKSTRATEGYTASKSTORAGEPLACE_CPP11_H_
+#define CENTRALKSTRATEGYTASKSTORAGEPLACE_CPP11_H_
 
 #include "CentralKStrategyTaskStorageDataBlock.h"
 #include "CentralKStrategyTaskStorageItem.h"
 #include "CentralKStrategyTaskStoragePerformanceCounters.h"
 
+#include <atomic>
 #include <pheet/memory/BlockItemReuse/BlockItemReuseMemoryManager.h>
 
-namespace pheet {
+#include "../../../misc/atomics_disable_macros.h"
+
+namespace pheet { namespace cpp11 {
 
 template <class Pheet, class Item>
 struct CentralKStrategyTaskStorageItemReference {
@@ -37,23 +40,8 @@ public:
 
 	template<class Strategy>
 	inline bool is_active(Ref const& ref) {
-		return ref.item->position == ref.position && !reinterpret_cast<Strategy*>(ref.strategy)->dead_task();
+		return ref.item->position.load(std::memory_order_relaxed) == ref.position && !reinterpret_cast<Strategy*>(ref.strategy)->dead_task();
 	}
-/*
-	inline void mark_removed(Ref& ref) {
-	//	item.block->mark_removed(item.index, task_storage->get_current_view());
-		delete ref.strategy;
-	}
-
-	inline bool clean_item(Ref& ref) {
-		if(ref.item->position != ref.position) {
-			delete ref.strategy;
-			return true;
-		}
-		return false;
-	}*/
-
-private:
 };
 
 template <class Pheet, class TaskStorage, typename TT, template <class SP, typename ST, class SR> class StrategyHeapT, size_t BlockSize, size_t Tests, bool LocalKPrio>
@@ -77,10 +65,15 @@ public:
 
 	typedef typename Pheet::Scheduler::Place SchedulerPlace;
 
-	CentralKStrategyTaskStoragePlace(TaskStorage* task_storage, SchedulerPlace*, PerformanceCounters pc)
-	:pc(pc), task_storage(task_storage), heap(sr, pc.strategy_heap_performance_counters), head(0) {
+	CentralKStrategyTaskStoragePlace(TaskStorage* task_storage, SchedulerPlace*, PerformanceCounters pc):
+		pc(pc),
+		task_storage(task_storage),
+		heap(sr, pc.strategy_heap_performance_counters),
+		head(0)
+	{
 		DataBlock* tmp = task_storage->start_block;
-		if(tmp == nullptr) {
+		if (tmp == nullptr)
+		{
 			// This assumes the first place is initialized before all others, otherwise synchronization would be needed!
 			tmp = &(data_blocks.acquire_item());
 			tmp->init_first(task_storage->get_num_places());
@@ -99,18 +92,21 @@ public:
 	/**
 	 * Needs to be called by scheduling system before scheduler terminates
 	 */
-	void clean_up() {
-		while(!heap.empty()) {
+	void clean_up()
+	{
+		while (!heap.empty())
+		{
 			Ref r = heap.pop();
 			// All items should have been processed
-			pheet_assert(r.position != r.item->position);
+			pheet_assert(r.position != r.item->position.load(std::memory_order_relaxed));
 			delete r.strategy;
 			r.strategy = nullptr;
 		}
 	}
 
 	template <class Strategy>
-	void push(Strategy&& s, T data) {
+	void push(Strategy&& s, T data)
+	{
 		Item& it = items.acquire_item();
 		pheet_assert(it.strategy == nullptr);
 		it.strategy = new Strategy(s);
@@ -118,29 +114,31 @@ public:
 		it.item_push = &Self::template item_push<Strategy>;
 		it.owner = this;
 
-		size_t old_tail = task_storage->tail;
+		size_t old_tail = task_storage->tail.load(std::memory_order_relaxed);
 		size_t cur_tail = old_tail;
 
-		while(!tail_block->put(&(task_storage->head), &(task_storage->tail), cur_tail, &it, pc.data_block_performance_counters)) {
-			if(tail_block->get_next() == nullptr) {
+		while (!tail_block->put(cur_tail, &it, pc.data_block_performance_counters))
+		{
+			if (tail_block->get_next(std::memory_order_relaxed) == nullptr)
+			{
 				DataBlock& next_block = data_blocks.acquire_item();
 				pc.num_blocks_created.incr();
 				tail_block->add_block(&next_block, task_storage->get_num_places());
 			}
-			pheet_assert(tail_block->get_next() != nullptr);
-			pheet_assert(tail_block->get_offset() + BlockSize == tail_block->get_next()->get_offset());
-			tail_block = tail_block->get_next();
+			pheet_assert(tail_block->get_next(std::memory_order_relaxed) != nullptr);
+			pheet_assert(tail_block->get_offset() + BlockSize == tail_block->get_next(std::memory_order_relaxed)->get_offset());
+			tail_block = tail_block->get_next(std::memory_order_acquire);
 		}
 
-		if(cur_tail != old_tail) {
-			size_t nold_tail = task_storage->tail;
-			ptrdiff_t diff = (ptrdiff_t)cur_tail - (ptrdiff_t)nold_tail;
-			while(diff > 0) {
-				if(SIZET_CAS(&(task_storage->tail), nold_tail, cur_tail)) {
+		if (cur_tail != old_tail)
+		{
+			size_t nold_tail = task_storage->tail.load(std::memory_order_relaxed);
+			ptrdiff_t diff = static_cast<ptrdiff_t>(cur_tail) - static_cast<ptrdiff_t>(nold_tail);
+			while (diff > 0)
+			{
+				if (task_storage->tail.compare_exchange_weak(nold_tail, cur_tail, std::memory_order_release, std::memory_order_relaxed))
 					break;
-				}
-				nold_tail = task_storage->tail;
-				diff = (ptrdiff_t)cur_tail - (ptrdiff_t)nold_tail;
+				diff = static_cast<ptrdiff_t>(cur_tail) - static_cast<ptrdiff_t>(nold_tail);
 			}
 		}
 
@@ -152,31 +150,34 @@ public:
 		heap.template push<Strategy>(std::move(r));
 	}
 
-	T pop() {
+	T pop()
+	{
 		update_heap();
 
-		while(heap.size() > 0) {
+		while (heap.size() > 0)
+		{
 			Ref r = heap.pop();
 
 			pheet_assert(r.strategy != nullptr);
-		//	if(r.strategy != r.item->strategy) {
-				delete r.strategy;
-		//	}
+			delete r.strategy;
 
-			if(r.item->position == r.position) {
+			if (r.item->position.load(std::memory_order_relaxed) == r.position)
+			{
 				T ret = r.item->data;
-				if(SIZET_CAS(&(r.item->position), r.position, r.position + (std::numeric_limits<size_t>::max() >> 1))) {
+				if (r.item->position.compare_exchange_weak(r.position, r.position + (std::numeric_limits<size_t>::max() >> 1), std::memory_order_relaxed, std::memory_order_relaxed))
+				{
 					pc.num_successful_takes.incr();
 					return ret;
 				}
-				else {
+				else
+				{
 					pc.num_unsuccessful_takes.incr();
 					pc.num_taken_heap_items.incr();
 				}
 			}
-			else {
+			else
 				pc.num_taken_heap_items.incr();
-			}
+
 			update_heap();
 		}
 
@@ -189,10 +190,11 @@ public:
 	}
 
 	template <class Strategy>
-	void item_push(Item* item, size_t position) {
-		if(reinterpret_cast<Strategy*>(item->strategy)->dead_task()) {
+	void item_push(Item* item, size_t position)
+	{
+		if (reinterpret_cast<Strategy*>(item->strategy)->dead_task())
 			return;
-		}
+		
 		Ref r;
 		r.item = item;
 		r.position = position;
@@ -217,64 +219,24 @@ public:
 		return heap.size();
 	}
 private:
-	void update_heap() {
+	void update_heap()
+	{
 		// Check whether update is necessary
-		if(!heap.empty()) {
-			if(LocalKPrio) {
-				auto peek = heap.peek();
+		if (!heap.empty() && task_storage->tail.load(std::memory_order_relaxed) == head)
+			return;
 
-				size_t pos = peek.position;
-				ptrdiff_t diff = ((ptrdiff_t)head) - ((ptrdiff_t) pos);
-				if(diff >= 0) {
-					return;
-				}
-				if(pos != peek.item->position) {
-					return;
-				}
-			}
-			else {
-				if(task_storage->tail == head) {
-					return;
-				}
-			}
-		}
-
-		process_until(task_storage->head);
-		while(head != task_storage->tail) {
-			if(!heap.empty() && LocalKPrio) {
-				size_t pos = heap.peek().position;
-				ptrdiff_t diff = ((ptrdiff_t)head) - ((ptrdiff_t) pos);
-				if(diff >= 0) {
-					return;
-				}
-			}
-			// If we fail to update, some other thread must have succeeded
-			if(task_storage->head == head) {
-				SIZET_CAS(&(task_storage->head), head, task_storage->tail);
-			}
-			process_until(task_storage->head);
-		}
+		process_until(task_storage->tail.load(std::memory_order_acquire));
 	}
 
-	void process_until(size_t limit) {
-		while(head != limit) {
-			while(!head_block->in_block(head)) {
-				DataBlock* next = head_block->get_next();
-				if(next == nullptr) {
-					MEMORY_FENCE();
-					next = head_block->get_next();
-					pheet_assert(next != nullptr);
-				}
-				if(head_block == tail_block) { // Make sure tail block doesn't lag behind
-					tail_block = next;
-				}
-				pheet_assert((ptrdiff_t)tail_block->get_offset() - (ptrdiff_t)head_block->get_offset() >= 0);
-				head_block->deregister();
-				head_block = next;
-			}
+	void process_until(size_t limit)
+	{
+		while (head != limit)
+		{
+			deregister_old_blocks();
 
 			Item* item = head_block->get_item(head);
-			if(item != nullptr && item->owner != this && item->position == head) {
+			if (item != nullptr && item->owner != this && item->position.load(std::memory_order_relaxed) == head)
+			{
 				// Push item to local heap
 				auto ip = item->item_push;
 				(this->*ip)(item, head);
@@ -282,14 +244,20 @@ private:
 
 			++head;
 		}
-		while(!head_block->in_block(head)) {
-			pheet_assert(head_block->get_next() != nullptr);
-			DataBlock* next = head_block->get_next();
-			if(head_block == tail_block) { // Make sure tail block doesn't lag behind
+		deregister_old_blocks();
+	}
+
+	void deregister_old_blocks()
+	{
+		while (!head_block->in_block(head))
+		{
+			pheet_assert(head_block->get_next(std::memory_order_relaxed) != nullptr);
+			DataBlock* next = head_block->get_next(std::memory_order_acquire);
+			if (head_block == tail_block) // Make sure tail block doesn't lag behind
 				tail_block = next;
-			}
+
 			pheet_assert(next != nullptr);
-			pheet_assert((ptrdiff_t)tail_block->get_offset() - (ptrdiff_t)head_block->get_offset() >= 0);
+			pheet_assert(static_cast<ptrdiff_t>(tail_block->get_offset()) - static_cast<ptrdiff_t>(head_block->get_offset()) >= 0);
 			head_block->deregister();
 			head_block = next;
 		}
@@ -309,5 +277,6 @@ private:
 	DataBlockMemoryManager data_blocks;
 };
 
-} /* namespace pheet */
-#endif /* CENTRALKSTRATEGYTASKSTORAGEPLACE_H_ */
+} // namespace cpp11
+} // namespace pheet
+#endif /* CENTRALKSTRATEGYTASKSTORAGEPLACE_CPP11_H_ */

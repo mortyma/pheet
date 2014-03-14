@@ -89,11 +89,11 @@ public:
 		return ret;
 	}
 
-	inline size_t get_length() {
+	inline size_t get_length() const {
 		return length;
 	}
 
-	inline size_t size() {
+	inline size_t size() const {
 		return get_length();
 	}
 

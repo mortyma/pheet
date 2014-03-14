@@ -292,7 +292,7 @@ public:
 		return steal();
 	}
 
-	bool is_full() {
+	bool is_full() const {
 		return false;
 	}
 
@@ -304,7 +304,7 @@ public:
 	 * Only safe for owner of TaskStorage. For other places sometimes top > bottom may become visible
 	 * leading to strange values for size.
 	 */
-	size_t size() {
+	size_t size() const {
 		return bottom.load(std::memory_order_relaxed) - top.load(std::memory_order_relaxed);
 	}
 
