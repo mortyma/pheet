@@ -17,6 +17,7 @@
 #include "StrategyBBGraphBipartitioningTask.h"
 
 #include <iostream>
+#include <atomic>
 
 namespace pheet {
 
@@ -78,7 +79,7 @@ template <class Pheet, template <class P, class SubProblem> class Logic, templat
 void StrategyBBGraphBipartitioningImpl<Pheet, Logic, SchedulingStrategy, MaxSize>::operator()() {
 	SolutionReducer best;
 
-	size_t ub = std::numeric_limits< size_t >::max();
+	std::atomic<size_t> ub(std::numeric_limits< size_t >::max());
 
 	size_t k = size >> 1;
 	SubProblem* prob = new SubProblem(data, size, k, &ub);
@@ -86,8 +87,8 @@ void StrategyBBGraphBipartitioningImpl<Pheet, Logic, SchedulingStrategy, MaxSize
 		finish<BBTask>(prob, best, pc);
 
 	solution = best.get_max();
-	pheet_assert(solution.weight == ub);
-	pheet_assert(ub != std::numeric_limits< size_t >::max());
+	pheet_assert(solution.weight == ub.load(std::memory_order_relaxed));
+	pheet_assert(ub.load(std::memory_order_relaxed) != std::numeric_limits< size_t >::max());
 	pheet_assert(solution.weight != std::numeric_limits< size_t >::max());
 	pheet_assert(solution.sets[0].count() == k);
 	pheet_assert(solution.sets[1].count() == size - k);

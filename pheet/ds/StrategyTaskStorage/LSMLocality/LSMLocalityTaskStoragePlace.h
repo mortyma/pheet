@@ -245,6 +245,10 @@ public:
 
 	}
 
+	size_t size() {
+		return tasks.load(std::memory_order_relaxed);
+	}
+
 	PerformanceCounters pc;
 private:
 	void put(Item* item) {

@@ -24,7 +24,7 @@ namespace pheet {
 template <class Pheet, size_t MaxSize = 64>
 class BBGraphBipartitioningSubproblemBase {
 protected:
-	BBGraphBipartitioningSubproblemBase(GraphVertex const* graph, size_t size, size_t k, size_t* upper_bound)
+	BBGraphBipartitioningSubproblemBase(GraphVertex const* graph, size_t size, size_t k, std::atomic<size_t>* upper_bound)
 	: graph(graph), size(size), k(k), upper_bound(upper_bound) {}
 
 public:
@@ -38,12 +38,12 @@ public:
 	size_t const size;
 	size_t const k;
 
-	size_t* upper_bound;
+	std::atomic<size_t>* upper_bound;
 
 	Set sets[3];
 
 	size_t get_global_upper_bound() {
-		return *this->upper_bound;
+		return this->upper_bound->load(std::memory_order_relaxed);
 	}
 // JLT would like
 // uint8 assigned[size] = 0/1/2 - where is vertex assigned?
@@ -62,7 +62,7 @@ public:
 	typedef MaxReducer<Pheet, Solution> SolutionReducer;
 	typedef LogicT<Pheet, Base> Logic;
 
-	BBGraphBipartitioningSubproblem(GraphVertex const* graph, size_t size, size_t k, size_t* upper_bound);
+	BBGraphBipartitioningSubproblem(GraphVertex const* graph, size_t size, size_t k, std::atomic<size_t>* upper_bound);
 	BBGraphBipartitioningSubproblem(Self const& other);
 	~BBGraphBipartitioningSubproblem();
 
@@ -77,6 +77,8 @@ public:
 	void update(uint8_t set, size_t pos);
 	void update_solution(SolutionReducer& best, PerformanceCounters& pc);
 	size_t get_lower_bound();
+	size_t get_old_estimate() { return old_estimate; }
+	size_t get_old_lower_bound() { return old_lb; }
 	size_t get_estimate();
 	size_t get_upper_bound();
 
@@ -84,13 +86,14 @@ public:
 //	size_t cc_w(size_t largest_w);
 
 private:
-
 	Logic logic;
+	size_t old_lb;
+	size_t old_estimate;
 };
 
 template <class Pheet, template <class P, class SP> class LogicT, size_t MaxSize>
-BBGraphBipartitioningSubproblem<Pheet, LogicT, MaxSize>::BBGraphBipartitioningSubproblem(GraphVertex const* graph, size_t size, size_t k, size_t* upper_bound)
-: Base(graph, size, k, upper_bound), logic(this) {
+BBGraphBipartitioningSubproblem<Pheet, LogicT, MaxSize>::BBGraphBipartitioningSubproblem(GraphVertex const* graph, size_t size, size_t k, std::atomic<size_t>* upper_bound)
+: Base(graph, size, k, upper_bound), logic(this), old_lb(0), old_estimate(0) {
 	for(size_t i = 0; i < size; ++i) {
 		this->sets[2].set(i);
 	}
@@ -140,6 +143,8 @@ void BBGraphBipartitioningSubproblem<Pheet, LogicT, MaxSize>::update(uint8_t set
 */
 //	uint8_t other_set = set ^ 1;
 
+	old_lb = logic.get_lower_bound();
+	old_estimate = logic.get_estimate();
 	logic.update(set, pos); // JLT - sometimes not good
 }
 /*
@@ -166,10 +171,10 @@ void BBGraphBipartitioningSubproblem<Pheet, LogicT, MaxSize>::update_solution(Ma
 	pheet_assert(this->sets[0].count() == this->k && this->sets[1].count() == (this->size - this->k));
 
 	size_t cut = logic.get_cut();
-	size_t old_ub = *this->upper_bound;
+	size_t old_ub = this->get_global_upper_bound();
 
 	while(cut < old_ub) {
-		if(SIZET_CAS(this->upper_bound, old_ub, cut)) {
+		if(this->upper_bound->compare_exchange_weak(old_ub, cut, std::memory_order_relaxed)) {
 			pc.last_update_time.take_time();
 			pc.num_upper_bound_changes.incr();
 
@@ -180,9 +185,6 @@ void BBGraphBipartitioningSubproblem<Pheet, LogicT, MaxSize>::update_solution(Ma
 			my_best.sets[0] = this->sets[0];
 			my_best.sets[1] = this->sets[1];
 			best.add_value(my_best);
-		}
-		else {
-			old_ub = *this->upper_bound;
 		}
 	}
 }
