@@ -13,6 +13,8 @@
  *
  */
 
+#include "../../init.h"
+
 #ifdef UTS_TEST
 
 #include <stdlib.h>
@@ -56,7 +58,7 @@ const char * uts_geoshapes_str[] = { "Linear decrease", "Exponential decrease", 
  *   generated with geometric distributions near the
  *   root and binomial distributions towards the leaves.
  */
-tree_t type  = GEO; // Default tree type
+tree_t type  = tree_t::GEO; // Default tree type
 double b_0   = 4.0; // default branching factor at the root
 int   rootId = 0;   // default seed for RNG state at root
 
@@ -87,7 +89,7 @@ double nonLeafProb = 15.0 / 64.0;  // q
  *  Default parameter values
  */
 int        gen_mx   = 6;      // default depth of tree
-geoshape_t shape_fn = LINEAR; // default shape function (b_i decr linearly)
+geoshape_t shape_fn = geoshape_t::LINEAR; // default shape function (b_i decr linearly)
 
 /*  In type HYBRID trees, each node is either type BIN or type
  *  GEO, with the generation strategy changing from GEO to BIN 
@@ -150,7 +152,7 @@ double rng_toProb(int n) {
 }
 
 
-void uts_initRoot(Node * root, int type) {
+void uts_initRoot(Node * root, tree_t type) {
   root->type = type;
   root->height = 0;
   root->numChildren = -1;      // means not yet determined
@@ -181,12 +183,12 @@ int uts_numChildren_geo(Node * parent) {
     switch (shape_fn) {
       
       // expected size polynomial in depth
-    case EXPDEC:
+    case geoshape_t::EXPDEC:
       b_i = b_0 * pow((double) depth, -log(b_0)/log((double) gen_mx));
       break;
       
       // cyclic tree size
-    case CYCLIC:
+    case geoshape_t::CYCLIC:
       if (depth > 5 * gen_mx){
         b_i = 0.0;
         break;
@@ -196,12 +198,12 @@ int uts_numChildren_geo(Node * parent) {
       break;
 
       // identical distribution at all nodes up to max depth
-    case FIXED:
+    case geoshape_t::FIXED:
       b_i = (depth < gen_mx)? b_0 : 0;
       break;
       
       // linear decrease in b_i
-    case LINEAR:
+    case geoshape_t::LINEAR:
     default:
       b_i =  b_0 * (1.0 - (double)depth / (double) gen_mx);
       break;
@@ -229,24 +231,24 @@ int uts_numChildren(Node *parent) {
 
   /* Determine the number of children */
   switch (type) {
-    case BIN:
+    case tree_t::BIN:
       if (parent->height == 0)
         numChildren = (int) floor(b_0);
       else 
         numChildren = uts_numChildren_bin(parent);
       break;
   
-    case GEO:
+    case tree_t::GEO:
       numChildren = uts_numChildren_geo(parent);
       break;
     
-    case HYBRID:
+    case tree_t::HYBRID:
       if (parent->height < shiftDepth * gen_mx)
         numChildren = uts_numChildren_geo(parent);
       else
         numChildren = uts_numChildren_bin(parent);
       break;
-    case BALANCED:
+    case tree_t::BALANCED:
       if (parent->height < gen_mx)
         numChildren = (int) b_0;
       break;
@@ -256,7 +258,7 @@ int uts_numChildren(Node *parent) {
   
   // limit number of children
   // only a BIN root can have more than MAXNUMCHILDREN
-  if (parent->height == 0 && parent->type == BIN) {
+  if (parent->height == 0 && parent->type == tree_t::BIN) {
     int rootBF = (int) ceil(b_0);
     if (numChildren > rootBF) {
       printf("*** Number of children of root truncated from %d to %d\n",
@@ -264,7 +266,7 @@ int uts_numChildren(Node *parent) {
       numChildren = rootBF;
     }
   }
-  else if (type != BALANCED) {
+  else if (type != tree_t::BALANCED) {
     if (numChildren > MAXNUMCHILDREN) {
       printf("*** Number of children truncated from %d to %d\n", 
              numChildren, MAXNUMCHILDREN);
@@ -276,22 +278,22 @@ int uts_numChildren(Node *parent) {
 }
 
 
-int uts_childType(Node *parent) {
+tree_t uts_childType(Node *parent) {
   switch (type) {
-    case BIN:
-      return BIN;
-    case GEO:
-      return GEO;
-    case HYBRID:
+    case tree_t::BIN:
+      return tree_t::BIN;
+    case tree_t::GEO:
+      return tree_t::GEO;
+    case tree_t::HYBRID:
       if (parent->height < shiftDepth * gen_mx)
-        return GEO;
+        return tree_t::GEO;
       else 
-        return BIN;
-    case BALANCED:
-      return BALANCED;
+        return tree_t::BIN;
+    case tree_t::BALANCED:
+      return tree_t::BALANCED;
     default:
       uts_error("uts_get_childtype(): Unknown tree type");
-      return -1;
+      throw -1;
   }
 }
 
@@ -302,18 +304,18 @@ int uts_paramsToStr(char *strBuf, int ind) {
   ind += sprintf(strBuf+ind, "UTS - Unbalanced Tree Search %s (%s)\n", UTS_VERSION, impl_getName());
 
   // tree type
-  ind += sprintf(strBuf+ind, "Tree type:  %d (%s)\n", type, uts_trees_str[type]);
+  ind += sprintf(strBuf+ind, "Tree type:  %d (%s)\n", type, uts_trees_str[static_cast<int>(type)]);
 	
   // tree shape parameters
   ind += sprintf(strBuf+ind, "Tree shape parameters:\n");
   ind += sprintf(strBuf+ind, "  root branching factor b_0 = %.1f, root seed = %d\n", b_0, rootId);
 	
-  if (type == GEO || type == HYBRID) {
+  if (type == tree_t::GEO || type == tree_t::HYBRID) {
     ind += sprintf(strBuf+ind, "  GEO parameters: gen_mx = %d, shape function = %d (%s)\n", 
-            gen_mx, shape_fn, uts_geoshapes_str[shape_fn]);
+            gen_mx, shape_fn, uts_geoshapes_str[static_cast<int>(shape_fn)]);
   }
 
-  if (type == BIN || type == HYBRID) {
+  if (type == tree_t::BIN || type == tree_t::HYBRID) {
     double q = nonLeafProb;
     int    m = nonLeafBF;
     double es  = (1.0 / (1.0 - q * m));
@@ -321,12 +323,12 @@ int uts_paramsToStr(char *strBuf, int ind) {
             q, m, q * m, es);
   }
 
-  if (type == HYBRID) {
+  if (type == tree_t::HYBRID) {
     ind += sprintf(strBuf+ind, "  HYBRID:  GEO from root to depth %d, then BIN\n", 
             (int) ceil(shiftDepth * gen_mx));
   }
 	
-  if (type == BALANCED) {
+  if (type == tree_t::BALANCED) {
     ind += sprintf(strBuf+ind, "  BALANCED parameters: gen_mx = %d\n", gen_mx);
     ind += sprintf(strBuf+ind, "        Expected size: %llu nodes, %llu leaves\n",
         (counter_t) ((pow(b_0, gen_mx+1) - 1.0)/(b_0 - 1.0)) /* geometric series */,
@@ -387,12 +389,12 @@ void uts_parseParams(int argc, char *argv[]){
       case 't':
         type = (tree_t) atoi(argv[i+1]); 
 		
-        if (type != BIN && type != GEO && type!= HYBRID && type != BALANCED) 
+        if (type != tree_t::BIN && type != tree_t::GEO && type!= tree_t::HYBRID && type != tree_t::BALANCED)
 	  err = i;
         break;
       case 'a':
         shape_fn = (geoshape_t) atoi(argv[i+1]);
-        if (shape_fn > FIXED) err = i;
+        if (shape_fn > geoshape_t::FIXED) err = i;
         break;
       case 'b':
         b_0 = atof(argv[i+1]); break;

@@ -10,8 +10,10 @@
 #ifdef UTS_TEST
 #include "UTSTest.h"
 #include "RecursiveSearch/UTSRun.h"
+#include "Strategy2/Strategy2UTS.h"
 
-#include <pheet/sched/Strategy/StrategyScheduler.h>
+#include <pheet/sched/Basic/BasicScheduler.h>
+#include <pheet/sched/Strategy2/StrategyScheduler2.h>
 #endif
 
 //#include "../test_schedulers.h"
@@ -34,9 +36,24 @@ namespace pheet {
 	void UTSTests::test()
 	{
 #ifdef UTS_TEST
+		typename Pheet::MachineModel mm;
+		procs_t max_cpus = std::min(mm.get_num_leaves(), Pheet::Environment::max_cpus);
+
 		for(size_t s = 0; s < sizeof(uts_test_standardworkloads)/sizeof(uts_test_standardworkloads[0]); s++) {
+			bool max_processed = false;
+			procs_t cpus;
 			for(size_t c = 0; c < sizeof(uts_test_cpus)/sizeof(uts_test_cpus[0]); c++) {
-				UTSTest<Test> iart(uts_test_cpus[c],uts_test_standardworkloads_params[uts_test_standardworkloads[s]]);
+				cpus = uts_test_cpus[c];
+				if(cpus >= max_cpus) {
+					if(!max_processed) {
+						cpus = max_cpus;
+						max_processed = true;
+					}
+					else {
+						continue;
+					}
+				}
+				UTSTest<Test> iart(cpus,uts_test_standardworkloads_params[uts_test_standardworkloads[s]]);
 				iart.run_test();
 			}
 		}
@@ -46,9 +63,9 @@ namespace pheet {
 	void UTSTests::run_test()
 	{
 #ifdef UTS_TEST
-		if(uts_test) {
-			test<UTSRun<Pheet::WithScheduler<StrategyScheduler> > >();
-		}
+		test<Strategy2UTS<Pheet::WithScheduler<StrategyScheduler2> > >();
+		test<UTSRun<Pheet::WithScheduler<StrategyScheduler2> > >();
+		test<UTSRun<Pheet::WithScheduler<BasicScheduler> > >();
 #endif
 	}
 

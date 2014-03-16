@@ -51,7 +51,6 @@ UTSRun<Pheet>::~UTSRun() {
 
 template <class Pheet>
 void UTSRun<Pheet>::run() {
-	
 	Node root;
 	uts_initRoot(&root, type);
 	typename Pheet::Environment env(cpus,pc);

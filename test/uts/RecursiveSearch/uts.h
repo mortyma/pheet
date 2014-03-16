@@ -17,10 +17,6 @@
 #define _UTS_H
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define BRG_RNG 1
 #include "rng/rng.h"
 
@@ -32,8 +28,14 @@ extern "C" {
 
 #define MAXNUMCHILDREN    100  // cap on children (BIN root is exempt)
 
+enum class  uts_trees_e    { BIN = 0, GEO, HYBRID, BALANCED };
+enum class  uts_geoshape_e { LINEAR = 0, EXPDEC, CYCLIC, FIXED };
+
+typedef enum uts_trees_e    tree_t;
+typedef enum uts_geoshape_e geoshape_t;
+
 struct node_t {
-  int type;          // distribution governing number of children
+	tree_t type;          // distribution governing number of children
   int height;        // depth of this node in the tree
   int numChildren;   // number of children, -1 => not yet determined
   
@@ -63,12 +65,6 @@ typedef struct node_t Node;
  *   generated with geometric distributions near the
  *   root and binomial distributions towards the leaves.
  */
-enum class  uts_trees_e    { BIN = 0, GEO, HYBRID, BALANCED };
-enum class  uts_geoshape_e { LINEAR = 0, EXPDEC, CYCLIC, FIXED };
-
-typedef enum uts_trees_e    tree_t;
-typedef enum uts_geoshape_e geoshape_t;
-
 /* Strings for the above enums */
 extern const char * uts_trees_str[];
 extern const char * uts_geoshapes_str[];
@@ -108,11 +104,11 @@ double uts_wctime();
 double rng_toProb(int n);
 
 /* Common tree routines */
-void   uts_initRoot(Node * root, int type);
+void   uts_initRoot(Node * root, tree_t type);
 int    uts_numChildren(Node *parent);
 int    uts_numChildren_bin(Node * parent);
 int    uts_numChildren_geo(Node * parent);
-int    uts_childType(Node *parent);
+tree_t    uts_childType(Node *parent);
 
 /* Implementation Specific Functions */
 char * impl_getName();
@@ -122,9 +118,6 @@ void   impl_helpMessage();
 void   impl_abort(int err);
 
 
-#ifdef __cplusplus
-}
-#endif
 
 
 

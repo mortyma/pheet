@@ -37,10 +37,10 @@ namespace pheet {
 		{
 			Node child;
 			int parentHeight = parent.height;
-			int numChildren, childType;
+			int numChildren;
 
 			numChildren = uts_numChildren(&parent);
-			childType   = uts_childType(&parent);
+			auto childType   = uts_childType(&parent);
 
 			// record number of children in parent
 			parent.numChildren = numChildren;
