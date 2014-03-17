@@ -48,7 +48,6 @@ namespace pheet {
 			// construct children and push onto stack
 			if (numChildren > 0) 
 			{
-				typename Pheet::Finish f;
 				int i, j;
 				child.type = childType;
 				child.height = parentHeight + 1;

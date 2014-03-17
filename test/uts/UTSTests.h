@@ -20,7 +20,7 @@ namespace pheet {
 	public:
 		void run_test();
 	private:
-		template <class Scheduler>
+		template <class Pheet, template <class> class Test>
 		void test();
 	};
 

@@ -14,6 +14,7 @@
 
 #include <pheet/sched/Basic/BasicScheduler.h>
 #include <pheet/sched/Strategy2/StrategyScheduler2.h>
+#include <pheet/sched/Synchroneous/SynchroneousScheduler.h>
 #endif
 
 //#include "../test_schedulers.h"
@@ -32,7 +33,7 @@ namespace pheet {
 												"T3L -t 0 -b 2000 -q 0.200014 -m 5 -r 7",
 												"T1XL -t 1 -a 3 -d 15 -b 4 -r 29"};
 
-	template <class Test>
+	template <class Pheet, template <class> class Test>
 	void UTSTests::test()
 	{
 #ifdef UTS_TEST
@@ -53,7 +54,7 @@ namespace pheet {
 						continue;
 					}
 				}
-				UTSTest<Test> iart(cpus,uts_test_standardworkloads_params[uts_test_standardworkloads[s]]);
+				UTSTest<Test<Pheet> > iart(cpus,uts_test_standardworkloads_params[uts_test_standardworkloads[s]]);
 				iart.run_test();
 			}
 		}
@@ -63,9 +64,14 @@ namespace pheet {
 	void UTSTests::run_test()
 	{
 #ifdef UTS_TEST
-		test<Strategy2UTS<Pheet::WithScheduler<StrategyScheduler2> > >();
-		test<UTSRun<Pheet::WithScheduler<StrategyScheduler2> > >();
-		test<UTSRun<Pheet::WithScheduler<BasicScheduler> > >();
+		test<Pheet::WithScheduler<StrategyScheduler2>,
+			 Strategy2UTS>();
+		test<Pheet::WithScheduler<StrategyScheduler2>,
+			 UTSRun>();
+		test<Pheet::WithScheduler<BasicScheduler>,
+			 UTSRun>();
+		test<Pheet::WithScheduler<SynchroneousScheduler>,
+			 UTSRun>();
 #endif
 	}
 

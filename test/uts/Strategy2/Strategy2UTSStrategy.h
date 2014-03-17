@@ -47,10 +47,10 @@ public:
 	 * Checks whether spawn can be converted to a function call
 	 */
 	inline bool can_call(TaskStoragePlace* p) {
-		if(height >= 16)
-			return p->size() >= 8;
+		if(height >= 8)
+			return p->size() >= 4;
 		else
-			return p->size() >= 24 - (unsigned)height;
+			return p->size() >= 12 - (unsigned)height;
 	}
 
 	static void print_name() {
