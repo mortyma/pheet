@@ -71,6 +71,7 @@ const double sssp_sim_theory_div = 100000000;
 
 #define UTS_TEST      true
 const procs_t uts_test_cpus[] = {1, 2, 4, 8};
+const size_t uts_test_repetitions = 1;
 
 // 0 # (T1) Geometric [fixed] ------- Tree size = 4130071, tree depth = 10, num leaves = 3305118 (80.03%)
 // 1 # (T5) Geometric [linear dec.] - Tree size = 4147582, tree depth = 20, num leaves = 2181318 (52.59%)

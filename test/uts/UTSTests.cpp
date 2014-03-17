@@ -54,8 +54,10 @@ namespace pheet {
 						continue;
 					}
 				}
-				UTSTest<Test<Pheet> > iart(cpus,uts_test_standardworkloads_params[uts_test_standardworkloads[s]]);
-				iart.run_test();
+				for(size_t i = 0; i < uts_test_repetitions; ++i) {
+					UTSTest<Test<Pheet> > iart(cpus,uts_test_standardworkloads_params[uts_test_standardworkloads[s]]);
+					iart.run_test();
+				}
 			}
 		}
 #endif
