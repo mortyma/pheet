@@ -28,6 +28,7 @@ struct StrategyScheduler2PlaceLevelDescription {
 	procs_t local_id;
 	procs_t size;
 	procs_t memory_level;
+	procs_t numa_memory_level;
 	procs_t global_id_offset;
 };
 
@@ -92,6 +93,7 @@ public:
 		void spawn_s(Strategy&& s, F&& f, TaskParams&& ... params);
 
 	procs_t get_distance(Self* other) const;
+	procs_t get_numa_distance(Self* other) const;
 //	procs_t get_distance(Self* other, procs_t max_granularity_level);
 //	procs_t get_max_distance() const;
 //	procs_t get_max_distance(procs_t max_granularity_level);
@@ -126,6 +128,16 @@ public:
 	void drop_item(TaskStorageItem* item) {
 		delete item->task;
 		finish_stack.signal_completion(item->stack_element);
+	}
+
+	template <typename T>
+	bool is_partially_numa_local(T const* addr, size_t count) {
+		return machine_model.is_partially_numa_local(addr, count);
+	}
+
+	template <typename T>
+	bool is_fully_numa_local(T const* addr, size_t count) {
+		return machine_model.is_fully_numa_local(addr, count);
 	}
 
 private:
@@ -194,6 +206,7 @@ StrategyScheduler2Place<Pheet, FinishStackT, CallThreshold>::StrategyScheduler2P
 	pheet_assert(num_places <= model.get_num_leaves());
 	levels[0].global_id_offset = 0;
 	levels[0].memory_level = model.get_memory_level();
+	levels[0].numa_memory_level = model.get_numa_memory_level();
 	levels[0].size = num_places;
 	levels[0].partners = places;
 	levels[0].num_partners = 0;
@@ -299,6 +312,7 @@ void StrategyScheduler2Place<Pheet, FinishStackT, CallThreshold>::initialize_lev
 			levels[num_initialized_levels].num_partners = offset - base_offset;
 			levels[num_initialized_levels].partners = places + base_offset;
 			levels[num_initialized_levels].memory_level = child.get_memory_level();
+			levels[num_initialized_levels].numa_memory_level = child.get_numa_memory_level();
 
 			places[offset] = new Place(task_storage.get_central_task_storage(), levels, num_initialized_levels + 1, child, scheduler_state, performance_counters);
 
@@ -308,6 +322,7 @@ void StrategyScheduler2Place<Pheet, FinishStackT, CallThreshold>::initialize_lev
 			levels[num_initialized_levels].num_partners = size - (offset - base_offset);
 			levels[num_initialized_levels].partners = places + offset;
 			levels[num_initialized_levels].memory_level = machine_model.get_memory_level();
+			levels[num_initialized_levels].numa_memory_level = machine_model.get_numa_memory_level();
 
 			size = offset - base_offset;
 			++num_initialized_levels;
@@ -681,6 +696,22 @@ procs_t StrategyScheduler2Place<Pheet, FinishStackT, CallThreshold>::get_distanc
 	}
 	pheet_assert(levels[i].memory_level <= offset);
 	return offset - levels[i].memory_level;
+}
+
+template <class Pheet, template <class> class FinishStackT, uint8_t CallThreshold>
+procs_t StrategyScheduler2Place<Pheet, FinishStackT, CallThreshold>::get_numa_distance(Self* other) const {
+	if(other == this) {
+		return 0;
+	}
+
+	procs_t offset = std::max(levels[num_levels - 1].numa_memory_level, other->levels[other->num_levels - 1].numa_memory_level);
+	procs_t i = std::min(num_levels - 1, other->num_levels - 1);
+	while(levels[i].global_id_offset != other->levels[i].global_id_offset) {
+		pheet_assert(i > 0);
+		--i;
+	}
+	pheet_assert(levels[i].numa_memory_level <= offset);
+	return offset - levels[i].numa_memory_level;
 }
 
 /*

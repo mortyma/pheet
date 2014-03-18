@@ -33,9 +33,20 @@ public:
 	procs_t get_node_offset();
 	procs_t get_num_leaves();
 	procs_t get_memory_level();
+	procs_t get_numa_memory_level();
 
 	void bind();
 	void unbind();
+
+	template <typename T>
+	bool is_partially_numa_local(T const* addr, size_t count) {
+		return base.is_partially_numa_local(addr, count);
+	}
+
+	template <typename T>
+	bool is_fully_numa_local(T const* addr, size_t count) {
+		return base.is_fully_numa_local(addr, count);
+	}
 
 private:
 	BinaryTreeMachineModel(BaseModel& base, procs_t first_child, procs_t last_child);
@@ -194,6 +205,11 @@ void BinaryTreeMachineModel<Pheet, BaseModelT>::unbind() {
 template <class Pheet, class BaseModelT>
 procs_t BinaryTreeMachineModel<Pheet, BaseModelT>::get_memory_level() {
 	return base.get_memory_level();
+}
+
+template <class Pheet, class BaseModelT>
+procs_t BinaryTreeMachineModel<Pheet, BaseModelT>::get_numa_memory_level() {
+	return base.get_numa_memory_level();
 }
 
 }

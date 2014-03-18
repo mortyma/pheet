@@ -25,17 +25,44 @@ public:
 
 	hwloc_obj_t get_root_obj();
 	unsigned int get_root_depth();
+	unsigned int get_numa_depth();
 	unsigned int get_total_depth();
 	unsigned int get_total_width();
 
 	hwloc_cpuset_t get_binding();
 	void bind(hwloc_cpuset_t cpus);
 	void free_binding(hwloc_cpuset_t cpus);
+
+	template <typename T>
+	bool is_partially_numa_local(hwloc_obj_t node, T const* addr, size_t count) {
+		hwloc_nodeset_t ns = hwloc_bitmap_alloc();
+ 		hwloc_membind_policy_t p;
+		hwloc_get_area_membind_nodeset(topology, addr, sizeof(T)*count, ns, &p, 0);
+
+		int ret = hwloc_bitmap_isincluded(node->nodeset, ns);
+		hwloc_bitmap_free(ns);
+		return ret != 0;
+	}
+
+	template <typename T>
+	bool is_fully_numa_local(hwloc_obj_t node, T const* addr, size_t count) {
+		hwloc_nodeset_t ns = hwloc_bitmap_alloc();
+		hwloc_membind_policy_t p;
+		int ret = hwloc_get_area_membind_nodeset(topology, addr, sizeof(T)*count, ns, &p, HWLOC_MEMBIND_STRICT);
+		if(ret == -1) {
+			hwloc_bitmap_free(ns);
+			return false;
+		}
+		ret = hwloc_bitmap_isequal(node->nodeset, ns);
+		hwloc_bitmap_free(ns);
+		return ret > 0;
+	}
 private:
 	HWLocTopologyInfo(HWLocTopologyInfo* topo, int depth);
 
 	hwloc_topology_t topology;
 	unsigned int root_depth;
+	unsigned int numa_depth;
 	unsigned int total_depth;
 };
 
@@ -48,7 +75,8 @@ HWLocTopologyInfo<Pheet>::HWLocTopologyInfo() {
 	hwloc_topology_load(topology);
 
 	root_depth = hwloc_get_root_obj(topology)->depth;
-	total_depth = hwloc_get_type_or_below_depth(topology, HWLOC_OBJ_CORE);
+	numa_depth = hwloc_get_type_or_above_depth(topology, HWLOC_OBJ_NODE);
+	total_depth = hwloc_get_type_or_above_depth(topology, HWLOC_OBJ_CORE);
 }
 
 template <class Pheet>
@@ -64,6 +92,11 @@ hwloc_obj_t HWLocTopologyInfo<Pheet>::get_root_obj() {
 template <class Pheet>
 unsigned int HWLocTopologyInfo<Pheet>::get_root_depth() {
 	return root_depth;
+}
+
+template <class Pheet>
+unsigned int HWLocTopologyInfo<Pheet>::get_numa_depth() {
+	return numa_depth;
 }
 
 template <class Pheet>
@@ -128,11 +161,22 @@ public:
 //	procs_t get_node_id();
 	procs_t get_num_leaves();
 	procs_t get_memory_level();
+	procs_t get_numa_memory_level();
 
 	bool supports_SMT() const { return false; }
  
 	void bind();
 	void unbind();
+
+	template <typename T>
+	bool is_partially_numa_local(T const* addr, size_t count) {
+		return topo->is_partially_numa_local(node, addr, count);
+	}
+
+	template <typename T>
+	bool is_fully_numa_local(T const* addr, size_t count) {
+		return topo->is_fully_numa_local(node, addr, count);
+	}
 
 private:
 	HWLocMachineModel(HWLocTopologyInfo<Pheet>* topo, hwloc_obj_t node);
@@ -278,6 +322,11 @@ procs_t HWLocMachineModel<Pheet>::get_num_leaves() {
 template <class Pheet>
 procs_t HWLocMachineModel<Pheet>::get_memory_level() {
 	return node->depth;
+}
+
+template <class Pheet>
+procs_t HWLocMachineModel<Pheet>::get_numa_memory_level() {
+	return std::min(node->depth, topo->get_numa_depth());
 }
 
 }

@@ -17,6 +17,7 @@
 #include "SmartRecursiveParallel2/SmartRecursiveParallelPrefixSum2.h"
 #include "StrategyRecursiveParallel/StrategyRecursiveParallelPrefixSum.h"
 #include "StrategyRecursiveParallel2/StrategyRecursiveParallelPrefixSum2.h"
+#include "NumaStrategy/NumaStrategyPrefixSum.h"
 #include "Parallel/ParallelPrefixSum.h"
 #include "Strategy/StrategyPrefixSum.h"
 
@@ -109,6 +110,10 @@ void PrefixSumTests::run_test() {
 						SmartRecursiveParallelPrefixSum2>();
 	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler2>,
 						StrategyRecursiveParallelPrefixSum2>();
+	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler2>::WithMachineModel<HWLocSMTMachineModel>,
+						NumaStrategyPrefixSum>();
+	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler2>,
+						NumaStrategyPrefixSum>();
 
 //	this->run_prefix_sum<	Pheet::WithScheduler<BasicScheduler>::WithMachineModel<HWLocSMTMachineModel>,
 //						RecursiveParallelPrefixSum>();
