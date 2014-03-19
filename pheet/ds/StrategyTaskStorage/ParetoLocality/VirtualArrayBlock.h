@@ -9,6 +9,7 @@
 #define DATA_BLOCK_H_
 
 #include <atomic>
+#include <array>
 #include "pheet/misc/assert.h"
 
 namespace pheet
@@ -22,7 +23,7 @@ private:
 
 public:
 	VirtualArrayBlock<T, N>()
-		: next(nullptr), prev(nullptr), m_data {nullptr} {
+		: next(nullptr), prev(nullptr), m_data {{nullptr}} {
 	}
 
 	T& operator[](const size_t idx)
@@ -41,7 +42,7 @@ public:
 	Self* prev;
 
 private:
-	T m_data[N];
+	std::array<T, N> m_data;
 };
 
 } /* namespace pheet */
