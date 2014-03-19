@@ -200,20 +200,6 @@ public:
 		return (*block)[idx % block_size()];
 	}
 
-	void swap(size_t left, size_t right)
-	{
-		//TODO: tmp should be the last element of a block (so that spy finds the
-		//element currently swapped out)
-		auto& l = operator [](left);
-		auto& r = operator [](right);
-
-		/* This is really a case for std::swap, but apparently some magic will be
-		 * going on here later. */
-		const T tmp = l;
-		l = r;
-		r = tmp;
-	}
-
 	constexpr size_t block_size() const
 	{
 		return DATA_BLOCK_SIZE;

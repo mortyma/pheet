@@ -45,14 +45,6 @@ TEST_F(VirtualArrayTest, ArraySetterAndGetter)
 	EXPECT_EQ(&ys[0], xs[2]);
 }
 
-TEST_F(VirtualArrayTest, PushAndSwap)
-{
-	xs.swap(0, 2);
-	EXPECT_EQ(&ys[2], xs[0]);
-	EXPECT_EQ(&ys[1], xs[1]);
-	EXPECT_EQ(&ys[0], xs[2]);
-}
-
 TEST_F(VirtualArrayTest, IterTraversal)
 {
 	int i = 0;
