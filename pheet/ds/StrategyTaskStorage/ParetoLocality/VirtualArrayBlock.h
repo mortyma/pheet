@@ -8,6 +8,7 @@
 #ifndef DATA_BLOCK_H_
 #define DATA_BLOCK_H_
 
+#include <atomic>
 #include "pheet/misc/assert.h"
 
 namespace pheet
@@ -36,7 +37,7 @@ public:
 	}
 
 public:
-	Self* next;
+	std::atomic<Self*> next;
 	Self* prev;
 
 private:

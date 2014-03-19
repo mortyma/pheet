@@ -237,7 +237,7 @@ private:
 	{
 		Block* tmp = new Block();
 		tmp->prev = m_last;
-		m_last->next = tmp;
+		m_last->next.store(tmp, std::memory_order_release);
 		m_last = tmp;
 		++m_block_cnt;
 	}
