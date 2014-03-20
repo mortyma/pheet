@@ -13,6 +13,7 @@
 
 #include <hwloc.h>
 #include <iostream>
+#include <errno.h>
 
 
 namespace pheet {
@@ -33,6 +34,9 @@ public:
 	void bind(hwloc_cpuset_t cpus);
 	void free_binding(hwloc_cpuset_t cpus);
 
+	/*
+	 * This does not seem to be supported under linux, so use with care
+	 */
 	template <typename T>
 	bool is_partially_numa_local(hwloc_obj_t node, T const* addr, size_t count) {
 		hwloc_nodeset_t ns = hwloc_bitmap_alloc();
@@ -44,6 +48,9 @@ public:
 		return ret != 0;
 	}
 
+	/*
+	 * This does not seem to be supported under linux, so use with care
+	 */
 	template <typename T>
 	bool is_fully_numa_local(hwloc_obj_t node, T const* addr, size_t count) {
 		hwloc_nodeset_t ns = hwloc_bitmap_alloc();
@@ -58,10 +65,18 @@ public:
 		return ret > 0;
 	}
 
+	/*
+	 * This does not seem to be supported under linux, so use with care
+	 */
 	procs_t get_numa_node_id(hwloc_obj_t node, void const* addr) {
 		hwloc_nodeset_t ns = hwloc_bitmap_alloc();
 		hwloc_membind_policy_t p;
-		hwloc_get_area_membind_nodeset(topology, addr, 1, ns, &p, 0);
+		int ret = hwloc_get_area_membind_nodeset(topology, addr, 1, ns, &p, 0);
+		if(ret == -1) {
+			if(errno == ENOSYS) {
+				throw -1;
+			}
+		}
 
 		int first = hwloc_bitmap_first(ns);
 		hwloc_bitmap_free(ns);
@@ -182,16 +197,25 @@ public:
 	void bind();
 	void unbind();
 
+	/*
+	 * This does not seem to be supported under linux, so use with care
+	 */
 	template <typename T>
 	bool is_partially_numa_local(T const* addr, size_t count) {
 		return topo->is_partially_numa_local(node, addr, count);
 	}
 
+	/*
+	 * This does not seem to be supported under linux, so use with care
+	 */
 	template <typename T>
 	bool is_fully_numa_local(T const* addr, size_t count) {
 		return topo->is_fully_numa_local(node, addr, count);
 	}
 
+	/*
+	 * This does not seem to be supported under linux, so use with care
+	 */
 	procs_t get_data_numa_node_id(void const* addr) {
 		return topo->get_numa_node_id(node, addr);
 	}

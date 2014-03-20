@@ -130,20 +130,32 @@ public:
 		finish_stack.signal_completion(item->stack_element);
 	}
 
+	/*
+	 * This does not seem to be supported under linux, so use with care
+	 */
 	template <typename T>
 	bool is_partially_numa_local(T const* addr, size_t count) {
 		return machine_model.is_partially_numa_local(addr, count);
 	}
 
+	/*
+	 * This does not seem to be supported under linux, so use with care
+	 */
 	template <typename T>
 	bool is_fully_numa_local(T const* addr, size_t count) {
 		return machine_model.is_fully_numa_local(addr, count);
 	}
 
+	/*
+	 * This does not seem to be supported under linux, so use with care
+	 */
 	procs_t get_data_numa_node_id(void const* addr) {
 		return machine_model.get_data_numa_node_id(addr);
 	}
 
+	/*
+	 * Experimental feature, interface might not be final, and might be removed without notice.
+	 */
 	procs_t get_numa_node_id() {
 		return numa_node_id;
 	}

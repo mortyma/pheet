@@ -57,7 +57,7 @@ public:
 			size_t half = blocks >> 1;
 			size_t half_l = half * BlockSize;
 
-			numa_nodes[half] = Pheet::get_place()->get_data_numa_node_id(data);
+//			numa_nodes[half] = Pheet::get_place()->get_data_numa_node_id(data);
 			Pheet::template
 				spawn_s<Self>(Strategy(numa_nodes[half], block_id + half, owner, false),
 						data + half_l, auxiliary_data, numa_nodes + half, blocks - half, length - half_l, block_id + half, sequential, owner);

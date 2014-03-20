@@ -29,16 +29,17 @@ public:
 	: block_id(block_id), owner(owner), in_order(in_order) {}
 
 	StrategyRecursiveParallelPrefixSum2Strategy(Self& other)
-	: BaseStrategy(other), block_id(other.block_id), owner(other.owner) {}
+	: BaseStrategy(other), block_id(other.block_id), owner(other.owner), in_order(in_order) {}
 
 	StrategyRecursiveParallelPrefixSum2Strategy(Self&& other)
-	: BaseStrategy(other), block_id(other.block_id), owner(other.owner) {}
+	: BaseStrategy(other), block_id(other.block_id), owner(other.owner), in_order(in_order) {}
 
 	~StrategyRecursiveParallelPrefixSum2Strategy() {}
 
 	Self& operator=(Self&& other) {
 		block_id = other.block_id;
 		owner = other.owner;
+		in_order = other.in_order;
 		return *this;
 	}
 

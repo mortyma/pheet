@@ -29,10 +29,10 @@ public:
 	: numa_node(numa_node), block_id(block_id), owner(owner), in_order(in_order) {}
 
 	NumaStrategyPrefixSumStrategy(Self& other)
-	: BaseStrategy(other), numa_node(other.numa_node), block_id(other.block_id), owner(other.owner) {}
+	: BaseStrategy(other), numa_node(other.numa_node), block_id(other.block_id), owner(other.owner), in_order(in_order) {}
 
 	NumaStrategyPrefixSumStrategy(Self&& other)
-	: BaseStrategy(other), numa_node(other.numa_node), block_id(other.block_id), owner(other.owner) {}
+	: BaseStrategy(other), numa_node(other.numa_node), block_id(other.block_id), owner(other.owner), in_order(in_order) {}
 
 	~NumaStrategyPrefixSumStrategy() {}
 
@@ -40,6 +40,7 @@ public:
 		numa_node = other.numa_node;
 		block_id = other.block_id;
 		owner = other.owner;
+		in_order = other.in_order;
 		return *this;
 	}
 
@@ -76,7 +77,7 @@ public:
 	}
 
 	size_t get_k() {
-		return 800;
+		return 16;
 	}
 
 private:

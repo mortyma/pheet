@@ -12,7 +12,7 @@
 #include <pheet/pheet.h>
 #include <pheet/misc/align.h>
 #include "NumaStrategyPrefixSumOffsetTask.h"
-#include "../RecursiveParallel2/RecursiveParallelPrefixSum2LocalSumTask.h"
+#include "NumaStrategyPrefixSumLocalSumTask.h"
 #include "NumaStrategyPrefixSumPerformanceCounters.h"
 
 #include <iostream>
@@ -20,32 +20,27 @@
 
 namespace pheet {
 
+/*
+ * Due to lack of OS support this benchmark cannot be used for now
+ */
 template <class Pheet, size_t BlockSize, bool Inclusive>
 class NumaStrategyPrefixSumImpl : public Pheet::Task {
 public:
 	typedef NumaStrategyPrefixSumImpl<Pheet, BlockSize, Inclusive> Self;
 	typedef NumaStrategyPrefixSumImpl<Pheet, BlockSize, false> ExclusiveSelf;
 	typedef NumaStrategyPrefixSumOffsetTask<Pheet, BlockSize, Inclusive> OffsetTask;
-	typedef RecursiveParallelPrefixSum2LocalSumTask<Pheet, BlockSize, Inclusive> LocalSumTask;
+	typedef NumaStrategyPrefixSumLocalSumTask<Pheet, BlockSize, Inclusive> LocalSumTask;
 	typedef NumaStrategyPrefixSumPerformanceCounters<Pheet> PerformanceCounters;
 
-	NumaStrategyPrefixSumImpl(unsigned int* data, size_t length)
-	:data(data), length(length), step(1), root(true) {
+	typedef typename Pheet::Place Place;
+
+	NumaStrategyPrefixSumImpl(unsigned int* data, size_t length, Place* locality_data)
+	:data(data), length(length) {
 
 	}
 
-	NumaStrategyPrefixSumImpl(unsigned int* data, size_t length, size_t step, bool root)
-	:data(data), length(length), step(step), root(root) {
-
-	}
-
-	NumaStrategyPrefixSumImpl(unsigned int* data, size_t length, PerformanceCounters& pc)
-	:data(data), length(length), step(1), root(true), pc(pc) {
-
-	}
-
-	NumaStrategyPrefixSumImpl(unsigned int* data, size_t length, size_t step, bool root, PerformanceCounters& pc)
-	:data(data), length(length), step(step), root(root), pc(pc) {
+	NumaStrategyPrefixSumImpl(unsigned int* data, size_t length, Place* locality_data, PerformanceCounters& pc)
+	:data(data), length(length), pc(pc) {
 
 	}
 
@@ -74,7 +69,13 @@ public:
 
 			std::atomic<size_t> sequential(0);
 
-			numa_nodes.ptr()[0] = Pheet::get_place()->get_data_numa_node_id(data);
+			pc.numa_cache_time.start_timer();
+			// Less overhead if initialized sequentially...
+			for(size_t i = 0; i < num_blocks; ++i) {
+				numa_nodes.ptr()[i] = Pheet::get_place()->get_data_numa_node_id(data + BlockSize * i);
+			}
+			pc.numa_cache_time.stop_timer();
+
 			// Calculate offsets
 			Pheet::template finish<OffsetTask>(data, auxiliary_data.ptr(), numa_nodes.ptr(), num_blocks, length, 0, sequential, Pheet::get_place());
 			size_t seq = sequential.load(std::memory_order_relaxed);
@@ -86,7 +87,7 @@ public:
 				Pheet::template finish<ExclusiveSelf>(auxiliary_data.ptr() + seq - 1, num_blocks + 1 - seq, pc);
 
 				// Calculate local prefix sums based on offset
-				Pheet::template finish<LocalSumTask>(data + (seq * BlockSize), auxiliary_data.ptr() + seq, num_blocks - seq, length - (seq * BlockSize));
+				Pheet::template finish<LocalSumTask>(data + (seq * BlockSize), auxiliary_data.ptr() + seq, numa_nodes.ptr() + seq, num_blocks - seq, length - (seq * BlockSize), seq, pc);
 			}
 		}
 	}
@@ -96,8 +97,6 @@ public:
 private:
 	unsigned int* data;
 	size_t length;
-	size_t step;
-	bool root;
 	PerformanceCounters pc;
 };
 
