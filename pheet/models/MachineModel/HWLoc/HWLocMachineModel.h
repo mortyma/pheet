@@ -57,6 +57,20 @@ public:
 		hwloc_bitmap_free(ns);
 		return ret > 0;
 	}
+
+	procs_t get_numa_node_id(hwloc_obj_t node, void const* addr) {
+		hwloc_nodeset_t ns = hwloc_bitmap_alloc();
+		hwloc_membind_policy_t p;
+		hwloc_get_area_membind_nodeset(topology, addr, 1, ns, &p, 0);
+
+		int first = hwloc_bitmap_first(ns);
+		hwloc_bitmap_free(ns);
+
+		if(first < 0) {
+			return std::numeric_limits<procs_t>::max();
+		}
+		return static_cast<procs_t>(first);
+	}
 private:
 	HWLocTopologyInfo(HWLocTopologyInfo* topo, int depth);
 
@@ -178,6 +192,16 @@ public:
 		return topo->is_fully_numa_local(node, addr, count);
 	}
 
+	procs_t get_data_numa_node_id(void const* addr) {
+		return topo->get_numa_node_id(node, addr);
+	}
+
+	procs_t get_numa_node_id() {
+		int first = hwloc_bitmap_first(node->nodeset);
+		if(first < 0)
+			return std::numeric_limits<procs_t>::max();
+		return static_cast<procs_t>(first);
+	}
 private:
 	HWLocMachineModel(HWLocTopologyInfo<Pheet>* topo, hwloc_obj_t node);
 	HWLocTopologyInfo<Pheet>* topo;

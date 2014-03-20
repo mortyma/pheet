@@ -48,6 +48,13 @@ public:
 		return base.is_fully_numa_local(addr, count);
 	}
 
+	procs_t get_data_numa_node_id(void const* addr) {
+		return base.get_data_numa_node_id(addr);
+	}
+
+	procs_t get_numa_node_id() {
+		return base.get_numa_node_id();
+	}
 private:
 	BinaryTreeMachineModel(BaseModel& base, procs_t first_child, procs_t last_child);
 	BaseModel base;

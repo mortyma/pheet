@@ -25,19 +25,19 @@ public:
 
 	NumaStrategyPrefixSumStrategy() {}
 
-	NumaStrategyPrefixSumStrategy(unsigned int* block_offset, size_t block_id, Place* owner, bool in_order)
-	: block_id(block_id), owner(owner), in_order(in_order) {}
+	NumaStrategyPrefixSumStrategy(procs_t numa_node, size_t block_id, Place* owner, bool in_order)
+	: numa_node(numa_node), block_id(block_id), owner(owner), in_order(in_order) {}
 
 	NumaStrategyPrefixSumStrategy(Self& other)
-	: BaseStrategy(other), block_offset(other.block_offset), block_id(other.block_id), owner(other.owner) {}
+	: BaseStrategy(other), numa_node(other.numa_node), block_id(other.block_id), owner(other.owner) {}
 
 	NumaStrategyPrefixSumStrategy(Self&& other)
-	: BaseStrategy(other), block_offset(other.block_offset), block_id(other.block_id), owner(other.owner) {}
+	: BaseStrategy(other), numa_node(other.numa_node), block_id(other.block_id), owner(other.owner) {}
 
 	~NumaStrategyPrefixSumStrategy() {}
 
 	Self& operator=(Self&& other) {
-		block_offset = other.block_offset;
+		numa_node = other.numa_node;
 		block_id = other.block_id;
 		owner = other.owner;
 		return *this;
@@ -46,9 +46,10 @@ public:
 
 	bool prioritize(Self& other) {
 		Place* p = Pheet::get_place();
+		procs_t nnid = p->get_numa_node_id();
 
-		bool is_local = p->is_partially_numa_local(block_offset, BlockSize);
-		bool is_other_local = p->is_partially_numa_local(other.block_offset, BlockSize);
+		bool is_local = (nnid == numa_node);
+		bool is_other_local = (nnid == other.numa_node);
 
 		if(is_local != is_other_local) {
 			return is_local;
@@ -75,11 +76,11 @@ public:
 	}
 
 	size_t get_k() {
-		return 8;
+		return 800;
 	}
 
 private:
-	unsigned int* block_offset;
+	procs_t numa_node;
 	size_t block_id;
 	Place* owner;
 	bool in_order;

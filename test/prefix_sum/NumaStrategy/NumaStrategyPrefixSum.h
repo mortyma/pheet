@@ -70,11 +70,13 @@ public:
 			size_t num_blocks = ((length - 1) / BlockSize) + 1;
 
 			aligned_data<unsigned int, 64> auxiliary_data(num_blocks);
+			aligned_data<procs_t, 64> numa_nodes(num_blocks);
 
 			std::atomic<size_t> sequential(0);
 
+			numa_nodes.ptr()[0] = Pheet::get_place()->get_data_numa_node_id(data);
 			// Calculate offsets
-			Pheet::template finish<OffsetTask>(data, auxiliary_data.ptr(), num_blocks, length, 0, sequential, Pheet::get_place());
+			Pheet::template finish<OffsetTask>(data, auxiliary_data.ptr(), numa_nodes.ptr(), num_blocks, length, 0, sequential, Pheet::get_place());
 			size_t seq = sequential.load(std::memory_order_relaxed);
 			pc.blocks.add(num_blocks);
 			pc.preprocessed_blocks.add(seq);

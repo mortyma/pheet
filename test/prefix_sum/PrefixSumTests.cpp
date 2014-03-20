@@ -96,6 +96,10 @@ void PrefixSumTests::run_test() {
 	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler>::WithMachineModel<HWLocSMTMachineModel>,
 						RecursiveParallelPrefixSum>();		*/
 
+	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler2>,
+						NumaStrategyPrefixSum>();
+	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler2>::WithMachineModel<HWLocSMTMachineModel>,
+						NumaStrategyPrefixSum>();
 	this->run_prefix_sum<	Pheet::WithScheduler<BasicScheduler>,
 						RecursiveParallelPrefixSum>();
 	this->run_prefix_sum<	Pheet::WithScheduler<BasicScheduler>,
@@ -110,10 +114,6 @@ void PrefixSumTests::run_test() {
 						SmartRecursiveParallelPrefixSum2>();
 	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler2>,
 						StrategyRecursiveParallelPrefixSum2>();
-	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler2>::WithMachineModel<HWLocSMTMachineModel>,
-						NumaStrategyPrefixSum>();
-	this->run_prefix_sum<	Pheet::WithScheduler<StrategyScheduler2>,
-						NumaStrategyPrefixSum>();
 
 //	this->run_prefix_sum<	Pheet::WithScheduler<BasicScheduler>::WithMachineModel<HWLocSMTMachineModel>,
 //						RecursiveParallelPrefixSum>();

@@ -140,6 +140,13 @@ public:
 		return machine_model.is_fully_numa_local(addr, count);
 	}
 
+	procs_t get_data_numa_node_id(void const* addr) {
+		return machine_model.get_data_numa_node_id(addr);
+	}
+
+	procs_t get_numa_node_id() {
+		return numa_node_id;
+	}
 private:
 	void initialize_levels();
 	void grow_levels_structure();
@@ -170,6 +177,8 @@ private:
 	CPUThreadExecutor<Self> thread_executor;
 
 	ptrdiff_t task_id;
+
+	procs_t numa_node_id;
 
 	static THREAD_LOCAL Self* local_place;
 
@@ -339,6 +348,7 @@ void StrategyScheduler2Place<Pheet, FinishStackT, CallThreshold>::initialize_lev
 		levels[i].local_id = global_id - levels[i].global_id_offset;
 	}
 	num_levels = num_initialized_levels;
+	numa_node_id = machine_model.get_numa_node_id();
 	machine_model.bind();
 }
 

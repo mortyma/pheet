@@ -9,6 +9,8 @@
 #ifndef NUMASTRATEGYPREFIXSUMOFFSETTASK_H_
 #define NUMASTRATEGYPREFIXSUMOFFSETTASK_H_
 
+#include <atomic>
+
 #include <pheet/pheet.h>
 #include "NumaStrategyPrefixSumStrategy.h"
 
@@ -21,13 +23,12 @@ public:
 	typedef NumaStrategyPrefixSumStrategy<Pheet, BlockSize> Strategy;
 	typedef typename Pheet::Place Place;
 
-	NumaStrategyPrefixSumOffsetTask(unsigned int* data, unsigned int* auxiliary_data, size_t blocks, size_t length, size_t block_id, std::atomic<size_t>& sequential, Place* owner)
-	:data(data), auxiliary_data(auxiliary_data), blocks(blocks), length(length), block_id(block_id), sequential(sequential), owner(owner) {}
+	NumaStrategyPrefixSumOffsetTask(unsigned int* data, unsigned int* auxiliary_data, procs_t* numa_nodes, size_t blocks, size_t length, size_t block_id, std::atomic<size_t>& sequential, Place* owner)
+	:data(data), auxiliary_data(auxiliary_data), numa_nodes(numa_nodes), blocks(blocks), length(length), block_id(block_id), sequential(sequential), owner(owner) {}
 	virtual ~NumaStrategyPrefixSumOffsetTask() {}
 
 	virtual void operator()() {
 		if(blocks == 1) {
-			data += block_id * BlockSize;
 			if(block_id == sequential.load(std::memory_order_acquire)) {
 				unsigned int sum = (block_id == 0)?0:auxiliary_data[block_id - 1];
 				for(size_t i = 0; i < length; ++i) {
@@ -56,17 +57,19 @@ public:
 			size_t half = blocks >> 1;
 			size_t half_l = half * BlockSize;
 
+			numa_nodes[half] = Pheet::get_place()->get_data_numa_node_id(data);
 			Pheet::template
-				spawn_s<Self>(Strategy(data + block_id + half, block_id + half, owner, false),
-						data, auxiliary_data, blocks - half, length - half_l, block_id + half, sequential, owner);
+				spawn_s<Self>(Strategy(numa_nodes[half], block_id + half, owner, false),
+						data + half_l, auxiliary_data, numa_nodes + half, blocks - half, length - half_l, block_id + half, sequential, owner);
 			Pheet::template
-				spawn_s<Self>(Strategy(data + block_id, block_id, owner, sequential.load(std::memory_order_relaxed) == block_id),
-						data, auxiliary_data, half, half_l, block_id, sequential, owner);
+				spawn_s<Self>(Strategy(numa_nodes[0], block_id, owner, sequential.load(std::memory_order_relaxed) == block_id),
+						data, auxiliary_data, numa_nodes, half, half_l, block_id, sequential, owner);
 		}
 	}
 private:
 	unsigned int* data;
 	unsigned int* auxiliary_data;
+	procs_t* numa_nodes;
 	size_t blocks;
 	size_t length;
 	size_t block_id;
