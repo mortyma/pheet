@@ -32,6 +32,9 @@ bool const sor_slices_rescheduled_at_same_place = false;
 
 bool const prefix_sum_log_pf_blocks = false;
 bool const prefix_sum_log_pf_preprocessed_blocks = false;
+bool const prefix_sum_log_numa_local_blocks = false;
+bool const prefix_sum_log_numa_non_local_blocks = false;
+bool const prefix_sum_log_numa_cache_time = false;
 bool const prefix_sum_log_schedule = false;
 
 bool const sssp_count_dead_tasks = false;
