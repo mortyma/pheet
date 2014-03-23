@@ -34,38 +34,36 @@ public:
 	:parent(parent) { }
 	virtual ~Strategy2UTSTask() {}
 
-	virtual void operator()()
+virtual void operator()()
+{
+	Node child;
+	int parentHeight = parent.height;
+	int numChildren;
+
+	numChildren = uts_numChildren(&parent);
+	auto childType   = uts_childType(&parent);
+
+	// record number of children in parent
+	parent.numChildren = numChildren;
+
+	// construct children and push onto stack
+	if (numChildren > 0)
 	{
-		Node child;
-		int parentHeight = parent.height;
-		int numChildren;
+		int i, j;
+		child.type = childType;
+		child.height = parentHeight + 1;
 
-		numChildren = uts_numChildren(&parent);
-		auto childType   = uts_childType(&parent);
-
-		// record number of children in parent
-		parent.numChildren = numChildren;
-
-		// construct children and push onto stack
-		if (numChildren > 0)
+		for (i = 0; i < numChildren; i++)
 		{
-			int i, j;
-			child.type = childType;
-			child.height = parentHeight + 1;
-
-			for (i = 0; i < numChildren; i++)
+			for (j = 0; j < computeGranularity; j++)
 			{
-				for (j = 0; j < computeGranularity; j++)
-				{
-					// TBD:  add parent height to spawn
-					// computeGranularity controls number of rng_spawn calls per node
-					rng_spawn(parent.state.state, child.state.state, i);
-					Pheet::template spawn_s<Self>(Strategy(child.height), child);
-
-				}
+				// computeGranularity controls number of rng_spawn calls per node
+				rng_spawn(parent.state.state, child.state.state, i);
 			}
+			Pheet::template spawn_s<Self>(Strategy(child.height), child);
 		}
 	}
+}
 
 private:
 	Node parent;

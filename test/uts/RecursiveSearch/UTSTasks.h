@@ -33,7 +33,7 @@ namespace pheet {
 		UTSStartTask(Node parent):parent(parent) { }
 		virtual ~UTSStartTask() {}
 
-		void operator()() //(typename Task::TEC& tec)
+		void operator()()
 		{
 			Node child;
 			int parentHeight = parent.height;
@@ -56,12 +56,10 @@ namespace pheet {
 				{
 					for (j = 0; j < computeGranularity; j++) 
 					{
-						// TBD:  add parent height to spawn
 						// computeGranularity controls number of rng_spawn calls per node
 						rng_spawn(parent.state.state, child.state.state, i);
-						Pheet::template spawn<UTSStartTask<Pheet> >(child);
-						
 					}
+					Pheet::template spawn<UTSStartTask<Pheet> >(child);
 				}
 			}
 		}
