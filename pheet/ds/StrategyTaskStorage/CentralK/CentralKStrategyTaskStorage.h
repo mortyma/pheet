@@ -38,14 +38,13 @@ public:
 	using WithTests = CentralKStrategyTaskStorageImpl<Pheet, TT, StrategyHeapT, BlockSize, NewTests, LocalKPrio>;
 
 	CentralKStrategyTaskStorageImpl(size_t num_places)
-	:head(0), tail(0), start_block(nullptr), num_places(num_places) {}
+	:tail(0), start_block(nullptr), num_places(num_places) {}
 	~CentralKStrategyTaskStorageImpl() {}
 
 	size_t get_num_places() {
 		return num_places;
 	}
 
-	size_t head;
 	size_t tail;
 
 	DataBlock* start_block;
