@@ -124,7 +124,7 @@ SsspGraphVertex* SsspTest<Pheet, Algorithm>::generate_data() {
 		}
 	}
 	{typedef typename Pheet::template WithScheduler<SynchroneousScheduler> SPheet;
-		typename SPheet::Environment env(cpus);
+		typename SPheet::Environment env(/*cpus*/);
 
 		SPheet::template
 			finish<SsspInitTask<SPheet> >(data, edges, 0, size - 1);
