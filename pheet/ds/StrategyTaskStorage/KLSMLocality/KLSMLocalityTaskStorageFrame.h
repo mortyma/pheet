@@ -17,7 +17,7 @@ template <class Pheet>
 class KLSMLocalityTaskStorageFrame {
 public:
 	KLSMLocalityTaskStorageFrame()
-	:phase(0) {
+	:phase(0), _phase_change_required(false), items(0), reusable_items(0) {
 		registered[0].store(0, std::memory_order_relaxed);
 		registered[1].store(-1, std::memory_order_relaxed);
 	}
@@ -68,6 +68,10 @@ public:
 				if(can_progress_phase()) {
 					return true;
 				}
+			}
+			++reusable_items;
+			if(reusable_items >= (items >> 1)) {
+				_phase_change_required.store(true, std::memory_order_relaxed);
 			}
 			return false;
 		}
@@ -136,10 +140,10 @@ public:
 	/*
 	 * Frames with medium contention can be used for more items if already in use
 	 */
-	bool medium_contention() const {
+/*	bool medium_contention() const {
 		size_t pi = phase.load(std::memory_order_relaxed) & 1;
 		return registered[pi^1].load(std::memory_order_relaxed) == -1;
-	}
+	}*/
 
 	/*
 	 * Frames with low contention can be reused for new items
@@ -150,9 +154,26 @@ public:
 				registered[pi^1].load(std::memory_order_relaxed) == -1;
 	}
 
+	bool phase_change_required() {
+		return _phase_change_required.load(std::memory_order_relaxed);
+	}
+
+	void item_added() {
+		++items;
+	}
+
+	void reuse_frame() {
+		items = 0;
+		reusable_items = 0;
+	}
+
 private:
 	std::atomic<s_procs_t> registered[2];
 	std::atomic<size_t> phase;
+	std::atomic<bool> _phase_change_required;
+
+	size_t items;
+	size_t reusable_items;
 
 	static size_t wraparound;
 };
@@ -169,7 +190,7 @@ public:
 		if(references == 0) {
 			phase = frame->register_place();
 		}
-	/*	else if(frame->get_phase() != phase) {
+/*		else if(frame->phase_change_required() && frame->get_phase() != phase) {
 			size_t new_phase = frame->register_place();
 			frame->deregister_place(phase);
 			phase = new_phase;
@@ -183,6 +204,13 @@ public:
 				return false;
 			}
 		}
+/*		else if(frame->phase_change_required() && frame->get_phase() != phase) {
+			size_t new_phase;
+			if(frame->try_register_place(new_phase)) {
+				frame->deregister_place(phase);
+				phase = new_phase;
+			}
+		}*/
 		++references;
 		return true;
 	}
@@ -193,10 +221,12 @@ public:
 		if(references == 0) {
 			frame->deregister_place(phase);
 		}
-	/*	else if(frame->get_phase() != phase) {
-			size_t new_phase = frame->register_place();
-			frame->deregister_place(phase);
-			phase = new_phase;
+/*		else if(frame->phase_change_required() && frame->get_phase() != phase) {
+			size_t new_phase;
+			if(frame->try_register_place(new_phase)) {
+				frame->deregister_place(phase);
+				phase = new_phase;
+			}
 		}*/
 	}
 

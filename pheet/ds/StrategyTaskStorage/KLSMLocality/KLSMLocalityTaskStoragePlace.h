@@ -88,11 +88,13 @@ public:
 		it.data = data;
 		it.task_storage = task_storage;
 		it.owner = this;
-		if(!current_frame->medium_contention()) {
+		if(!current_frame->phase_change_required()) {
 			// Exchange current frame every time there is congestion
 			current_frame = &(frames.acquire_item());
+			current_frame->reuse_frame();
 		}
 		it.frame.store(current_frame, std::memory_order_release);
+		current_frame->item_added();
 
 		// Release, so that if item is seen as not taken by other threads
 		// It is guaranteed to be newly initialized and the strategy set.

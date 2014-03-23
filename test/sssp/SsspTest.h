@@ -124,7 +124,9 @@ SsspGraphVertex* SsspTest<Pheet, Algorithm>::generate_data() {
 		}
 	}
 	{typedef typename Pheet::template WithScheduler<SynchroneousScheduler> SPheet;
-		typename SPheet::Environment env(/*cpus*/);
+		typedef typename SPheet::Environment SEnv;
+		// For some reason the default constructor is not called with GCC, that's why we specify the number of CPUs
+		SEnv env(1);
 
 		SPheet::template
 			finish<SsspInitTask<SPheet> >(data, edges, 0, size - 1);
