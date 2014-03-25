@@ -13,7 +13,6 @@
 #include "Strategy2SsspPerformanceCounters.h"
 
 #include <pheet/ds/StrategyTaskStorage/KLSMLocality/KLSMLocalityTaskStorage.h>
-#include <pheet/ds/StrategyTaskStorage/KDelayedLSMLocality/KDelayedLSMLocalityTaskStorage.h>
 #include <pheet/ds/StrategyTaskStorage/LSMLocality/LSMLocalityTaskStorage.h>
 
 namespace pheet {
@@ -88,9 +87,6 @@ char const Strategy2SsspImpl<Pheet, TaskStorageT>::name[] = "Strategy2 Sssp";
 
 template <class Pheet>
 using Strategy2Sssp = Strategy2SsspImpl<Pheet, KLSMLocalityTaskStorage >;
-
-template <class Pheet>
-using Strategy2SsspDelayedK = Strategy2SsspImpl<Pheet, KDelayedLSMLocalityTaskStorage >;
 
 template <class Pheet>
 using Strategy2SsspNoK = Strategy2SsspImpl<Pheet, LSMLocalityTaskStorage >;

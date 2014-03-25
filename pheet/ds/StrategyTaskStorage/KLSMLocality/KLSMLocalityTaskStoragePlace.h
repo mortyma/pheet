@@ -11,14 +11,14 @@
 
 #include "KLSMLocalityTaskStorageItem.h"
 #include "KLSMLocalityTaskStorageBlock.h"
-#include "KLSMLocalityTaskStorageFrame.h"
 #include "KLSMLocalityTaskStorageGlobalListItem.h"
 
 #include <pheet/memory/BlockItemReuse/BlockItemReuseMemoryManager.h>
 #include <pheet/memory/ItemReuse/ItemReuseMemoryManager.h>
+#include <pheet/memory/Frame/FrameMemoryManagerFrame.h>
+#include <pheet/memory/Frame/FrameMemoryManagerPlaceSingleton.h>
 
 #include <limits>
-#include <unordered_map>
 
 namespace pheet {
 
@@ -28,27 +28,29 @@ public:
 	typedef KLSMLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy> Self;
 
 	typedef typename ParentTaskStoragePlace::BaseTaskStoragePlace BaseTaskStoragePlace;
-	typedef KLSMLocalityTaskStorageFrame<Pheet> Frame;
-	typedef KLSMLocalityTaskStorageFrameRegistration<Pheet, Frame> FrameReg;
+	typedef FrameMemoryManagerFrame<Pheet> Frame;
+	typedef FrameMemoryManagerPlaceSingleton<Pheet> FrameManager;
 	typedef typename ParentTaskStoragePlace::BaseItem BaseItem;
-	typedef KLSMLocalityTaskStorageItem<Pheet, Self, Frame, FrameReg, BaseItem, Strategy> Item;
+	typedef KLSMLocalityTaskStorageItem<Pheet, Self, Frame, BaseItem, Strategy> Item;
 	typedef KLSMLocalityTaskStorageBlock<Pheet, Item> Block;
 	typedef KLSMLocalityTaskStorageGlobalListItem<Pheet, Block> GlobalListItem;
 
 	typedef typename BaseItem::T T;
 
-	typedef BlockItemReuseMemoryManager<Pheet, Item, KLSMLocalityTaskStorageItemReuseCheck<Item, Frame> > ItemMemoryManager;
-	typedef ItemReuseMemoryManager<Pheet, Frame, KLSMLocalityTaskStorageFrameReuseCheck<Frame> > FrameMemoryManager;
+	typedef typename BlockItemReuseMemoryManager<Pheet, Item, KLSMLocalityTaskStorageItemReuseCheck<Item, Frame> >::template WithAmortization<2> ItemMemoryManager;
 	typedef ItemReuseMemoryManager<Pheet, GlobalListItem, KLSMLocalityTaskStorageGlobalListItemReuseCheck<GlobalListItem> > GlobalListItemMemoryManager;
 
 	typedef typename ParentTaskStoragePlace::PerformanceCounters PerformanceCounters;
 
 	KLSMLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place)
 	:pc(parent_place->pc),
-	 parent_place(parent_place), top_block_shared(nullptr), bottom_block_shared(nullptr),
+	 parent_place(parent_place),
+	 frame_man(Pheet::template place_singleton<FrameManager>()),
+	 top_block_shared(nullptr), bottom_block_shared(nullptr),
 	 best_block(nullptr), best_block_known(true),
 	 needs_rescan(false),
-	 current_frame(&(frames.acquire_item())),
+	 current_frame(frame_man.next_frame()),
+	 frame_used(0),
 	 remaining_k(std::numeric_limits<size_t>::max()), tasks(0), sequential(Pheet::get_num_places() == 1) {
 
 		// Get central task storage at end of initialization (not before,
@@ -88,20 +90,21 @@ public:
 		it.data = data;
 		it.task_storage = task_storage;
 		it.owner = this;
-		if(!current_frame->phase_change_required()) {
+		if(frame_used >= 256 || !current_frame->phase_change_required()) {
 			// Exchange current frame every time there is congestion
-			current_frame = &(frames.acquire_item());
-			current_frame->reuse_frame();
+			current_frame = frame_man.next_frame();
+			frame_used = 0;
 		}
+		++frame_used;
 		it.frame.store(current_frame, std::memory_order_release);
+		it.phase = -1;
 		current_frame->item_added();
 
 		// Release, so that if item is seen as not taken by other threads
 		// It is guaranteed to be newly initialized and the strategy set.
 		it.taken.store(false, std::memory_order_release);
-		it.last_phase.store(-1, std::memory_order_release);
 
-		put(&it);
+		put(&it, 0);
 
 		parent_place->push(&it);
 
@@ -138,7 +141,7 @@ public:
 			size_t level = best->get_level();
 
 			// There is at least one taken task now, let's do a cleanup
-			best->pop_taken_and_dead(this, frame_regs);
+			best->pop_taken_and_dead(this);
 			best_block_known = false;
 			best_block = nullptr;
 
@@ -180,103 +183,91 @@ public:
 
 		// No need to do cheap taken check before, was already done by parent
 		Frame* f = item->frame.load(std::memory_order_relaxed);
-		FrameReg& reg = frame_regs[f];
+		size_t p;
 
-		if(!reg.try_add_ref(f)) {
+		if(!frame_man.try_reg(f, p)) {
 			// Spurious failure
 			return nullable_traits<T>::null_value;
 		}
-		if(f == item->frame.load(std::memory_order_relaxed)) {
-			if(!item->is_taken()) {
-				// Boundary item is still active. Put it in local queue, so we don't have to steal it another time
-				// For the boundary item we ignore whether the item is dead, as long as it is not taken, it is
-				// valid to be used
-				put(item);
+		if(!item->is_taken() && f == item->frame.load(std::memory_order_relaxed)) {
+			// Boundary item is still active. Put it in local queue, so we don't have to steal it another time
+			// For the boundary item we ignore whether the item is dead, as long as it is not taken, it is
+			// valid to be used
+			put(item, p);
 
-				// Parent place must know about the item as well, to omit multiple steals
-				// (unless boundary has highest priority and does not create new tasks, then
-				// stealing is inevitable for correct semantics)
-				parent_place->push(item);
+			// Parent place must know about the item as well, to omit multiple steals
+			// (unless boundary has highest priority and does not create new tasks, then
+			// stealing is inevitable for correct semantics)
+			parent_place->push(item);
 
-				// Only go through tasks of other thread if we have significantly less tasks stored locally
-				// This is mainly to reduce spying in case the boundary items coincide with the
-				// highest priority items, and k is large, where up to k items are looked at
-				// every time an item is stolen.
-				if(tasks.load(std::memory_order_relaxed) < (item->owner->tasks.load(std::memory_order_relaxed) << 1)) {
-					// Now go through other tasks in the blocks of the given thread.
-					// There is no guarantee that all tasks will be seen, since none of these tasks
-					// would violate the k-requirements, this is not an issue
-					// We call this spying
-					Block* b = item->owner->top_block.load(std::memory_order_acquire);
-					while(b != nullptr) {
-						size_t filled = b->acquire_filled();
-						for(size_t i = 0; i < filled; ++i) {
-							Item* spy_item = b->get_item(i);
-							// First do cheap taken check
-							if(spy_item != item && !spy_item->taken.load(std::memory_order_acquire)) {
-								// Should never happen, we must have observed taken being set or we wouldn't
-								// need to spy
-								pheet_assert(spy_item->owner != this);
-								Frame* spy_frame = spy_item->frame;
-								FrameReg* spy_reg = &(frame_regs[spy_frame]);
+			// Only go through tasks of other thread if we have significantly less tasks stored locally
+			// This is mainly to reduce spying in case the boundary items coincide with the
+			// highest priority items, and k is large, where up to k items are looked at
+			// every time an item is stolen.
+			if(tasks.load(std::memory_order_relaxed) < (item->owner->tasks.load(std::memory_order_relaxed) << 1)) {
+				// Now go through other tasks in the blocks of the given thread.
+				// There is no guarantee that all tasks will be seen, since none of these tasks
+				// would violate the k-requirements, this is not an issue
+				// We call this spying
+				Block* b = item->owner->top_block.load(std::memory_order_acquire);
+				while(b != nullptr) {
+					size_t filled = b->acquire_filled();
+					for(size_t i = 0; i < filled; ++i) {
+						Item* spy_item = b->get_item(i);
+						// First do cheap taken check
+						if(spy_item != item && !spy_item->is_taken()) {
+							// Should never happen, we must have observed taken being set or we wouldn't
+							// need to spy
+							pheet_assert(spy_item->owner != this);
+							Frame* spy_frame = spy_item->frame.load(std::memory_order_relaxed);
+							size_t spy_p;
 
-								// We do not need to see all items, so only proceed if we succeed
-								// registering for the frame
-								if(spy_reg->try_add_ref(spy_frame)) {
+							// We do not need to see all items, so only proceed if we succeed
+							// registering for the frame
+							if(frame_man.try_reg(spy_frame, spy_p)) {
 
-									// Frame might have changed between read and registration
-									Frame* spy_frame2 = spy_item->frame;
-									if(spy_frame2 == spy_frame) {
-										// Frame is still the same, we can proceed
+								// Frame might have changed between read and registration
+								if(!spy_item->is_taken() && spy_item->frame.load(std::memory_order_relaxed) == spy_frame) {
+									// Frame is still the same, we can proceed
 
-										if(spy_item->is_taken_or_dead()) {
-											// We do not keep items that are already taken or marked as dead
-											spy_reg->rem_ref(spy_frame);
-										}
-										else {
-											pc.num_spied_tasks.incr();
-
-											// Store item, but do not store in parent! (It's not a boundary after all!)
-											put(spy_item);
-										}
+									if(spy_item->is_dead()) {
+										// We do not keep items that are already taken or marked as dead
+										frame_man.rem_reg(spy_frame, spy_p);
 									}
 									else {
-										// Frame has changed, just skip item
-										spy_reg->rem_ref(spy_frame);
+										pc.num_spied_tasks.incr();
 
-										// If item has changed, so has the block, so we can skip
-										// the rest of the block
-										break;
+										// Store item, but do not store in parent! (It's not a boundary after all!)
+										put(spy_item, spy_p);
 									}
+								}
+								else {
+									// Frame has changed, just skip item
+									frame_man.rem_reg(spy_frame, spy_p);
+
+									// If item has changed, so has the block, so we can skip
+									// the rest of the block
+									break;
 								}
 							}
 						}
-
-						// Not wait-free yet, since theoretically we might loop through blocks
-						// of same size all the time (unrealistic, but not impossible)
-						// Still, not really a problem, since it only depends on the behaviour of
-						// the owner, and whp. we will not encounter more than a few cycles
-						// before we reach a smaller block (we can never reach a larger block)
-						b = b->acquire_next();
 					}
+
+					// Not wait-free yet, since theoretically we might loop through blocks
+					// of same size all the time (unrealistic, but not impossible)
+					// Still, not really a problem, since it only depends on the behaviour of
+					// the owner, and whp. we will not encounter more than a few cycles
+					// before we reach a smaller block (we can never reach a larger block)
+					b = b->acquire_next();
 				}
-
-				// Now that we have spied some items from the owner of the boundary, we can just pop an item
-				return pop(boundary);
 			}
-			else {
-				// Help other thread marking boundary item as taken
-				// Safe since we are still registered to frame so it cannot be reused
-				// (same with the thread we are helping)
-				item->taken.store(true, std::memory_order_release);
 
-				// Now we can deregister from boundary item
-				reg.rem_ref(f);
-			}
+			// Now that we have spied some items from the owner of the boundary, we can just pop an item
+			return pop(boundary);
 		}
 		else {
 			// Frame has changed in the meantime, just deregister
-			reg.rem_ref(f);
+			frame_man.rem_reg(f, p);
 		}
 
 		return nullable_traits<T>::null_value;
@@ -308,32 +299,31 @@ private:
 					pc.num_inspected_global_items.incr();
 
 					// First do cheap taken check
-					if(spy_item->owner != this && !spy_item->taken.load(std::memory_order_acquire)) {
+					if(spy_item->owner != this && !spy_item->is_taken()) {
 						Frame* spy_frame = spy_item->frame;
-						FrameReg* spy_reg = &(frame_regs[spy_frame]);
+						size_t spy_p;
 
-						spy_reg->add_ref(spy_frame);
+						frame_man.reg(spy_frame, spy_p);
 
 						// Frame might have changed between read and registration
-						Frame* spy_frame2 = spy_item->frame;
-						if(spy_frame2 == spy_frame) {
+						if(!spy_item->is_taken() && spy_item->frame.load(std::memory_order_relaxed) == spy_frame) {
 							// Frame is still the same, we can proceed
 
-							if(spy_item->is_taken_or_dead()) {
+							if(spy_item->is_dead()) {
 								// We do not keep items that are already taken or marked as dead
-								spy_reg->rem_ref(spy_frame);
+								frame_man.rem_reg(spy_frame, spy_p);
 							}
 							else {
 								pc.num_spied_tasks.incr();
 								pc.num_spied_global_tasks.incr();
 
 								// Store item, but do not store in parent! (It's not a boundary after all!)
-								put(spy_item);
+								put(spy_item, spy_p);
 							}
 						}
 						else {
 							// Frame has changed, just skip item
-							spy_reg->rem_ref(spy_frame);
+							frame_man.rem_reg(spy_frame, spy_p);
 
 							// If item has changed, so has the block, so we can skip
 							// the rest of the block. (either filled is now smaller or
@@ -542,7 +532,7 @@ private:
 		pheet_assert(top_block_shared == nullptr || top_block_shared->get_prev() == nullptr);
 	}
 
-	void put(Item* item) {
+	void put(Item* item, size_t p) {
 		pheet_assert(best_block_known);
 
 		tasks.store(tasks.load(std::memory_order_relaxed) + 1, std::memory_order_relaxed);
@@ -550,7 +540,7 @@ private:
 		Block* bb = bottom_block;
 		pheet_assert(bb->get_next() == nullptr);
 		pheet_assert(!bb->reusable());
-		if(!bb->try_put(item, item->owner == this)) {
+		if(!bb->try_put(item, item->owner == this, p)) {
 			// Lazy merging, blocks will only be merged when looking for the best block
 			// or when running out of blocks to use, or when the guarantees about blocks used would be violated
 
@@ -579,7 +569,7 @@ private:
 			bottom_block = new_bb;
 
 			// We know we have space in here, so no try_put needed
-			bottom_block->put(item, item->owner == this);
+			bottom_block->put(item, item->owner == this, p);
 
 			if(best_block == nullptr || (best_block != bottom_block && item->strategy.prioritize(best_block->top()->strategy))) {
 				best_block = bottom_block;
@@ -606,7 +596,7 @@ private:
 		pheet_assert(!last_merge->empty());
 		pheet_assert(block == last_merge->get_next());
 		Block* merged = find_free_block(std::max(l_min, block->get_level() + 1));
-		merged->merge_into(last_merge, block, this, frame_regs);
+		merged->merge_into(last_merge, block, this);
 		merged->mark_in_use();
 		pheet_assert(merged->get_filled() <= last_merge->get_filled() + block->get_filled());
 		pheet_assert(merged->get_owned_filled() <= last_merge->get_owned_filled() + block->get_owned_filled());
@@ -641,7 +631,7 @@ private:
 				merged2 = find_free_block(l + 1);
 			}
 			pheet_assert(merged2 != bottom_block_shared);
-			merged2->merge_into(last_merge, merged, this, frame_regs);
+			merged2->merge_into(last_merge, merged, this);
 
 			if(gli == nullptr) {
 				gli = last_merge->get_global_list_item();
@@ -742,7 +732,7 @@ private:
 		// Choose a block big enough to fit data of both blocks, but never smaller than the smaller of
 		// the two blocks (No point in using a smaller block, larger is definitely free)
 		Block* merged = find_free_block(std::max(std::max(block->get_level() + 1, last_merge->get_level() + 1), l_min));
-		merged->merge_into(last_merge, block, this, frame_regs);
+		merged->merge_into(last_merge, block, this);
 		merged->mark_in_use();
 		pheet_assert(merged->get_filled() <= last_merge->get_filled() + block->get_filled());
 		pheet_assert(merged->get_owned_filled() <= last_merge->get_owned_filled() + block->get_owned_filled());
@@ -772,7 +762,7 @@ private:
 					// so, conflict only occurs when a merged block is merged again)
 					merged2 = find_free_block(l + 1);
 				}
-				merged2->merge_into(last_merge, merged, this, frame_regs);
+				merged2->merge_into(last_merge, merged, this);
 
 				if(gli == nullptr) {
 					gli = last_merge->get_global_list_item();
@@ -1030,7 +1020,7 @@ private:
 	bool created_task_storage;
 
 	ItemMemoryManager items;
-	FrameMemoryManager frames;
+	FrameManager& frame_man;
 	GlobalListItemMemoryManager global_list_items;
 
 	// Stores 3 blocks per level.
@@ -1045,7 +1035,7 @@ private:
 	bool needs_rescan;
 
 	Frame* current_frame;
-	std::unordered_map<Frame*, FrameReg> frame_regs;
+	size_t frame_used;
 
 //	Block* best_block;
 

@@ -51,6 +51,8 @@ public:
 		// Then release new phase id (reopening of position needs to have happened before)
 		phase.store((p+1) & wraparound, std::memory_order_release);
 
+		pheet_assert(reusable_items <= items);
+		items -= reusable_items;
 		reusable_items = 0;
 		_phase_change_required.store(false, std::memory_order_relaxed);
 	}

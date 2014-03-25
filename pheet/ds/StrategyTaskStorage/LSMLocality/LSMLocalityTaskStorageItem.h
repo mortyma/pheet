@@ -75,7 +75,6 @@ struct LSMLocalityTaskStorageItem : public BaseItem {
 template <class Item, class Frame>
 struct LSMLocalityTaskStorageItemReuseCheck {
 	bool operator() (Item& item) {
-		// item.taken is always set after last_phase is set, therefore use this for checks
 		if(!item.used_locally && item.taken.load(std::memory_order_relaxed)) {
 			pheet_assert(item.frame.load(std::memory_order_relaxed) != nullptr);
 			ptrdiff_t p = item.phase;

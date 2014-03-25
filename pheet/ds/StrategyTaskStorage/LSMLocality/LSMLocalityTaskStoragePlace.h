@@ -17,7 +17,6 @@
 #include <pheet/memory/Frame/FrameMemoryManagerPlaceSingleton.h>
 
 #include <limits>
-#include <unordered_map>
 
 namespace pheet {
 
@@ -29,7 +28,6 @@ public:
 	typedef typename ParentTaskStoragePlace::BaseTaskStoragePlace BaseTaskStoragePlace;
 	typedef FrameMemoryManagerFrame<Pheet> Frame;
 	typedef FrameMemoryManagerPlaceSingleton<Pheet> FrameManager;
-//	typedef LSMLocalityTaskStorageFrameRegistration<Pheet, Frame> FrameReg;
 	typedef typename ParentTaskStoragePlace::BaseItem BaseItem;
 	typedef LSMLocalityTaskStorageItem<Pheet, Self, Frame, BaseItem, Strategy> Item;
 	typedef LSMLocalityTaskStorageBlock<Pheet, Item> Block;
@@ -89,6 +87,7 @@ public:
 		++frame_used;
 		it.frame.store(current_frame, std::memory_order_release);
 		it.phase = -1;
+		current_frame->item_added();
 
 		// Release, so that if item is seen as not taken by other threads
 		// It is guaranteed to be newly initialized and the strategy set.
