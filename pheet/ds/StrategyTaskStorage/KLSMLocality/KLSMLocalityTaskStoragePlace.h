@@ -73,6 +73,8 @@ public:
 		if(created_task_storage) {
 			delete task_storage;
 		}
+
+		pc.num_allocated_items.add(items.size());
 	}
 
 	GlobalListItem* create_global_list_item() {

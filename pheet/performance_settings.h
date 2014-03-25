@@ -77,6 +77,7 @@ bool const task_storage_count_inspected_global_items = pc_all | false;
 bool const task_storage_count_spied_global_tasks = pc_all | false;
 bool const task_storage_count_max_inspected_global_blocks = pc_all | false;
 bool const task_storage_count_merges = pc_all | false;
+bool const task_storage_count_allocated_items = pc_all | false;
 
 bool const stealer_count_stream_tasks = pc_all | false;
 bool const stealer_count_stolen_tasks = pc_all | false;

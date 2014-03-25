@@ -162,6 +162,10 @@ public:
 		}
 	}
 
+	size_t size() {
+		return total_size;
+	}
+
 private:
 	Item* head;
 	size_t offset;

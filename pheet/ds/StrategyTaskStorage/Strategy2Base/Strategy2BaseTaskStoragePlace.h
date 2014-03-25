@@ -67,7 +67,9 @@ public:
 		throw -1;
 	}
 
-	~Strategy2BaseTaskStoragePlace() {}
+	~Strategy2BaseTaskStoragePlace() {
+		pc.num_allocated_items.add(items.size());
+	}
 
 	void push(T data) {
 		if(pop_in_phase) {
