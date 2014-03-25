@@ -68,13 +68,9 @@ public:
 		if(reg.is_last(phase)) {
 			buffer_index = (buffer_index + 1) % BufferSize;
 			if(recent_regs[buffer_index] != nullptr) {
-				recent_regs[buffer_index]->rem_reg(recent_reg_frames[buffer_index], recent_reg_phases[buffer_index]);
-				if(recent_regs[buffer_index]->empty()) {
-					frame_regs.erase(frame);
-				}
+				rem_reg(recent_regs[buffer_index], recent_reg_phases[buffer_index]);
 			}
-			recent_regs[buffer_index] = &reg;
-			recent_reg_frames[buffer_index] = frame;
+			recent_regs[buffer_index] = frame;
 			recent_reg_phases[buffer_index] = phase;
 		}
 		else {
@@ -93,8 +89,7 @@ private:
 	FrameMemoryManager frames;
 	std::unordered_map<Frame*, LV> frame_regs;
 
-	LV* recent_regs[BufferSize];
-	Frame* recent_reg_frames[BufferSize];
+	Frame* recent_regs[BufferSize];
 	size_t recent_reg_phases[BufferSize];
 	size_t buffer_index;
 };
