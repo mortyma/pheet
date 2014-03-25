@@ -190,7 +190,7 @@ public:
 
 									if(spy_item->is_dead()) {
 										// We do not keep items that are already taken or marked as dead
-										frame_man.rem_reg(spy_frame, spy_p);
+										frame_man.rem_reg_buffered(spy_frame, spy_p);
 									}
 									else {
 										pc.num_spied_tasks.incr();
@@ -201,7 +201,7 @@ public:
 								}
 								else {
 									// Frame has changed, just skip item
-									frame_man.rem_reg(spy_frame, spy_p);
+									frame_man.rem_reg_buffered(spy_frame, spy_p);
 
 									// If item has changed, so has the block, so we can skip
 									// the rest of the block
@@ -225,7 +225,7 @@ public:
 		}
 		else {
 			// Frame has changed in the meantime, just deregister
-			frame_man.rem_reg(f, p);
+			frame_man.rem_reg_buffered(f, p);
 		}
 
 		return nullable_traits<T>::null_value;

@@ -90,7 +90,7 @@ public:
 		it.data = data;
 		it.task_storage = task_storage;
 		it.owner = this;
-		if(frame_used >= 256 || !current_frame->phase_change_required()) {
+		if(frame_used >= 1024 || !current_frame->phase_change_required()) {
 			// Exchange current frame every time there is congestion
 			current_frame = frame_man.next_frame();
 			frame_used = 0;
@@ -232,7 +232,7 @@ public:
 
 									if(spy_item->is_dead()) {
 										// We do not keep items that are already taken or marked as dead
-										frame_man.rem_reg(spy_frame, spy_p);
+										frame_man.rem_reg_buffered(spy_frame, spy_p);
 									}
 									else {
 										pc.num_spied_tasks.incr();
@@ -243,7 +243,7 @@ public:
 								}
 								else {
 									// Frame has changed, just skip item
-									frame_man.rem_reg(spy_frame, spy_p);
+									frame_man.rem_reg_buffered(spy_frame, spy_p);
 
 									// If item has changed, so has the block, so we can skip
 									// the rest of the block
@@ -267,7 +267,7 @@ public:
 		}
 		else {
 			// Frame has changed in the meantime, just deregister
-			frame_man.rem_reg(f, p);
+			frame_man.rem_reg_buffered(f, p);
 		}
 
 		return nullable_traits<T>::null_value;
@@ -311,7 +311,7 @@ private:
 
 							if(spy_item->is_dead()) {
 								// We do not keep items that are already taken or marked as dead
-								frame_man.rem_reg(spy_frame, spy_p);
+								frame_man.rem_reg_buffered(spy_frame, spy_p);
 							}
 							else {
 								pc.num_spied_tasks.incr();
@@ -323,7 +323,7 @@ private:
 						}
 						else {
 							// Frame has changed, just skip item
-							frame_man.rem_reg(spy_frame, spy_p);
+							frame_man.rem_reg_buffered(spy_frame, spy_p);
 
 							// If item has changed, so has the block, so we can skip
 							// the rest of the block. (either filled is now smaller or
