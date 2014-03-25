@@ -13,16 +13,18 @@
 
 #include "FrameMemoryManagerItem.h"
 #include "FrameMemoryManagerFrame.h"
-#include "FrameMemoryManagerPlace.h"
+#include "FrameMemoryManagerSingleton.h"
+#include "FrameMemoryManagerPtr.h"
 
 namespace pheet {
 
 template <class Pheet, typename T, class ReuseCheck, size_t FrameGranularity>
 class FrameMemoryManagerImpl {
 public:
-	typedef FrameMemoryManagerPlace<Pheet> Singleton;
+	typedef FrameMemoryManagerSingleton<Pheet> Singleton;
 	typedef FrameMemoryManagerItem<Pheet, T, ReuseCheck> Item;
 	typedef FrameMemoryManagerFrame<Pheet> Frame;
+	typedef FrameMemoryManagerPtr<Pheet, Item> PtrType;
 
 	typedef BlockItemReuseMemoryManager<Pheet, Item, FrameMemoryManagerItemReuseCheck<Item, ReuseCheck> > ItemMemoryManager;
 
@@ -30,11 +32,25 @@ public:
 	using WithFrameGranularity = FrameMemoryManagerImpl<Pheet, NewFrameGranularity>;
 
 	FrameMemoryManagerImpl()
-	: singleton(Pheet::template place_singleton<Singleton>()) {}
+	: singleton(Pheet::template place_singleton<Singleton>()),
+	  current_frame(singleton.next_frame),
+	  processed(0) {}
+
 	~FrameMemoryManagerImpl() {}
+
+	PtrType acquire_item() {
+		Item& item = item_mm.acquire_item();
+		item.phase.store(-1, std::memory_order_release);
+		item.current_frame.store(current_frame, std::memory_order_release);
+
+		PtrType ret(&item);
+		return ret;
+	}
 
 private:
 	Singleton& singleton;
+	Frame* current_frame;
+	size_t processed;
 
 	ItemMemoryManager item_mm;
 };

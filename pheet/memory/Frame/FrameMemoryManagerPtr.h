@@ -20,19 +20,22 @@ namespace pheet {
 template <class Pheet, class Item>
 class FrameMemoryManagerPtr {
 public:
+	typedef FrameMemoryManagerPtr<Pheet, Item> Self;
+
 	typedef FrameMemoryManagerFrame<Pheet> Frame;
 	typedef FrameMemoryManagerFrameLocalView<Pheet> LV;
 	typedef FrameMemoryManagerSingleton<Pheet> Singleton;
 
 	FrameMemoryManagerPtr(Item* _item)
 	: item(_item) {
+		pheet_assert(item != nullptr);
 		pheet_assert(_item->phase.load(std::memory_order_relaxed) == -1);
 
 		Frame* frame = item->frame.load(std::memory_order_relaxed);
 		Pheet::template place_singleton<Singleton>().reg(frame, phase);
 	}
 
-	FrameMemoryManagerPtr(Item const& other)
+	FrameMemoryManagerPtr(Self const& other)
 	: item(other.item.load(std::memory_order_relaxed)) {
 		Item* it = item.load(std::memory_order_relaxed);
 		Frame* frame = it->frame.load(std::memory_order_relaxed);
@@ -57,7 +60,11 @@ public:
 	 * But if not accessed by owner of pointer, accessing the item is probably unsafe
 	 */
 	typename Item::T* ptr() {
-		return item.load(std::memory_order_relaxed)->data;
+		return &(item.load(std::memory_order_relaxed)->data);
+	}
+
+	bool valid() {
+		return item != nullptr;
 	}
 
 private:

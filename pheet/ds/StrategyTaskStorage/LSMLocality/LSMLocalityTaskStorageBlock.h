@@ -12,6 +12,8 @@
 #include <atomic>
 #include <algorithm>
 
+#include <pheet/memory/Frame/FrameMemoryManagerPlaceSingleton.h>
+
 namespace pheet {
 
 /*
@@ -33,18 +35,25 @@ class LSMLocalityTaskStorageBlock {
 public:
 	typedef LSMLocalityTaskStorageBlock<Pheet, Item> Self;
 
+	typedef FrameMemoryManagerPlaceSingleton<Pheet> FrameManager;
+	typedef typename FrameManager::Frame Frame;
+
+
 	LSMLocalityTaskStorageBlock(size_t size)
-	:filled(0), size(size), level(0), level_boundary(1), next(nullptr), prev(nullptr), in_use(false) {
+	: frame_man(Pheet::template place_singleton<FrameManager>()),
+	  filled(0), size(size), level(0), level_boundary(1), next(nullptr), prev(nullptr), in_use(false) {
 		data = new std::atomic<Item*>[size];
+		phases = new size_t[size];
 	}
 	~LSMLocalityTaskStorageBlock() {
 		delete[] data;
+		delete[] phases;
 	}
 
 	/*
 	 * Assumes given item is already registered in frame if necessary
 	 */
-	bool try_put(Item* item) {
+	bool try_put(Item* item, size_t p) {
 		size_t f = filled.load(std::memory_order_relaxed);
 		if(f == size) {
 			return false;
@@ -52,6 +61,7 @@ public:
 		else if(f == 0 ||
 				item->strategy.prioritize(data[f-1].load(std::memory_order_relaxed)->strategy)) {
 			data[f].store(item, std::memory_order_relaxed);
+			phases[f] = p;
 			// If new value for filled is seen, so is the item stored in it
 			filled.store(f + 1, std::memory_order_release);
 
@@ -67,12 +77,13 @@ public:
 	/*
 	 * Assumes given item is already registered in frame if necessary
 	 */
-	void put(Item* item) {
+	void put(Item* item, size_t p) {
 		size_t f = filled.load(std::memory_order_relaxed);
 		pheet_assert(f < size);
 		pheet_assert(f == 0 ||
 				item->strategy.prioritize(data[f-1].load(std::memory_order_relaxed)->strategy));
 		data[f].store(item, std::memory_order_relaxed);
+		phases[f] = p;
 		// If new value for filled is seen, so is the item stored in it
 		filled.store(f + 1, std::memory_order_release);
 
@@ -102,7 +113,7 @@ public:
 		while(f > 0) {
 			size_t f2 = f - 1;
 			Item* item = data[f2].load(std::memory_order_relaxed);
-			if(item->last_phase.load(std::memory_order_relaxed) == -1) {
+			if(!item->taken.load(std::memory_order_relaxed)) {
 				if(item->strategy.dead_task()) {
 					// If we don't succeed someone else will, either way we won't execute the task
 					item->take_and_delete();
@@ -113,7 +124,7 @@ public:
 					}
 					else {
 						auto frame = item->frame.load(std::memory_order_relaxed);
-						frame_regs[frame].rem_ref(frame);
+						frame_man.rem_reg(frame, phases[f2]);
 					}
 				}
 				else {
@@ -127,7 +138,7 @@ public:
 				}
 				else {
 					auto frame = item->frame.load(std::memory_order_relaxed);
-					frame_regs[frame].rem_ref(frame);
+					frame_man.rem_reg(frame, phases[f2]);
 				}
 			}
 			f = f2;
@@ -202,8 +213,8 @@ public:
 	 * Merges the two given blocks into this block
 	 * Assumes this block is empty
 	 */
-	template <class Place, class Hashtable>
-	void merge_into(Self* left, Self* right, Place* local_place, Hashtable& frame_regs) {
+	template <class Place>
+	void merge_into(Self* left, Self* right, Place* local_place) {
 		pheet_assert(filled.load(std::memory_order_relaxed) == 0);
 		pheet_assert(left->level <= right->level);
 		pheet_assert(left->in_use);
@@ -212,8 +223,8 @@ public:
 		size_t f = 0;
 		size_t l_max = left->filled.load(std::memory_order_relaxed);
 		size_t r_max = right->filled.load(std::memory_order_relaxed);
-		size_t l = left->find_next_non_dead(0, local_place, frame_regs);
-		size_t r = right->find_next_non_dead(0, local_place, frame_regs);
+		size_t l = left->find_next_non_dead(0, local_place);
+		size_t r = right->find_next_non_dead(0, local_place);
 
 		while(l != l_max && r != r_max) {
 			pheet_assert(l < l_max);
@@ -233,19 +244,21 @@ public:
 				}
 				else {
 					auto frame = r_item->frame.load(std::memory_order_relaxed);
-					frame_regs[frame].rem_ref(frame);
+					frame_man.rem_reg(frame, right->phases[r]);
 				}
-				r = right->find_next_non_dead(r + 1, local_place, frame_regs);
+				r = right->find_next_non_dead(r + 1, local_place);
 			}
 			else if(l_item->strategy.prioritize(
 					r_item->strategy)) {
 				data[f].store(r_item, std::memory_order_relaxed);
-				r = right->find_next_non_dead(r + 1, local_place, frame_regs);
+				phases[f] = right->phases[r];
+				r = right->find_next_non_dead(r + 1, local_place);
 				++f;
 			}
 			else {
 				data[f].store(l_item, std::memory_order_relaxed);
-				l = left->find_next_non_dead(l + 1, local_place, frame_regs);
+				phases[f] = left->phases[l];
+				l = left->find_next_non_dead(l + 1, local_place);
 				++f;
 			}
 		}
@@ -258,7 +271,8 @@ public:
 				Item* l_item = left->data[l].load(std::memory_order_relaxed);
 				pheet_assert(l_item != nullptr);
 				data[f].store(l_item, std::memory_order_relaxed);
-				l = left->find_next_non_dead(l + 1, local_place, frame_regs);
+				phases[f] = left->phases[l];
+				l = left->find_next_non_dead(l + 1, local_place);
 				++f;
 			} while(l != l_max);
 		}
@@ -269,7 +283,8 @@ public:
 				Item* r_item = right->data[r].load(std::memory_order_relaxed);
 				pheet_assert(r_item != nullptr);
 				data[f].store(r_item, std::memory_order_relaxed);
-				r = right->find_next_non_dead(r + 1, local_place, frame_regs);
+				phases[f] = right->phases[r];
+				r = right->find_next_non_dead(r + 1, local_place);
 				++f;
 			}
 		}
@@ -316,12 +331,12 @@ private:
 	 * Should be called in a way so that each offset is processed exactly once, since some
 	 * clean-up is performed on the way
 	 */
-	template <class Place, class Hashtable>
-	size_t find_next_non_dead(size_t offset, Place* local_place, Hashtable& frame_regs) {
+	template <class Place>
+	size_t find_next_non_dead(size_t offset, Place* local_place) {
 		size_t f = filled.load(std::memory_order_relaxed);
 		while(offset < f) {
 			Item* item = data[offset].load(std::memory_order_relaxed);
-			if(item->last_phase == -1) {
+			if(!item->taken.load(std::memory_order_relaxed)) {
 				if(item->strategy.dead_task()) {
 					// If we don't succeed someone else will, either way we won't execute the task
 					item->take_and_delete();
@@ -338,14 +353,17 @@ private:
 			}
 			else {
 				auto frame = item->frame.load(std::memory_order_relaxed);
-				frame_regs[frame].rem_ref(frame);
+				frame_man.rem_reg(frame, phases[offset]);
 			}
 			++offset;
 		}
 		return offset;
 	}
 
+	FrameManager& frame_man;
+
 	std::atomic<Item*>* data;
+	size_t* phases;
 	std::atomic<size_t> filled;
 	size_t size;
 	size_t level;

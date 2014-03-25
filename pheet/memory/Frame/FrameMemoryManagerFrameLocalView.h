@@ -35,13 +35,17 @@ public:
 		return true;
 	}
 
-	void rem_ref(Frame* frame, size_t phase) {
+	void rem_reg(Frame* frame, size_t phase) {
 		size_t p = phase & 1;
-		pheet_assert(ref[p] > 0);
+		pheet_assert(reg[p] > 0);
 		--reg[p];
 		if(reg[p] == 0) {
 			frame->deregister_place(phase);
 		}
+	}
+
+	bool empty() {
+		return reg[0] == 0 && reg[1] == 0;
 	}
 private:
 	size_t reg[2];

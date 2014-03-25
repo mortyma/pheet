@@ -15,7 +15,7 @@ template <class Pheet>
 class FrameMemoryManagerFrame {
 public:
 	FrameMemoryManagerFrame()
-	:phase(0), _phase_change_required(false), items(0), reusable_items(0), owner_reg(0) {
+	:phase(0), _phase_change_required(false), items(0), reusable_items(0) {
 		registered[0].store(0, std::memory_order_relaxed);
 		registered[1].store(-1, std::memory_order_relaxed);
 	}
@@ -87,33 +87,13 @@ public:
 		return true;
 	}
 
-	size_t register_place() {
-		while(true) {
-			size_t p = phase.load(std::memory_order_relaxed);
-			s_procs_t r = registered[p&1].load(std::memory_order_acquire);
-
-			pheet_assert(r >= -1);
-
-			while(r == -1 || !registered[p&1].compare_exchange_weak(r, r + 1, std::memory_order_acquire, std::memory_order_acquire)) {
-				p = phase.load(std::memory_order_relaxed);
-				r = registered[p&1].load(std::memory_order_acquire);
-			}
-
-			// Check if the phase is still the same
-			size_t p2 = phase.load(std::memory_order_acquire);
-			if((p2 & 1) == (p & 1)) {
-				// As long as the new phase uses the same slot we are fine
-				return p2;
-			}
-			deregister_place(p);
-		}
-	}
-
 	/*
 	 * Wait-free variant
 	 */
-	bool try_register_place(size_t& ret_phase) {
-		size_t p = phase.load(std::memory_order_relaxed);
+	bool try_register_place(size_t phase) {
+		size_t p = this->phase.load(std::memory_order_relaxed);
+		if(p != phase)
+			return false;
 		s_procs_t r = registered[p&1].load(std::memory_order_acquire);
 
 		pheet_assert(r >= -1);
@@ -121,9 +101,8 @@ public:
 		if(r == -1 || !registered[p&1].compare_exchange_weak(r, r + 1, std::memory_order_acquire, std::memory_order_acquire)) {
 			return false;
 		}
-		size_t p2 = phase.load(std::memory_order_acquire);
-		if((p2 & 1) == (p & 1)) {
-			ret_phase = p2;
+		size_t p2 = this->phase.load(std::memory_order_acquire);
+		if(p == p2) {
 			return true;
 		}
 		deregister_place(p);
@@ -141,13 +120,12 @@ public:
 		return phase.load(std::memory_order_relaxed);
 	}
 
-	bool phase_change_required() {
+	bool phase_change_required() const {
 		return _phase_change_required.load(std::memory_order_relaxed);
 	}
 
 	void item_added() {
 		++items;
-		++owner_reg;
 	}
 
 private:
@@ -157,7 +135,6 @@ private:
 
 	size_t items;
 	size_t reusable_items;
-	size_t owner_reg;
 
 	static size_t wraparound;
 };

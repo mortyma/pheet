@@ -29,15 +29,32 @@ public:
 	~FrameMemoryManagerPlaceSingleton() {}
 
 	void reg(Frame* frame, size_t& phase) {
+		LV& reg = frame_regs[frame];
+		phase = frame->get_phase();
 
+		while(!reg.try_reg(frame, phase)) {
+			phase = frame->get_phase();
+		}
 	}
 
 	bool try_reg(Frame* frame, size_t& phase) {
+		LV& reg = frame_regs[frame];
+		phase = frame->get_phase();
 
+		return reg.try_reg(frame, phase);
 	}
 
 	void rem_reg(Frame* frame, size_t phase) {
+		LV& reg = frame_regs[frame];
 
+		reg.rem_reg(frame, phase);
+		if(reg.empty()) {
+			frame_regs.erase(frame);
+		}
+	}
+
+	Frame* next_frame() {
+		return &(frames.acquire_item());
 	}
 
 private:

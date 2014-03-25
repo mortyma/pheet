@@ -16,10 +16,13 @@ namespace pheet {
 /*
  * Similar to ItemReuseMemoryManager, but allocates blocks of items instead of single items
  */
-template <class Pheet, typename T, class ReuseCheck, size_t BlockSize>
+template <class Pheet, typename T, class ReuseCheck, size_t BlockSize, size_t Amortization>
 class BlockItemReuseMemoryManagerImpl {
 public:
 	typedef BlockItemReuseMemoryManagerItem<Pheet, T, BlockSize> Item;
+
+	template <size_t NewAmortization>
+	using WithAmortization = BlockItemReuseMemoryManagerImpl<Pheet, T, ReuseCheck, BlockSize, NewAmortization>;
 
 	BlockItemReuseMemoryManagerImpl()
 	: head(new Item()), offset(0), amortized(0), total_size(BlockSize), new_block(true) {
@@ -50,7 +53,7 @@ public:
 					// Found reusable element
 					++offset;
 					// Successful access pays for 1 unsuccessful access
-					amortized += 2;
+					amortized += 1 + Amortization;
 					return head->items[offset - 1];
 				}
 				++offset;
@@ -65,7 +68,7 @@ public:
 				new_block = true;
 			}
 			else {
-				amortized = std::min(amortized, total_size);
+				amortized = std::min(amortized, total_size * Amortization);
 				amortized -= BlockSize;
 				head = head->next;
 
@@ -90,7 +93,7 @@ public:
 					// Found reusable element
 					++offset;
 					// Successful access pays for 1 unsuccessful access
-					amortized += 2;
+					amortized += 1 + Amortization;
 					head->items[offset] = std::move(assign);
 					return head->items[offset];
 				}
@@ -106,7 +109,7 @@ public:
 				new_block = true;
 			}
 			else {
-				amortized = std::min(amortized, total_size);
+				amortized = std::min(amortized, total_size * Amortization);
 				amortized -= BlockSize;
 				head = head->next;
 
@@ -132,7 +135,7 @@ public:
 					// Found reusable element
 					++offset;
 					// Successful access pays for 1 unsuccessful access
-					amortized += 2;
+					amortized += 1 + Amortization;
 					head->items[offset] = std::tuple<S, V ...>(std::move(assign), std::forward(assign_more ...));
 					return head->items[offset];
 				}
@@ -148,7 +151,7 @@ public:
 				new_block = true;
 			}
 			else {
-				amortized = std::min(amortized, total_size);
+				amortized = std::min(amortized, total_size * Amortization);
 				amortized -= BlockSize;
 				head = head->next;
 
@@ -169,7 +172,7 @@ private:
 };
 
 template <class Pheet, typename T, class ReuseCheck>
-using BlockItemReuseMemoryManager = BlockItemReuseMemoryManagerImpl<Pheet, T, ReuseCheck, 256>;
+using BlockItemReuseMemoryManager = BlockItemReuseMemoryManagerImpl<Pheet, T, ReuseCheck, 256, 1>;
 
 } /* namespace pheet */
 #endif /* BLOCKITEMREUSEMEMORYMANAGER_H_ */
