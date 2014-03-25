@@ -107,8 +107,8 @@ public:
 	/*
 	 * Scans the top tasks until either the block is empty or the top is not dead and not taken
 	 */
-	template <class Place, class Hashtable>
-	void pop_taken_and_dead(Place* local_place, Hashtable& frame_regs) {
+	template <class Place>
+	void pop_taken_and_dead(Place* local_place) {
 		size_t f = filled.load(std::memory_order_relaxed);
 		while(f > 0) {
 			size_t f2 = f - 1;
@@ -161,26 +161,18 @@ public:
 		}
 	}
 
-	bool empty() {
+	bool empty() const {
 		size_t f = filled.load(std::memory_order_acquire);
 		return f == 0;
 	}
 
-	size_t get_filled() {
+	size_t get_filled() const {
 		return filled.load(std::memory_order_relaxed);
 	}
 
-	size_t acquire_filled() {
+	size_t acquire_filled() const {
 		return filled.load(std::memory_order_acquire);
 	}
-/*
-	void drop_empty() {
-		Self* n = next.load(std::memory_order_relaxed);
-		while(n != nullptr && n->filled == 0) {
-			n = n->next.load(std::memory_order_relaxed);
-		}
-		next.store(n, std::memory_order_relaxed);
-	}*/
 
 	/*
 	 * Not thread-safe. Only to be called by owner

@@ -47,6 +47,11 @@ public:
 	bool empty() {
 		return reg[0] == 0 && reg[1] == 0;
 	}
+
+	bool is_last(size_t phase) {
+		pheet_assert(reg[phase & 1] > 0);
+		return reg[phase & 1] == 1;
+	}
 private:
 	size_t reg[2];
 };

@@ -63,17 +63,25 @@ public:
 	 * where the same frame is accessed every time
 	 */
 	void rem_reg_buffered(Frame* frame, size_t phase) {
-		if(recent_regs[buffer_index] == frame) {
-			// Was already buffered in previous access
-			rem_reg(frame, phase);
-		}
-		else {
+		LV& reg = frame_regs[frame];
+
+		if(reg.is_last(phase)) {
 			buffer_index = (buffer_index + 1) % BufferSize;
 			if(recent_regs[buffer_index] != nullptr) {
-				rem_reg(recent_regs[buffer_index], recent_reg_phases[buffer_index]);
+				recent_regs[buffer_index]->rem_reg(recent_reg_frames[buffer_index], recent_reg_phases[buffer_index]);
+				if(recent_regs[buffer_index]->empty()) {
+					frame_regs.erase(frame);
+				}
 			}
-			recent_regs[buffer_index] = frame;
+			recent_regs[buffer_index] = &reg;
+			recent_reg_frames[buffer_index] = frame;
 			recent_reg_phases[buffer_index] = phase;
+		}
+		else {
+			reg.rem_reg(frame, phase);
+			if(reg.empty()) {
+				frame_regs.erase(frame);
+			}
 		}
 	}
 
@@ -85,7 +93,8 @@ private:
 	FrameMemoryManager frames;
 	std::unordered_map<Frame*, LV> frame_regs;
 
-	Frame* recent_regs[BufferSize];
+	LV* recent_regs[BufferSize];
+	Frame* recent_reg_frames[BufferSize];
 	size_t recent_reg_phases[BufferSize];
 	size_t buffer_index;
 };

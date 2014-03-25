@@ -117,7 +117,7 @@ public:
 			T data = best_item->take();
 
 			// There is at least one taken task now, let's do a cleanup
-			best->pop_taken_and_dead(this, frame_man);
+			best->pop_taken_and_dead(this);
 
 			// Check whether we succeeded
 			if(data != nullable_traits<T>::null_value) {

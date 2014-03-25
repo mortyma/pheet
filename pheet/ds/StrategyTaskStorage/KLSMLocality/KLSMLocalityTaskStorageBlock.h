@@ -221,7 +221,7 @@ public:
 		}
 	}
 
-	bool empty() {
+	bool empty() const {
 		size_t f = filled.load(std::memory_order_acquire);
 		return f == 0;
 	}
@@ -334,8 +334,8 @@ public:
 					l_item->used_locally = false;
 				}
 				else {
-					auto frame = r_item->frame.load(std::memory_order_relaxed);
-					frame_man.rem_reg(frame, right->phases[r]);
+					auto frame = l_item->frame.load(std::memory_order_relaxed);
+					frame_man.rem_reg(frame, left->phases[l]);
 				}
 				l = left->find_next_non_dead(l + 1, local_place);
 			}
