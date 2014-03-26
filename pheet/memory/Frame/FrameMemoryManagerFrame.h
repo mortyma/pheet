@@ -130,6 +130,10 @@ public:
 		++items;
 	}
 
+	size_t size() const {
+		return items;
+	}
+
 private:
 	std::atomic<s_procs_t> registered[2];
 	std::atomic<size_t> phase;
@@ -153,7 +157,7 @@ size_t FrameMemoryManagerFrame<Pheet>::wraparound = std::numeric_limits<size_t>:
 template <class Frame>
 struct FrameMemoryManagerFrameReuseCheck {
 	bool operator() (Frame const& frame) const {
-		return !frame.phase_change_required();
+		return !frame.phase_change_required() && frame.size() >= 256;
 	}
 };
 

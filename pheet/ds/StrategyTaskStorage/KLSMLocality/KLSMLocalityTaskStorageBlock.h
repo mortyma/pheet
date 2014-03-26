@@ -169,8 +169,7 @@ public:
 					item->take_and_delete();
 
 					if(item->owner == local_place) {
-						pheet_assert(item->used_locally);
-						item->used_locally = false;
+						item->free_locally();
 
 						pheet_assert(fo > 0);
 						--fo;
@@ -187,8 +186,7 @@ public:
 			}
 			else {
 				if(item->owner == local_place) {
-					pheet_assert(item->used_locally);
-					item->used_locally = false;
+					item->free_locally();
 
 					pheet_assert(fo > 0);
 					--fo;
@@ -330,8 +328,7 @@ public:
 				// with exactly the same priority
 
 				if(l_item->owner == local_place) {
-					pheet_assert(l_item->used_locally);
-					l_item->used_locally = false;
+					l_item->free_locally();
 				}
 				else {
 					auto frame = l_item->frame.load(std::memory_order_relaxed);
@@ -525,8 +522,7 @@ private:
 
 			// Items will never be touched again, so remove reference
 			if(item->owner == local_place) {
-				pheet_assert(item->used_locally);
-				item->used_locally = false;
+				item->free_locally();
 			}
 			else {
 				auto frame = item->frame.load(std::memory_order_relaxed);

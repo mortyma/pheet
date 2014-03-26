@@ -64,6 +64,15 @@ struct LSMLocalityTaskStorageItem : public BaseItem {
 		}
 	}
 
+	void free_locally() {
+		pheet_assert(used_locally);
+		used_locally = false;
+		pheet_assert(phase == -1);
+		Frame* f = frame.load(std::memory_order_relaxed);
+		f->register_reusable();
+		phase = (ptrdiff_t) f->get_phase();
+	}
+
 	Place* owner;
 	Strategy strategy;
 	bool used_locally;
@@ -78,14 +87,9 @@ struct LSMLocalityTaskStorageItemReuseCheck {
 		if(!item.used_locally) { // No need to check for taken items (dead items will never be taken, in fact)
 			pheet_assert(item.frame.load(std::memory_order_relaxed) != nullptr);
 			pheet_assert(item.taken.load(std::memory_order_relaxed));
-			ptrdiff_t p = item.phase;
-			if(p == -1) {
-				Frame* f = item.frame.load(std::memory_order_relaxed);
-				f->register_reusable();
-				p = (ptrdiff_t) f->get_phase();
-				item.phase = p;
-			}
-			return item.frame.load(std::memory_order_relaxed)->can_reuse(p);
+			pheet_assert(item.phase != -1);
+
+			return item.frame.load(std::memory_order_relaxed)->can_reuse(item.phase);
 		}
 		return false;
 	}
