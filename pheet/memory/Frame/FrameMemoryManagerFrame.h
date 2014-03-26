@@ -157,7 +157,7 @@ size_t FrameMemoryManagerFrame<Pheet>::wraparound = std::numeric_limits<size_t>:
 template <class Frame>
 struct FrameMemoryManagerFrameReuseCheck {
 	bool operator() (Frame const& frame) const {
-		return !frame.phase_change_required() && frame.size() >= 256;
+		return !frame.phase_change_required() && frame.size() >= 1024;
 	}
 };
 

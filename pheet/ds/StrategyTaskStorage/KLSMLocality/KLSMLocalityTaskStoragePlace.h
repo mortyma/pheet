@@ -92,7 +92,7 @@ public:
 		it.data = data;
 		it.task_storage = task_storage;
 		it.owner = this;
-		if(frame_used >= 256 || !current_frame->phase_change_required()) {
+		if(frame_used >= 1024 || !current_frame->phase_change_required()) {
 			// Exchange current frame every time there is congestion
 			current_frame = frame_man.next_frame();
 			frame_used = 0;
