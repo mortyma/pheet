@@ -121,7 +121,7 @@ public:
 		size_t old_tail = task_storage->tail;
 		size_t cur_tail = old_tail;
 
-		while(!tail_block->put(&(task_storage->head), &(task_storage->tail), cur_tail, &it, pc.data_block_performance_counters)) {
+		while(!tail_block->put(cur_tail, &it, pc.data_block_performance_counters)) {
 			if(tail_block->get_next() == nullptr) {
 				DataBlock& next_block = data_blocks.acquire_item();
 				pc.num_blocks_created.incr();
@@ -219,59 +219,15 @@ public:
 private:
 	void update_heap() {
 		// Check whether update is necessary
-		if(!heap.empty()) {
-			if(LocalKPrio) {
-				auto peek = heap.peek();
+		if(!heap.empty() && task_storage->tail == head)
+			return;
 
-				size_t pos = peek.position;
-				ptrdiff_t diff = ((ptrdiff_t)head) - ((ptrdiff_t) pos);
-				if(diff >= 0) {
-					return;
-				}
-				if(pos != peek.item->position) {
-					return;
-				}
-			}
-			else {
-				if(task_storage->tail == head) {
-					return;
-				}
-			}
-		}
-
-		process_until(task_storage->head);
-		while(head != task_storage->tail) {
-			if(!heap.empty() && LocalKPrio) {
-				size_t pos = heap.peek().position;
-				ptrdiff_t diff = ((ptrdiff_t)head) - ((ptrdiff_t) pos);
-				if(diff >= 0) {
-					return;
-				}
-			}
-			// If we fail to update, some other thread must have succeeded
-			if(task_storage->head == head) {
-				SIZET_CAS(&(task_storage->head), head, task_storage->tail);
-			}
-			process_until(task_storage->head);
-		}
+		process_until(task_storage->tail);
 	}
 
 	void process_until(size_t limit) {
 		while(head != limit) {
-			while(!head_block->in_block(head)) {
-				DataBlock* next = head_block->get_next();
-				if(next == nullptr) {
-					MEMORY_FENCE();
-					next = head_block->get_next();
-					pheet_assert(next != nullptr);
-				}
-				if(head_block == tail_block) { // Make sure tail block doesn't lag behind
-					tail_block = next;
-				}
-				pheet_assert((ptrdiff_t)tail_block->get_offset() - (ptrdiff_t)head_block->get_offset() >= 0);
-				head_block->deregister();
-				head_block = next;
-			}
+			deregister_old_blocks();
 
 			Item* item = head_block->get_item(head);
 			if(item != nullptr && item->owner != this && item->position == head) {
@@ -282,14 +238,18 @@ private:
 
 			++head;
 		}
-		while(!head_block->in_block(head)) {
+		deregister_old_blocks();
+	}
+
+	void deregister_old_blocks() {
+		while (!head_block->in_block(head)) {
 			pheet_assert(head_block->get_next() != nullptr);
 			DataBlock* next = head_block->get_next();
-			if(head_block == tail_block) { // Make sure tail block doesn't lag behind
+			if (head_block == tail_block) // Make sure tail block doesn't lag behind
 				tail_block = next;
-			}
+
 			pheet_assert(next != nullptr);
-			pheet_assert((ptrdiff_t)tail_block->get_offset() - (ptrdiff_t)head_block->get_offset() >= 0);
+			pheet_assert(static_cast<ptrdiff_t>(tail_block->get_offset()) - static_cast<ptrdiff_t>(head_block->get_offset()) >= 0);
 			head_block->deregister();
 			head_block = next;
 		}

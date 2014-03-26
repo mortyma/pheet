@@ -37,7 +37,7 @@ public:
 	//	}
 	}
 
-	bool put(size_t* head, size_t*, size_t& cur_tail, Item* item, PerformanceCounters& pc) {
+	bool put(size_t& cur_tail, Item* item, PerformanceCounters& pc) {
 		// Take care not to break correct wraparounds when changing anything
 		size_t k = item->strategy->get_k();
 	//	size_t next_offset = offset + BlockSize;
@@ -58,21 +58,8 @@ public:
 				if(data[array_offset + wrapped_i] == nullptr) {
 					item->orig_position = cur_tail + wrapped_i;
 					item->position = item->orig_position;
-					if(PTR_CAS(&(data[array_offset + wrapped_i]), nullptr, item)) {
-						ptrdiff_t diff = (ptrdiff_t)item->position - (ptrdiff_t)*head;
-						if(diff < 0) {
-							data[array_offset + wrapped_i] = nullptr;
-						//	size_t old_pos = cur_tail + wrapped_i;
-							if(!SIZET_CAS(&(item->position), item->orig_position, item->orig_position + (std::numeric_limits<size_t>::max() >> 1))) {
-								// Item got eliminated by other thread, success
-								// I think linearization point is when item was put into array
-								return true;
-							}
-						}
-						else {
-							return true;
-						}
-					}
+					if(PTR_CAS(&(data[array_offset + wrapped_i]), nullptr, item))
+						return true;
 				}
 			}
 
@@ -118,18 +105,19 @@ public:
 		block->active = true;
 
 		Self* pred = this;
-		while(true) {
-			if(pred->next == nullptr) {
-				block->offset = pred->offset + BlockSize;
-
-				if(PTR_CAS(&(pred->next), nullptr, block)) {
-					pheet_assert(!pred->is_reusable());
-					break;
-				}
+		block->offset = pred->offset + BlockSize;
+		auto nextBlock = pred->next;
+		while (nextBlock == nullptr)
+		{
+			if(PTR_CAS(&(pred->next), nullptr, block)) {
+				pheet_assert(!pred->is_reusable());
+				return;
 			}
-			pred = pred->next;
+			nextBlock = pred->next;
 		}
 
+		// we failed to add the block, but some other thread must have succeeded -> make our block reusable again
+		block->active = false;
 	}
 
 	bool in_block(size_t position) {
