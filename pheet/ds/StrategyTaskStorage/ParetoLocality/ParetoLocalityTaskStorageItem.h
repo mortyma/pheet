@@ -19,122 +19,49 @@ class ParetoLocalityTaskStorageItem : public BaseItem
 public:
 	typedef typename BaseItem::T T;
 
-	ParetoLocalityTaskStorageItem();
-	ParetoLocalityTaskStorageItem(Strategy&& strategy, T data);
-	T take();
-	void take_and_delete();
-	bool is_dead();
-	bool is_taken() const;
-	bool is_taken_or_dead();
-	Strategy* strategy();
-	void strategy(Strategy&& strategy);
+	ParetoLocalityTaskStorageItem() {}
+
+	T take()
+	{
+		//TODO: no concurrency yet
+		this->taken.store(true, std::memory_order_relaxed);
+		return this->data;
+	}
+
+	void take_and_delete()
+	{
+		//TODO: no concurrency yet
+		this->taken.store(true, std::memory_order_relaxed);
+		this->data.drop_item();
+	}
+
+	bool is_dead()
+	{
+		return m_strategy.dead_task();
+	}
+
+	bool is_taken() const
+	{
+		return this->taken.load();
+	}
+
+	bool is_taken_or_dead()
+	{
+		return is_taken() || is_dead();
+	}
+
+	Strategy* strategy() {
+		return &m_strategy;
+	}
+
+	void strategy(Strategy&& strategy)
+	{
+		m_strategy = std::move(strategy);
+	}
 
 private:
 	Strategy m_strategy;
 };
-
-template < class Pheet,
-           class Place,
-           class BaseItem,
-           class Strategy >
-ParetoLocalityTaskStorageItem<Pheet, Place, BaseItem, Strategy>::
-ParetoLocalityTaskStorageItem()
-{}
-
-
-template < class Pheet,
-           class Place,
-           class BaseItem,
-           class Strategy >
-ParetoLocalityTaskStorageItem<Pheet, Place, BaseItem, Strategy>::
-ParetoLocalityTaskStorageItem(Strategy&& strategy, T t)
-{
-	m_strategy = std::move(strategy);
-	this->data = t;
-	this->taken.store(false, std::memory_order_release);
-}
-
-template < class Pheet,
-           class Place,
-           class BaseItem,
-           class Strategy >
-typename ParetoLocalityTaskStorageItem<Pheet, Place, BaseItem, Strategy>::T
-ParetoLocalityTaskStorageItem<Pheet, Place, BaseItem, Strategy>::
-take()
-{
-	//TODO: no concurrency yet
-	this->taken.store(true, std::memory_order_relaxed);
-	return this->data;
-}
-
-template < class Pheet,
-           class Place,
-           class BaseItem,
-           class Strategy >
-void
-ParetoLocalityTaskStorageItem<Pheet, Place, BaseItem, Strategy>::
-take_and_delete()
-{
-	//TODO: no concurrency yet
-	this->taken.store(true, std::memory_order_relaxed);
-	this->data.drop_item();
-}
-
-template < class Pheet,
-           class Place,
-           class BaseItem,
-           class Strategy >
-bool
-ParetoLocalityTaskStorageItem<Pheet, Place, BaseItem, Strategy>::
-is_dead()
-{
-	return m_strategy.dead_task();
-}
-
-template < class Pheet,
-           class Place,
-           class BaseItem,
-           class Strategy >
-bool
-ParetoLocalityTaskStorageItem<Pheet, Place, BaseItem, Strategy>::
-is_taken() const
-{
-	return this->taken.load();
-}
-
-template < class Pheet,
-           class Place,
-           class BaseItem,
-           class Strategy >
-bool
-ParetoLocalityTaskStorageItem<Pheet, Place, BaseItem, Strategy>::
-is_taken_or_dead()
-{
-	return is_taken() || is_dead();
-}
-
-template < class Pheet,
-           class Place,
-           class BaseItem,
-           class Strategy >
-Strategy*
-ParetoLocalityTaskStorageItem<Pheet, Place, BaseItem, Strategy>::
-strategy()
-{
-	return &m_strategy;
-}
-
-template < class Pheet,
-           class Place,
-           class BaseItem,
-           class Strategy >
-void
-ParetoLocalityTaskStorageItem<Pheet, Place, BaseItem, Strategy>::
-strategy(Strategy&& strategy)
-{
-	m_strategy = std::move(strategy);
-}
-
 } /* namespace pheet */
 #endif /* PARETOLOCALITYTASKSTORAGEITEM_H_ */
 
