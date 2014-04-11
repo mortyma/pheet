@@ -23,10 +23,14 @@ private:
 
 public:
 	VirtualArrayBlock<T, N>()
-		: next(nullptr), prev(nullptr), m_data {{nullptr}} {
+		: next(nullptr), prev(nullptr) {
+
+		for (auto& it : m_data) {
+			it = nullptr;
+		}
 	}
 
-	T& operator[](const size_t idx)
+	std::atomic<T>& operator[](const size_t idx)
 	{
 		pheet_assert(idx < N);
 		return m_data[idx];
@@ -42,7 +46,7 @@ public:
 	Self* prev;
 
 private:
-	std::array<T, N> m_data;
+	std::array<std::atomic<T>, N> m_data;
 };
 
 } /* namespace pheet */

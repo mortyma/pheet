@@ -83,7 +83,7 @@ public:
 			return *this;
 		}
 
-		T& operator*() const
+		std::atomic<T>& operator*() const
 		{
 			return m_block->operator [](m_idx);
 		}
@@ -192,7 +192,7 @@ public:
 	}
 
 	//TODO: implement element access using iterators instead?
-	T& operator[](size_t idx)
+	std::atomic<T>& operator[](size_t idx)
 	{
 		pheet_assert(idx < m_capacity);
 

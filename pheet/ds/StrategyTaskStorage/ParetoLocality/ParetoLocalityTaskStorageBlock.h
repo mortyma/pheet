@@ -385,9 +385,13 @@ private:
 	void swap(typename VirtualArray<Item*>::VirtualArrayIterator& lhs,
 	          typename VirtualArray<Item*>::VirtualArrayIterator& rhs)
 	{
-		Item* item = *lhs;
-		*lhs = *rhs;
-		*rhs = item;
+		//Note: the below does not work since std::atomic is not copy-assignable
+		//*lhs = *rhs;
+
+		Item* left = *lhs;
+		Item* right = *rhs;
+		*lhs = right;
+		*rhs = left;
 	}
 
 	/**
