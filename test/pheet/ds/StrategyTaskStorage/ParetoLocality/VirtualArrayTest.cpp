@@ -130,12 +130,17 @@ TEST_F(VirtualArrayTest, IterDeref)
 	}
 }
 
+
 TEST_F(VirtualArrayTest, IterSwap)
 {
 	auto l = xs.iterator_to(0);
 	auto r = xs.iterator_to(2);
 
-	std::swap(*l, *r);
+	//can't use std::swap with atomics
+	//std::swap(*l, *r);
+	auto h = l;
+	l = r;
+	r = h;
 
 	int i = 3;
 	for (auto it = xs.begin(); it != xs.iterator_to(3); it++) {
