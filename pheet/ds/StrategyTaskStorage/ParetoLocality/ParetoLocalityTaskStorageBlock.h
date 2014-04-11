@@ -31,10 +31,10 @@ class ParetoLocalityTaskStorageBlock
 public:
 	typedef typename Item::T T;
 
-
-	ParetoLocalityTaskStorageBlock(VirtualArray<Item*>& array, size_t offset, PivotQueue* pivots,
-	                               size_t lvl = 0)
-		: m_data(array), m_offset(offset), m_size(0), m_lvl(lvl), m_pivots(pivots)
+	ParetoLocalityTaskStorageBlock(VirtualArray<Item*>& array, size_t offset,
+								   PivotQueue* pivots, size_t lvl = 0)
+		: m_data(array), m_offset(offset), m_size(0), m_lvl(lvl),
+		  m_pivots(pivots), m_next(nullptr)
 	{
 		m_capacity = MAX_PARTITION_SIZE * pow(2, m_lvl);
 		m_partitions = new PartitionPointers(m_pivots, m_capacity);
@@ -145,8 +145,8 @@ public:
 
 	ParetoLocalityTaskStorageBlock* merge_next()
 	{
-		pheet_assert(m_next != nullptr);
-		pheet_assert(m_next ->lvl() == m_lvl);
+		pheet_assert(m_next.load(/*TODO*/) != nullptr);
+		pheet_assert(m_next.load(/*TODO*/)->lvl() == m_lvl);
 		//we only merge full blocks
 		pheet_assert(m_size == m_capacity);
 
@@ -157,11 +157,11 @@ public:
 		m_size = m_capacity;
 
 		//splice out next
-		ParetoLocalityTaskStorageBlock* tmp  = m_next;
+		ParetoLocalityTaskStorageBlock* tmp  = m_next.load(/*TODO*/);
 		if (tmp->next()) {
 			tmp->next()->prev(this);
 		}
-		m_next = tmp->next();
+		m_next.store(tmp->next() /*TODO*/);
 		delete tmp;
 
 		return this;
@@ -187,12 +187,12 @@ public:
 
 	ParetoLocalityTaskStorageBlock* next() const
 	{
-		return m_next;
+		return m_next.load(/*TODO*/);
 	}
 
 	void next(ParetoLocalityTaskStorageBlock* b)
 	{
-		m_next = b;
+		m_next.store(b /*TODO*/);
 	}
 
 	size_t lvl() const
@@ -488,7 +488,7 @@ private:
 	PivotQueue* m_pivots;
 	size_t m_failed_attempts;
 
-	ParetoLocalityTaskStorageBlock* m_next = nullptr;
+	std::atomic<ParetoLocalityTaskStorageBlock*> m_next;
 	ParetoLocalityTaskStorageBlock* m_prev = nullptr;
 
 };
