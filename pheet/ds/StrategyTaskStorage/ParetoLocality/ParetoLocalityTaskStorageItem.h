@@ -75,9 +75,14 @@ public:
 		m_strategy = std::move(strategy);
 	}
 
-	void owner(Place* owner)
+	void owner(Place* const owner)
 	{
 		m_owner = owner;
+	}
+
+	Place* owner() const
+	{
+		return m_owner;
 	}
 
 private:

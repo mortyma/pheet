@@ -184,8 +184,10 @@ template < class Pheet,
            class Strategy >
 typename ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::T
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
-steal(BaseItem* /* boundary */)
+steal(BaseItem*  boundary)
 {
+	Item* item = reinterpret_cast<Item*>(boundary);
+	pheet_assert(item->owner() != this);
 	//TODO: use spy semantics
 	return nullable_traits<T>::null_value;
 }
