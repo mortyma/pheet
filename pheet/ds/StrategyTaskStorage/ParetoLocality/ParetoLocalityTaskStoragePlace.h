@@ -114,6 +114,8 @@ push(Strategy&& strategy, T data)
 	item.data = data;
 	item.strategy(std::forward < Strategy && > (strategy));
 	item.task_storage = task_storage;
+	item.owner(this);
+
 	// Release the item so that other threads can see it.
 	item.taken.store(false, std::memory_order_release);
 

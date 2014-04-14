@@ -11,7 +11,7 @@ namespace pheet
 {
 
 template < class Pheet,
-           class Place,   //TODO: do we need the place that owns the item here?
+		   class Place,
            class BaseItem,
            class Strategy >
 class ParetoLocalityTaskStorageItem : public BaseItem
@@ -19,7 +19,9 @@ class ParetoLocalityTaskStorageItem : public BaseItem
 public:
 	typedef typename BaseItem::T T;
 
-	ParetoLocalityTaskStorageItem() {}
+	ParetoLocalityTaskStorageItem()
+		: m_owner(nullptr)
+	{}
 
 	T take()
 	{
@@ -59,8 +61,15 @@ public:
 		m_strategy = std::move(strategy);
 	}
 
+	void owner(Place* owner)
+	{
+		m_owner = owner;
+	}
+
 private:
+	Place* m_owner;
 	Strategy m_strategy;
+
 };
 } /* namespace pheet */
 #endif /* PARETOLOCALITYTASKSTORAGEITEM_H_ */
