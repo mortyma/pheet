@@ -55,6 +55,11 @@ private:
 	 */
 	bool merge_required() const;
 
+	/**
+	 * Put the item in the topmost block.
+	 */
+	void put(Item& item);
+
 private:
 	ParentTaskStoragePlace* parent_place;
 	TaskStorage* task_storage;
@@ -119,6 +124,19 @@ push(Strategy&& strategy, T data)
 	// Release the item so that other threads can see it.
 	item.taken.store(false, std::memory_order_release);
 
+	put(item);
+
+	parent_place->push(&item);
+}
+
+template < class Pheet,
+           class TaskStorage,
+           class ParentTaskStoragePlace,
+           class Strategy >
+void
+ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
+put(Item& item)
+{
 	if (!last->try_put(&item)) {
 		//merge if neccessary
 		if (merge_required()) {
@@ -141,9 +159,8 @@ push(Strategy&& strategy, T data)
 		//put the item in the new block
 		last->put(&item);
 	}
-
-	parent_place->push(&item);
 }
+
 
 template < class Pheet,
            class TaskStorage,
