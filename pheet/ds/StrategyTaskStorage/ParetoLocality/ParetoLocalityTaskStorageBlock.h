@@ -246,7 +246,6 @@ private:
 				 * Item instances */
 				//delete item;
 			}
-			//TODO: make sure item is free'ed or reused
 			*it = nullptr;
 		}
 	}
