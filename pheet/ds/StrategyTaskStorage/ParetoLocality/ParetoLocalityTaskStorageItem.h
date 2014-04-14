@@ -7,11 +7,13 @@
 #ifndef PARETOLOCALITYTASKSTORAGEITEM_H_
 #define PARETOLOCALITYTASKSTORAGEITEM_H_
 
+#include "pheet/misc/type_traits.h"
+
 namespace pheet
 {
 
 template < class Pheet,
-		   class Place,
+           class Place,
            class BaseItem,
            class Strategy >
 class ParetoLocalityTaskStorageItem : public BaseItem
@@ -25,16 +27,27 @@ public:
 
 	T take()
 	{
-		//TODO: no concurrency yet
-		this->taken.store(true, std::memory_order_relaxed);
-		return this->data;
+		bool expected = false;
+		if (this->taken.compare_exchange_strong(
+		            expected, true,
+		            std::memory_order_release, std::memory_order_acquire)) {
+			this->version.store(this->version.load(std::memory_order_relaxed) + 1,
+			                    std::memory_order_relaxed);
+			return this->data;
+		}
+		return nullable_traits<T>::null_value;
 	}
 
 	void take_and_delete()
 	{
-		//TODO: no concurrency yet
-		this->taken.store(true, std::memory_order_relaxed);
-		this->data.drop_item();
+		bool expected = false;
+		if (this->taken.compare_exchange_strong(
+		            expected, true,
+		            std::memory_order_release, std::memory_order_acquire)) {
+			this->version.store(this->version.load(std::memory_order_relaxed) + 1,
+			                    std::memory_order_relaxed);
+			this->data.drop_item();
+		}
 	}
 
 	bool is_dead()
@@ -52,7 +65,8 @@ public:
 		return is_taken() || is_dead();
 	}
 
-	Strategy* strategy() {
+	Strategy* strategy()
+	{
 		return &m_strategy;
 	}
 

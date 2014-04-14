@@ -12,7 +12,7 @@
 #include "ParetoLocalityTaskStorageItemReuseCheck.h"
 
 #include "pheet/memory/ItemReuse/ItemReuseMemoryManager.h"
-#include "pheet/misc/type_traits.h"
+
 
 
 #include <vector>
