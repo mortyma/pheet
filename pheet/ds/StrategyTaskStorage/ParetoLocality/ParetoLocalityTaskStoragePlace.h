@@ -168,31 +168,47 @@ template < class Pheet,
            class Strategy >
 typename ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::T
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
-pop(BaseItem* /* boundary */)
+pop(BaseItem* boundary)
 {
-	//iterate through all blocks
-	Block* best;
-	Item* item = nullptr;
+	Item* boundary_item = reinterpret_cast<Item*>(boundary);
 
-	for (Block* it = first; it != nullptr; it = it->next()) {
-		Item* const top = it->top();
-		//is the block empty?
-		if (top == nullptr) {
-			/* it->top() returned nullptr, thus no more active items are in
-			 * block it. */
-			continue;
+	while (!boundary_item->is_taken()) {
+		Block* best_block = nullptr;
+		Item* best_item = nullptr;
+		//iterate through all blocks
+		for (Block* it = first; it != nullptr; it = it->next()) {
+			Item* const top = it->top();
+			//is the block empty?
+			if (top == nullptr) {
+				/* it->top() returned nullptr, thus no more active items are in
+				 * block it. */
+				continue;
+			}
+			//We found a new best item
+			if (best_item == nullptr ||
+			        top->strategy()->prioritize(*(best_item->strategy()))) {
+				best_item = top;
+				best_block = it;
+			}
 		}
 
-		if (item == nullptr || top->strategy()->prioritize(*(item->strategy()))) {
-			item = top;
-			best = it;
+		//if the boundary item was taken in the meantime, pop has to return null...
+		if (boundary_item->is_taken() || best_item == nullptr) {
+			return nullable_traits<T>::null_value;
+		}
+		//..otherwise a best item (and the block it is stored in) has to exist
+		pheet_assert(best_block);
+		pheet_assert(best_item);
+		T pop = best_block->take(best_item);
+		//If take did not succeed, best_item was taken by another thread in the
+		//meantime. Try again.
+		if (pop != nullable_traits<T>::null_value) {
+			return pop;
 		}
 	}
 
-	if (item == nullptr) {
-		return nullable_traits<T>::null_value;
-	}
-	return best->take(item);
+	// Linearized to check of boundary item
+	return nullable_traits<T>::null_value;
 }
 
 template < class Pheet,
