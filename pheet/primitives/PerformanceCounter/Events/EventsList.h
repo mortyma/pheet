@@ -11,7 +11,8 @@
 #include "../../Reducer/List/ListReducer.h"
 #include <chrono>
 
-namespace pheet {
+namespace pheet
+{
 
 
 template <typename E>
@@ -22,14 +23,15 @@ private:
 	E value;
 
 public:
-	Event(struct timeval start, E value)
-	:start(start),value(value) {}
+	Event(std::chrono::high_resolution_clock::time_point start, E value)
+		: start(start), value(value) {}
 
 	void print(std::chrono::high_resolution_clock::time_point expstart)
-    {
-		double time = 1.0e-6 * std::chrono::duration_cast<std::chrono::microseconds>(start - expstart).count();
+	{
+		double time = 1.0e-6 * std::chrono::duration_cast<std::chrono::microseconds>
+		              (start - expstart).count();
 		std::cout << time << ": " << value << std::endl;
-    }
+	}
 };
 
 template <class Pheet, typename E, bool enabled>
@@ -45,23 +47,24 @@ private:
 
 public:
 	EventsList()
-	: start(std::chrono::high_resolution_clock::now()) {}
+		: start(std::chrono::high_resolution_clock::now()) {}
 
-    inline EventsList(EventsList<Pheet, E, true> const& other)
-    :events(other.events) {}
+	inline EventsList(EventsList<Pheet, E, true> const& other)
+		: events(other.events) {}
 
-    void add(E const& value)
-    {
-    	Event<E> e(std::chrono::high_resolution_clock::now(),value);
-    	events.add(e);
-    }
+	void add(E const& value)
+	{
+		Event<E> e(std::chrono::high_resolution_clock::now(), value);
+		events.add(e);
+	}
 
-    void print()
-    {
-    	std::vector<Event<E> > eventslist = events.get_list();
-    	for(size_t i=0; i<eventslist.size(); ++i)
-    		eventslist[i].print(start);
-    }
+	void print()
+	{
+		std::vector<Event<E> > eventslist = events.get_list();
+		for (size_t i = 0; i < eventslist.size(); ++i) {
+			eventslist[i].print(start);
+		}
+	}
 };
 
 template <class Pheet, typename E>
