@@ -32,7 +32,7 @@ public:
 	typedef typename Item::T T;
 
 	ParetoLocalityTaskStorageBlock(VirtualArray<Item*>& array, size_t offset,
-								   PivotQueue* pivots, size_t lvl = 0)
+	                               PivotQueue* pivots, size_t lvl = 0)
 		: m_data(array), m_offset(offset), m_size(0), m_lvl(lvl),
 		  m_pivots(pivots), m_next(nullptr)
 	{
@@ -123,7 +123,9 @@ public:
 				clean_up();
 			}
 		}
-		pheet_assert(!(best && best->is_taken_or_dead())); //don't return dead or taken items
+		//TODO: remove
+		//don't return dead or taken items
+		//pheet_assert(!(best && best->is_taken_or_dead()));
 		return best;
 	}
 
