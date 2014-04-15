@@ -253,6 +253,10 @@ private:
 	               typename VirtualArray<Item*>::VirtualArrayIterator& left,
 	               typename VirtualArray<Item*>::VirtualArrayIterator& right)
 	{
+
+#ifdef PHEET_DEBUG_MODE
+		check_correctness();
+#endif
 		pheet_assert(left.index() < right.index());
 		const auto old_left = left;
 
@@ -380,6 +384,74 @@ private:
 			partition(depth, left, new_right);
 		}
 		m_failed_attempts = 0;
+#ifdef PHEET_DEBUG_MODE
+		check_correctness();
+#endif
+	}
+
+	/**
+	 * Check if the block is in a valid state.
+	 *
+	 * In detail:
+	 * TODO
+	 *
+	 */
+	void check_correctness()
+	{
+		auto it = m_data.iterator_to(m_offset);
+
+		//TODO: use iterators
+		for (size_t i = 1; i < m_partitions->size(); i++) {
+			size_t idx = m_partitions->get(i - 1).first + m_offset;
+			auto start = m_data.iterator_to(idx);
+			idx = m_partitions->get(i).first + m_offset;
+			PivotElement* pivot = m_partitions->get(i).second;
+			auto pp = m_data.iterator_to(idx);
+			idx = m_partitions->dead_partition() + m_offset;
+			/*if(i < m_partitions->size()-1) {
+				idx = m_partitions->get(i+1).first + m_offset;
+			}*/
+			auto end = m_data.iterator_to(idx);
+
+			check_partition(pivot, start, pp, end);
+		}
+
+		check_dead();
+	}
+	void check_partition(PivotElement* pivot,
+	                     typename VirtualArray<Item*>::VirtualArrayIterator& start,
+	                     typename VirtualArray<Item*>::VirtualArrayIterator& pp,
+	                     typename VirtualArray<Item*>::VirtualArrayIterator& end)
+	{
+		Item* item;
+		for (; start != pp; start++) {
+			item = *start;
+			assert(item->strategy()->priority_at(pivot->dimension()) > pivot->value());
+		}
+		for (; pp != end; pp++) {
+			item = *pp;
+			assert(item->strategy()->priority_at(pivot->dimension()) <= pivot->value());
+		}
+	}
+
+	/**
+	 * Check the "dead" partition of this block for correctness.
+	 *
+	 * In detail:
+	 * - check that all items in the "dead" partition are either (i) null,
+	 * (ii) dead or (iii) taken.
+	 */
+	void check_dead()
+	{
+		auto it = m_data.iterator_to(m_offset + m_partitions->dead_partition());
+		const auto end_it = m_data.iterator_to(m_offset + m_capacity);
+		for (; it != end_it; it++) {
+			if (*it == nullptr || it->is_taken() || it->is_dead()) {
+				continue;
+			}
+			//should never get here
+			assert(false);
+		}
 	}
 
 	void swap(typename VirtualArray<Item*>::VirtualArrayIterator& lhs,
