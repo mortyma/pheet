@@ -146,11 +146,9 @@ public:
 	VirtualArrayIterator iterator_to(const size_t idx) const
 	{
 		Block* block = find_block(idx);
-
 		VirtualArrayIterator it;
 		it.m_block = block;
 		it.m_idx_in_block = idx % block_size();
-
 		for (const Block* i = m_first; i != block; i = i->next) {
 			it.m_block_nr++;
 		}
@@ -230,7 +228,6 @@ private:
 	Block* m_last;
 	size_t m_block_cnt;
 	size_t m_capacity;
-
 };
 
 } /* namespace pheet */
