@@ -50,9 +50,7 @@ public:
 
 		VirtualArrayIterator operator++(int)
 		{
-			if (m_block == nullptr) {
-				return *this;
-			}
+			pheet_assert(m_block);
 
 			VirtualArrayIterator orig(*this);
 
@@ -62,15 +60,13 @@ public:
 				m_block_nr++;
 				m_idx_in_block = 0;
 			}
-
+			pheet_assert(m_block);
 			return orig;
 		}
 
 		VirtualArrayIterator& operator--()
 		{
-			if (m_block == nullptr) {
-				return *this;
-			}
+			pheet_assert(m_block);
 
 			if (m_idx_in_block == 0) {
 				m_block = m_block->prev;
@@ -79,7 +75,7 @@ public:
 			} else {
 				m_idx_in_block--;
 			}
-
+			pheet_assert(m_block);
 			return *this;
 		}
 
