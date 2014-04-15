@@ -114,9 +114,11 @@ public:
 			return (m_idx < that.m_idx);
 		}
 
-		size_t index() const
+		size_t index(size_t offset = 0) const
 		{
-			return m_block_nr * DATA_BLOCK_SIZE + m_idx;
+			size_t idx = m_block_nr * DATA_BLOCK_SIZE + m_idx - offset;
+			pheet_assert(idx >= 0);
+			return idx;
 		}
 
 	private:

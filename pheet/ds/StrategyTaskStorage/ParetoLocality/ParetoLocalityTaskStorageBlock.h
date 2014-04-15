@@ -288,10 +288,10 @@ private:
 			if (left != right) {
 				if (!*right || right->is_taken_or_dead()) {
 					//right is dead
-					if (m_partitions->dead_partition() - right.index() + m_offset == 1) {
+					if (m_partitions->dead_partition() - right.index(m_offset)  == 1) {
 						//element after right is dead too. Advance dead and right.
 						//This is safe since left < right
-						m_partitions->dead_partition(right.index() - m_offset);
+						m_partitions->dead_partition(right.index(m_offset));
 						pheet_assert(left < right);
 						--right;
 					} else {
@@ -303,7 +303,7 @@ private:
 				} else if (!*left || left->is_taken_or_dead()) {
 					/* left is dead. Note that left+1==dead may never occur while
 					 * left < right, since right < dead holds. */
-					pheet_assert(left.index() - m_offset + 1 < m_partitions->dead_partition());
+					pheet_assert(left.index(m_offset) + 1 < m_partitions->dead_partition());
 					/* swap left with rightmost non-dead element. This may swap
 					 * an element >=pivot to left, but we will not advance left.
 					 * Progress is made by putting one dead element into it'S final
@@ -331,7 +331,7 @@ private:
 		/* Partitioning finished when left <= right. Left == right +1 is the case
 		 * if the last swap was on indices s.t. left + 1 == right and both items
 		 * were not dead. */
-		pheet_assert(left == right || left.index() - m_offset == right.index() - m_offset + 1);
+		pheet_assert(left == right || left.index(m_offset) == right.index(m_offset) + 1);
 
 		//check if left points to dead item
 		if (!*left || left->is_taken_or_dead()) {
@@ -349,10 +349,10 @@ private:
 		if (left->strategy()->greater_priority(p_dim, p_val)) {
 			left++;
 		}
-		pheet_assert(left.index() - m_offset <= m_partitions->dead_partition());
+		pheet_assert(left.index(m_offset) <= m_partitions->dead_partition());
 
 		//check if the last partitioning step needs to be redone
-		if (!partition_failed(pivot, left.index() - m_offset)) {
+		if (!partition_failed(pivot, left.index(m_offset))) {
 			m_failed_attempts = 0;
 		} else {
 			/* partitioning failed. Reset the start of the section that needs
@@ -368,14 +368,14 @@ private:
 			++m_failed_attempts;
 		}
 
-		if ((m_partitions->dead_partition() - left.index() + m_offset > MAX_PARTITION_SIZE)
+		if ((m_partitions->dead_partition() - left.index(m_offset) > MAX_PARTITION_SIZE)
 		        && m_failed_attempts < MAX_ATTEMPTS) {
 			/* If partitioning succeeded but the resulting right-most (excluding
 			 * dead) partition is >MAX_PARTITION_SIZE, partition recursively */
 			if (m_failed_attempts == 0) {
 				++depth;
 			}
-			partition(depth, left.index() - m_offset, m_partitions->dead_partition() - 1);
+			partition(depth, left.index(m_offset), m_partitions->dead_partition() - 1);
 		}
 		m_failed_attempts = 0;
 	}
