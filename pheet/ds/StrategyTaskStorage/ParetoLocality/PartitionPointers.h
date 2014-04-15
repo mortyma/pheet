@@ -67,13 +67,12 @@ public:
 		return m_last;
 	}
 
-	//TODO: dead is not a good name, since it is also used for dead tasks
-	size_t dead() const
+	size_t dead_partition() const
 	{
 		return m_dead;
 	}
 
-	void dead(size_t val)
+	void dead_partition(size_t val)
 	{
 		m_dead = val;
 	}

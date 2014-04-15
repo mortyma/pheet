@@ -78,7 +78,7 @@ public:
 		Item* best = nullptr;
 
 		//iterate through items in right-most partition
-		const size_t end = m_offset + std::min(m_partitions->end(), m_partitions->dead());
+		const size_t end = m_offset + std::min(m_partitions->end(), m_partitions->dead_partition());
 		auto it = m_data.iterator_to(m_offset + m_partitions->last());
 		const auto end_it = m_data.iterator_to(end);
 		for (; it != end_it; it++) {
@@ -216,7 +216,7 @@ private:
 
 	void clean_up()
 	{
-		size_t end = std::min(m_partitions->dead(), m_partitions->end());
+		size_t end = std::min(m_partitions->dead_partition(), m_partitions->end());
 		drop_dead_items(0, end);
 	}
 
@@ -225,7 +225,7 @@ private:
 	 */
 	void drop_dead_items()
 	{
-		drop_dead_items(m_partitions->dead(), m_capacity);
+		drop_dead_items(m_partitions->dead_partition(), m_capacity);
 	}
 
 	void drop_dead_items(size_t start, size_t end)
@@ -291,28 +291,28 @@ private:
 			if (left != right) {
 				if (!*right || right->is_taken_or_dead()) {
 					//right is dead
-					if (m_partitions->dead() - right.index() + m_offset == 1) {
+					if (m_partitions->dead_partition() - right.index() + m_offset == 1) {
 						//element after right is dead too. Advance dead and right.
 						//This is safe since left < right
-						m_partitions->dead(right.index() - m_offset);
+						m_partitions->dead_partition(right.index() - m_offset);
 						pheet_assert(left < right);
 						--right;
 					} else {
 						//swap right with rightmost non-dead element
 						m_partitions->decrease_dead();
-						auto dead = m_data.iterator_to(m_partitions->dead() + m_offset);
+						auto dead = m_data.iterator_to(m_partitions->dead_partition() + m_offset);
 						swap(right, dead);
 					}
 				} else if (!*left || left->is_taken_or_dead()) {
 					/* left is dead. Note that left+1==dead may never occur while
 					 * left < right, since right < dead holds. */
-					pheet_assert(left.index() - m_offset + 1 < m_partitions->dead());
+					pheet_assert(left.index() - m_offset + 1 < m_partitions->dead_partition());
 					/* swap left with rightmost non-dead element. This may swap
 					 * an element >=pivot to left, but we will not advance left.
 					 * Progress is made by putting one dead element into it'S final
 					 * place */
 					m_partitions->decrease_dead();
-					auto dead = m_data.iterator_to(m_partitions->dead() + m_offset);
+					auto dead = m_data.iterator_to(m_partitions->dead_partition() + m_offset);
 					swap(left, dead);
 					//if now right == dead, advance right
 					if (dead == right) {
@@ -339,7 +339,7 @@ private:
 		//check if left points to dead item
 		if (!*left || left->is_taken_or_dead()) {
 			m_partitions->decrease_dead();
-			auto dead = m_data.iterator_to(m_partitions->dead() + m_offset);
+			auto dead = m_data.iterator_to(m_partitions->dead_partition() + m_offset);
 			if (left == dead) {
 				--left;
 			} else {
@@ -352,7 +352,7 @@ private:
 		if (left->strategy()->greater_priority(p_dim, p_val)) {
 			left++;
 		}
-		pheet_assert(left.index() - m_offset <= m_partitions->dead());
+		pheet_assert(left.index() - m_offset <= m_partitions->dead_partition());
 
 		//check if the last partitioning step needs to be redone
 		if (!partition_failed(pivot, left.index() - m_offset)) {
@@ -371,14 +371,14 @@ private:
 			++m_failed_attempts;
 		}
 
-		if ((m_partitions->dead() - left.index() + m_offset > MAX_PARTITION_SIZE)
+		if ((m_partitions->dead_partition() - left.index() + m_offset > MAX_PARTITION_SIZE)
 		        && m_failed_attempts < MAX_ATTEMPTS) {
 			/* If partitioning succeeded but the resulting right-most (excluding
 			 * dead) partition is >MAX_PARTITION_SIZE, partition recursively */
 			if (m_failed_attempts == 0) {
 				++depth;
 			}
-			partition(depth, left.index() - m_offset, m_partitions->dead() - 1);
+			partition(depth, left.index() - m_offset, m_partitions->dead_partition() - 1);
 		}
 		m_failed_attempts = 0;
 	}
@@ -415,7 +415,7 @@ private:
 	 */
 	bool partition_failed(PivotElement* pivot, size_t left)
 	{
-		if (left != m_partitions->dead()) {
+		if (left != m_partitions->dead_partition()) {
 			/* if rightmost partition contains at least 1 item, add a partition
 			   pointer */
 			m_partitions->add(left, pivot);
