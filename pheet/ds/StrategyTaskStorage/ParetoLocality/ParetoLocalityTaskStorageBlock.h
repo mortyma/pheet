@@ -30,6 +30,7 @@ class ParetoLocalityTaskStorageBlock
 {
 public:
 	typedef typename Item::T T;
+	typedef typename VirtualArray<Item*>::VirtualArrayIterator VAIt;
 
 	ParetoLocalityTaskStorageBlock(VirtualArray<Item*>& array, size_t offset,
 	                               PivotQueue* pivots, size_t lvl = 0)
@@ -249,9 +250,7 @@ private:
 		}
 	}
 
-	void partition(size_t depth,
-	               typename VirtualArray<Item*>::VirtualArrayIterator& left,
-	               typename VirtualArray<Item*>::VirtualArrayIterator& right)
+	void partition(size_t depth, VAIt& left, VAIt& right)
 	{
 
 #ifdef PHEET_DEBUG_MODE
@@ -418,10 +417,7 @@ private:
 
 		check_dead();
 	}
-	void check_partition(PivotElement* pivot,
-	                     typename VirtualArray<Item*>::VirtualArrayIterator& start,
-	                     typename VirtualArray<Item*>::VirtualArrayIterator& pp,
-	                     typename VirtualArray<Item*>::VirtualArrayIterator& end)
+	void check_partition(PivotElement* pivot, VAIt& start, VAIt& pp, VAIt& end)
 	{
 		Item* item;
 		for (; start != pp; start++) {
@@ -454,8 +450,7 @@ private:
 		}
 	}
 
-	void swap(typename VirtualArray<Item*>::VirtualArrayIterator& lhs,
-	          typename VirtualArray<Item*>::VirtualArrayIterator& rhs)
+	void swap(VAIt& lhs, VAIt& rhs)
 	{
 		//Note: the below does not work since std::atomic is not copy-assignable
 		//*lhs = *rhs;
@@ -516,9 +511,7 @@ private:
 		return false;
 	}
 
-	PivotElement* generate_pivot(
-	    typename VirtualArray<Item*>::VirtualArrayIterator& left,
-	    typename VirtualArray<Item*>::VirtualArrayIterator& right, size_t pos)
+	PivotElement* generate_pivot(VAIt& left, VAIt& right, size_t pos)
 	{
 		std::mt19937 rng;
 		size_t seed = std::random_device()();
