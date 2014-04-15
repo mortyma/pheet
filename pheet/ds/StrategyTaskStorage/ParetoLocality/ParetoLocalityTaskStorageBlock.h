@@ -33,12 +33,17 @@ public:
 	typedef typename VirtualArray<Item*>::VirtualArrayIterator VAIt;
 
 	ParetoLocalityTaskStorageBlock(VirtualArray<Item*>& array, size_t offset,
-	                               PivotQueue* pivots, size_t lvl = 0)
-		: m_data(array), m_offset(offset), m_size(0), m_lvl(lvl),
+	                               PivotQueue* pivots)
+		: m_data(array), m_offset(offset), m_size(0), m_lvl(0),
 		  m_pivots(pivots), m_next(nullptr)
 	{
 		m_capacity = MAX_PARTITION_SIZE * pow(2, m_lvl);
-		m_partitions = new PartitionPointers(m_pivots, m_capacity);
+
+		//TODO: refactor
+		auto start = m_data.iterator_to(m_offset);
+		auto dead = m_data.iterator_to(m_capacity + m_offset);
+		auto end = start;
+		m_partitions = new PartitionPointers<Item>(pivots, start, dead, end);
 	}
 
 	~ParetoLocalityTaskStorageBlock()
@@ -77,11 +82,15 @@ public:
 	Item* top()
 	{
 		Item* best = nullptr;
-
 		//iterate through items in right-most partition
-		const size_t end = m_offset + std::min(m_partitions->end(), m_partitions->dead_partition());
-		auto it = m_data.iterator_to(m_offset + m_partitions->last());
-		const auto end_it = m_data.iterator_to(end);
+		auto it = m_partitions->last();
+
+		//TODO: min method in VirtualArrayIterator?
+		size_t it_idx = it.index();
+		size_t end_idx = m_partitions->end().index();
+		size_t dead_idx = m_partitions->dead_partition().index();
+		const auto end_it = end_idx < dead_idx ?
+		                    m_partitions->end() : m_partitions->dead_partition();
 		for (; it != end_it; it++) {
 			Item* item = *it;
 			if (item == nullptr) {
@@ -170,7 +179,12 @@ public:
 	void partition()
 	{
 		delete m_partitions;
-		m_partitions = new PartitionPointers(m_pivots, m_capacity, m_capacity);
+		//TODO: refactor
+		auto start = m_data.iterator_to(m_offset);
+		auto dead = m_data.iterator_to(m_capacity + m_offset);
+		auto end = dead;
+		m_partitions = new PartitionPointers<Item>(m_pivots, start, dead, end);
+		//TODO: refactor
 		auto left = m_data.iterator_to(m_offset);
 		auto right = m_data.iterator_to(m_offset + m_capacity - 1);
 		partition(0, left, right);
@@ -214,10 +228,16 @@ public:
 
 private:
 
+
+
 	void clean_up()
 	{
-		size_t end = std::min(m_partitions->dead_partition(), m_partitions->end());
-		drop_dead_items(0, end);
+		//TODO: min method in VirtualArrayIterator?
+		size_t end_idx = m_partitions->end().index();
+		size_t dead_idx = m_partitions->dead_partition().index();
+		const auto end = end_idx < dead_idx ?
+		                 m_partitions->end() : m_partitions->dead_partition();
+		drop_dead_items(m_partitions->first(), end);
 	}
 
 	/**
@@ -225,15 +245,15 @@ private:
 	 */
 	void drop_dead_items()
 	{
-		drop_dead_items(m_partitions->dead_partition(), m_capacity);
+		drop_dead_items(m_partitions->dead_partition(), m_partitions->end());
 	}
 
-	void drop_dead_items(size_t start, size_t end)
+	void drop_dead_items(VAIt start, VAIt end)
 	{
-		auto it = m_data.iterator_to(m_offset + start);
-		const auto end_it = m_data.iterator_to(m_offset + end);
-		for (; it != end_it; it++) {
-			Item* item = *it;
+		//auto it = m_data.iterator_to(m_offset + start);
+		//const auto end_it = m_data.iterator_to(m_offset + end);
+		for (; start != end; start++) {
+			Item* item = *start;
 			pheet_assert(!item || item->is_taken_or_dead());
 
 			if (item && !item->is_taken()) {
@@ -246,13 +266,12 @@ private:
 				 * Item instances */
 				//delete item;
 			}
-			*it = nullptr;
+			*start = nullptr;
 		}
 	}
 
 	void partition(size_t depth, VAIt& left, VAIt& right)
 	{
-
 #ifdef PHEET_DEBUG_MODE
 		check_correctness();
 #endif
@@ -288,35 +307,34 @@ private:
 			            || right->strategy()->equal_priority(p_dim, p_val))) {
 				--right;
 			}
-
 			if (left != right) {
 				if (!*right || right->is_taken_or_dead()) {
 					//right is dead
-					if (m_partitions->dead_partition() - right.index(m_offset)  == 1) {
+					if (m_partitions->dead_partition().index() - right.index()  == 1) {
 						//element after right is dead too. Advance dead and right.
 						//This is safe since left < right
-						m_partitions->dead_partition(right.index(m_offset));
+						m_partitions->dead_partition(right);
 						pheet_assert(left < right);
 						--right;
 					} else {
 						//swap right with rightmost non-dead element
 						m_partitions->decrease_dead();
-						auto dead = m_data.iterator_to(m_partitions->dead_partition() + m_offset);
+						VAIt dead = m_partitions->dead_partition();
 						swap(right, dead);
 					}
 				} else if (!*left || left->is_taken_or_dead()) {
 					/* left is dead. Note that left+1==dead may never occur while
 					 * left < right, since right < dead holds. */
-					pheet_assert(left.index(m_offset) + 1 < m_partitions->dead_partition());
+					pheet_assert(left.index() + 1 < m_partitions->dead_partition().index());
 					/* swap left with rightmost non-dead element. This may swap
 					 * an element >=pivot to left, but we will not advance left.
 					 * Progress is made by putting one dead element into it'S final
 					 * place */
 					m_partitions->decrease_dead();
-					auto dead = m_data.iterator_to(m_partitions->dead_partition() + m_offset);
+					VAIt dead = m_partitions->dead_partition();
 					swap(left, dead);
 					//if now right == dead, advance right
-					if (dead == right) {
+					if (m_partitions->dead_partition() == right) {
 						--right;
 					}
 				} else {
@@ -335,25 +353,26 @@ private:
 		/* Partitioning finished when left <= right. Left == right +1 is the case
 		 * if the last swap was on indices s.t. left + 1 == right and both items
 		 * were not dead. */
-		pheet_assert(left == right || left.index(m_offset) == right.index(m_offset) + 1);
+		pheet_assert(left == right || left.index() == right.index() + 1);
 
 		//check if left points to dead item
 		if (!*left || left->is_taken_or_dead()) {
 			m_partitions->decrease_dead();
-			auto dead = m_data.iterator_to(m_partitions->dead_partition() + m_offset);
-			if (left == dead) {
+			if (left == m_partitions->dead_partition()) {
 				--left;
 			} else {
+				VAIt dead = m_partitions->dead_partition();
 				swap(left, dead);
 			}
 		}
+		//TODO: this sometime fails
 		pheet_assert(*left);
 
 		//check if item at left belongs to left or right partition
 		if (left->strategy()->less_priority(p_dim, p_val)) {
 			left++;
 		}
-		pheet_assert(left.index(m_offset) <= m_partitions->dead_partition());
+		pheet_assert(left.index() <= m_partitions->dead_partition().index());
 
 		//check if the last partitioning step needs to be redone
 		if (!partition_failed(pivot, left)) {
@@ -372,14 +391,15 @@ private:
 			++m_failed_attempts;
 		}
 
-		if ((m_partitions->dead_partition() - left.index(m_offset) > MAX_PARTITION_SIZE)
+		if ((m_partitions->dead_partition().index() - left.index() > MAX_PARTITION_SIZE)
 		        && m_failed_attempts < MAX_ATTEMPTS) {
 			/* If partitioning succeeded but the resulting right-most (excluding
 			 * dead) partition is >MAX_PARTITION_SIZE, partition recursively */
 			if (m_failed_attempts == 0) {
 				++depth;
 			}
-			auto new_right = m_data.iterator_to(m_partitions->dead_partition() - 1 + m_offset);
+			auto new_right = m_partitions->dead_partition();
+			--new_right;
 			partition(depth, left, new_right);
 		}
 		m_failed_attempts = 0;
@@ -399,19 +419,11 @@ private:
 	{
 		auto it = m_data.iterator_to(m_offset);
 
-		//TODO: use iterators
 		for (size_t i = 1; i < m_partitions->size(); i++) {
-			size_t idx = m_partitions->get(i - 1).first + m_offset;
-			auto start = m_data.iterator_to(idx);
-			idx = m_partitions->get(i).first + m_offset;
+			auto start = m_partitions->get(i - 1).first;
 			PivotElement* pivot = m_partitions->get(i).second;
-			auto pp = m_data.iterator_to(idx);
-			idx = m_partitions->dead_partition() + m_offset;
-			/*if(i < m_partitions->size()-1) {
-				idx = m_partitions->get(i+1).first + m_offset;
-			}*/
-			auto end = m_data.iterator_to(idx);
-
+			auto pp = m_partitions->get(i).first;
+			auto end = m_partitions->dead_partition();
 			check_partition(pivot, start, pp, end);
 		}
 
@@ -439,8 +451,8 @@ private:
 	 */
 	void check_dead()
 	{
-		auto it = m_data.iterator_to(m_offset + m_partitions->dead_partition());
-		const auto end_it = m_data.iterator_to(m_offset + m_capacity);
+		auto it = m_partitions->dead_partition();
+		const auto end_it = m_partitions->end();
 		for (; it != end_it; it++) {
 			if (*it == nullptr || it->is_taken() || it->is_dead()) {
 				continue;
@@ -481,10 +493,10 @@ private:
 	 */
 	bool partition_failed(PivotElement* pivot, VAIt& left)
 	{
-		if (left.index(m_offset) != m_partitions->dead_partition()) {
+		if (left.index() != m_partitions->dead_partition().index()) {
 			/* if rightmost partition contains at least 1 item, add a partition
 			   pointer */
-			m_partitions->add(left.index(m_offset), pivot);
+			m_partitions->add(left, pivot);
 			return false;
 		}
 		/* all items were partitioned into left or dead partition. Thus, our
@@ -553,7 +565,7 @@ private:
 	size_t m_size;
 	size_t m_lvl;
 
-	PartitionPointers* m_partitions;
+	PartitionPointers<Item>* m_partitions;
 	PivotQueue* m_pivots;
 	size_t m_failed_attempts;
 
