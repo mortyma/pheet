@@ -191,7 +191,6 @@ public:
 		m_capacity -= value;
 	}
 
-	//TODO: implement element access using iterators instead?
 	std::atomic<T>& operator[](size_t idx)
 	{
 		pheet_assert(idx < m_capacity);

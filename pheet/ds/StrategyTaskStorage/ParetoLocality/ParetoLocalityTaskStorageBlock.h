@@ -123,9 +123,6 @@ public:
 				clean_up();
 			}
 		}
-		//TODO: remove
-		//don't return dead or taken items
-		//pheet_assert(!(best && best->is_taken_or_dead()));
 		return best;
 	}
 
