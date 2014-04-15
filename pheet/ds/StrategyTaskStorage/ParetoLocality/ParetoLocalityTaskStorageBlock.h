@@ -258,7 +258,7 @@ private:
 		//generate new pivot element if neccesarry
 		PivotElement* pivot;
 		if (m_pivots->size() <= depth) {
-			pivot = generate_pivot(l, r, depth);
+			pivot = generate_pivot(left, right, depth);
 			if (pivot == nullptr) {
 				/* could not generate suitable pivot element -> Abort partitioning
 				 * Right-most partition will exceed MAX_PARTITION_SIZE
@@ -441,7 +441,9 @@ private:
 		return false;
 	}
 
-	PivotElement* generate_pivot(size_t left, size_t right, size_t pos)
+	PivotElement* generate_pivot(
+	    typename VirtualArray<Item*>::VirtualArrayIterator& left,
+	    typename VirtualArray<Item*>::VirtualArrayIterator& right, size_t pos)
 	{
 		std::mt19937 rng;
 		size_t seed = std::random_device()();
@@ -450,17 +452,20 @@ private:
 		seed = 42;
 #endif
 		rng.seed(seed);
-		std::uniform_int_distribution<std::mt19937::result_type> dist_e(left, right);
+		size_t l = left.index();
+		size_t r = right.index();
+		std::uniform_int_distribution<std::mt19937::result_type> dist_e(l, r);
 
-		Item* item = m_data[m_offset + left];
-		size_t upper = item->strategy()->nr_dimensions() - 1;
+		size_t upper = left->strategy()->nr_dimensions() - 1;
 		std::uniform_int_distribution<std::mt19937::result_type> dist_d(0, upper);
 
 		//TODO: sample
 		size_t attempts = 0;
+		Item* item;
 		while (attempts < MAX_ATTEMPTS) {
 			//random element from block in the range we need to partition
-			item = m_data[m_offset + dist_e(rng)];
+			size_t idx = dist_e(rng);
+			item = m_data[idx];
 			if (item && !item->is_taken_or_dead()) {
 				//random dimension
 				size_t d = dist_d(rng);
