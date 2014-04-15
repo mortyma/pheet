@@ -170,7 +170,9 @@ public:
 	{
 		delete m_partitions;
 		m_partitions = new PartitionPointers(m_pivots, m_capacity, m_capacity);
-		partition(0, 0, m_capacity - 1);
+		auto left = m_data.iterator_to(m_offset);
+		auto right = m_data.iterator_to(m_offset + m_capacity - 1);
+		partition(0, left, right);
 		drop_dead_items();
 	}
 
@@ -247,12 +249,14 @@ private:
 		}
 	}
 
-	void partition(size_t depth, size_t l /* TODO */, size_t r /* TODO */)
+	void partition(size_t depth,
+	               typename VirtualArray<Item*>::VirtualArrayIterator& left,
+	               typename VirtualArray<Item*>::VirtualArrayIterator& right)
 	{
-		auto left = m_data.iterator_to(m_offset + l);
-		auto right = m_data.iterator_to(m_offset + r);
+		//auto left = m_data.iterator_to(m_offset + l);
+		//auto right = m_data.iterator_to(m_offset + r);
 
-		pheet_assert(left < right);
+		pheet_assert(left.index() < right.index());
 		const auto old_left = left;
 
 		//generate new pivot element if neccesarry
@@ -375,7 +379,8 @@ private:
 			if (m_failed_attempts == 0) {
 				++depth;
 			}
-			partition(depth, left.index(m_offset), m_partitions->dead_partition() - 1);
+			auto new_right = m_data.iterator_to(m_partitions->dead_partition() - 1 + m_offset);
+			partition(depth, left, new_right);
 		}
 		m_failed_attempts = 0;
 	}
