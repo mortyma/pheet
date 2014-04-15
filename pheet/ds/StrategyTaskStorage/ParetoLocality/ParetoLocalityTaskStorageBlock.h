@@ -356,7 +356,7 @@ private:
 		pheet_assert(left.index(m_offset) <= m_partitions->dead_partition());
 
 		//check if the last partitioning step needs to be redone
-		if (!partition_failed(pivot, left.index(m_offset))) {
+		if (!partition_failed(pivot, left)) {
 			m_failed_attempts = 0;
 		} else {
 			/* partitioning failed. Reset the start of the section that needs
@@ -479,13 +479,12 @@ private:
 	 * otherwise (implying that the last partitioning step has to be repeated
 	 * with a new pivot element).
 	 */
-	bool partition_failed(PivotElement* pivot, size_t left)
+	bool partition_failed(PivotElement* pivot, VAIt& left)
 	{
-		//TODO: use iterator
-		if (left != m_partitions->dead_partition()) {
+		if (left.index(m_offset) != m_partitions->dead_partition()) {
 			/* if rightmost partition contains at least 1 item, add a partition
 			   pointer */
-			m_partitions->add(left, pivot);
+			m_partitions->add(left.index(m_offset), pivot);
 			return false;
 		}
 		/* all items were partitioned into left or dead partition. Thus, our
