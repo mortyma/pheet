@@ -253,9 +253,6 @@ private:
 	               typename VirtualArray<Item*>::VirtualArrayIterator& left,
 	               typename VirtualArray<Item*>::VirtualArrayIterator& right)
 	{
-		//auto left = m_data.iterator_to(m_offset + l);
-		//auto right = m_data.iterator_to(m_offset + r);
-
 		pheet_assert(left.index() < right.index());
 		const auto old_left = left;
 
@@ -474,7 +471,6 @@ private:
 			if (item && !item->is_taken_or_dead()) {
 				//random dimension
 				size_t d = dist_d(rng);
-
 				PivotElement* pivot = new PivotElement(d, item->strategy()->priority_at(d), pos);
 				if (m_pivots->try_put(pivot)) {
 					return pivot;
