@@ -347,7 +347,7 @@ private:
 		pheet_assert(*left);
 
 		//check if item at left belongs to left or right partition
-		if (left->strategy()->greater_priority(p_dim, p_val)) {
+		if (left->strategy()->less_priority(p_dim, p_val)) {
 			left++;
 		}
 		pheet_assert(left.index(m_offset) <= m_partitions->dead_partition());
