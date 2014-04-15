@@ -20,17 +20,18 @@ class PivotQueue
 public:
 
 	/**
-	 * Put the PivotElement into this PivotQueue iff no equal PivotElement is in
-	 * the queue.
+	 * Put the PivotElement into this PivotQueue iff no PivotElement of same
+	 * dimension and equal value is in the queue.
 	 */
 	bool try_put(PivotElement* element)
 	{
 		for (size_t i = 0; i < size(); i++) {
-			//check dimension first
-			//TODO: assert val is not bigger than older pivots
 			//TODO: complexity?
 			PivotElement* other = elements[size() - i - 1];
 			if (element->dimension() == other->dimension()) {
+				//Assert value of new pivot element is not larger than older pivots
+				//(with same dimension)
+				pheet_assert(!(element->value() > other->value()));
 				if (element->value() == other->value()) {
 					return false;
 				} else {
