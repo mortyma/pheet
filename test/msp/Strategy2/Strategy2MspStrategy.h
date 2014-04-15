@@ -35,19 +35,19 @@ public:
 	inline bool prioritize(Self& other) const;
 
 	/**
-	 * Returns true if this at dimension dim this has less priority than
+	 * Returns true if at dimension dim this has less priority than
 	 * other_val
 	 */
 	inline bool less_priority(size_t dim, size_t other_val) const;
 
 	/**
-	 * Returns true if this at dimension dim this has greater priority than
+	 * Returns true if at dimension dim this has greater priority than
 	 * other_val
 	 */
 	inline bool greater_priority(size_t dim, size_t other_val) const;
 
 	/**
-	 * Returns true if this at dimension dim this has equal priority as
+	 * Returns true if at dimension dim this has equal priority as
 	 * other_val
 	 */
 	inline bool equal_priority(size_t dim, size_t other_val) const;
