@@ -414,6 +414,7 @@ private:
 	 */
 	bool partition_failed(PivotElement* pivot, size_t left)
 	{
+		//TODO: use iterator
 		if (left != m_partitions->dead_partition()) {
 			/* if rightmost partition contains at least 1 item, add a partition
 			   pointer */

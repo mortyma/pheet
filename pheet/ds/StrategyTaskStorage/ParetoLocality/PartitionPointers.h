@@ -92,6 +92,7 @@ public:
 		++m_end ;
 	}
 
+	//TODO: rename idx to something like idx_in_data
 	void add(size_t idx, PivotElement* pivot)
 	{
 		m_idx.push_back(std::make_pair(idx, pivot));
@@ -100,6 +101,7 @@ public:
 	}
 
 private:
+	//TODO: use iterators instead of index?
 	PivotQueue* m_pivot_queue;
 	std::vector<std::pair<size_t, PivotElement*>> m_idx;
 	/* start of last partition (excluding dead items) */
