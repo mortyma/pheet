@@ -81,10 +81,10 @@ ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strat
 ParetoLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place)
 	: parent_place(parent_place)
 {
-
+	//increase capacity of virtual array
+	m_array.increase_capacity(MAX_PARTITION_SIZE);
 	first = new Block(m_array, 0, &m_pivots);
 	last = first;
-	m_array.increase_capacity(first->capacity());
 	task_storage = TaskStorage::get(this, parent_place->get_central_task_storage(),
 	                                created_task_storage);
 }
@@ -148,6 +148,8 @@ put(Item& item)
 			last->partition();
 		}
 
+		//increase capacity of virtual array
+		m_array.increase_capacity(MAX_PARTITION_SIZE);
 		//create new block
 		size_t nb_offset = last->offset() + last->capacity();
 		Block* nb = new Block(m_array, nb_offset, &m_pivots);
@@ -155,7 +157,6 @@ put(Item& item)
 		pheet_assert(!last->next());
 		last->next(nb);
 		last = nb;
-		m_array.increase_capacity(nb->capacity());
 		//put the item in the new block
 		last->put(&item);
 	}
