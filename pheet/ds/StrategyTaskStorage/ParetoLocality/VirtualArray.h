@@ -128,7 +128,7 @@ public:
 	};
 
 	VirtualArray()
-		: m_block_cnt(1), m_capacity(0)
+		: m_block_cnt(1), m_capacity(1)
 	{
 		m_last = m_first = new Block();
 	}
