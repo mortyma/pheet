@@ -94,12 +94,8 @@ public:
 			}
 
 			if (item->is_dead()) {
-				/* TODO: With multiple threads, this can lead to errors. */
 				item->take_and_delete();
-				/* TODO: we can not delete items, since another thread might
-				 * access them. Use a MemoryManager that governs the use of
-				 * Item instances */
-				//delete item;
+				// Memory manager will take care of deleting items
 				*it = nullptr;
 				continue;
 			}
@@ -127,6 +123,7 @@ public:
 				drop_dead_items(m_partitions->first(), end_it);
 			}
 		}
+		//TODO: use iterators
 		return best;
 	}
 
@@ -138,11 +135,11 @@ public:
 	 */
 	T take(Item* item)
 	{
+		//TODO: use iterators
 		T data = item->take();
-		/* TODO: we can delete item and set it's entry in the VirtualArray to
-		 * nullptr. But for this we need the item's index here*/
-		//delete item;
-		//data_at(i) = nullptr; //This is pseudo code
+		// Memory manager will take care of deleting items
+		// TODO: if we had an iterator to the item, we could set it null
+		// (so other threads can decide faster whether to steal this item or not)
 		return data;
 	}
 
@@ -244,13 +241,7 @@ private:
 			if (item && !item->is_taken()) {
 				item->take_and_delete();
 			}
-
-			if (item) {
-				/* TODO: we can not delete items, since another thread might
-				 * access them. Use a MemoryManager that governs the use of
-				 * Item instances */
-				//delete item;
-			}
+			// Memory manager will take care of deleting items
 			*start = nullptr;
 		}
 	}

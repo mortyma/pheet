@@ -177,7 +177,7 @@ ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strat
 pop(BaseItem* boundary)
 {
 	Item* boundary_item = reinterpret_cast<Item*>(boundary);
-
+	//TODO: use iterators
 	while (!boundary_item->is_taken()) {
 		Block* best_block = nullptr;
 		Item* best_item = nullptr;
