@@ -86,11 +86,7 @@ public:
 		for (; it < end_it; it++) {
 			pheet_assert(it.index() < end_it.index());
 			Item* item = *it;
-			if (item == nullptr) {
-				continue;
-			}
-
-			if (item->is_taken()) {
+			if (item == nullptr || item->is_taken()) {
 				continue;
 			}
 
