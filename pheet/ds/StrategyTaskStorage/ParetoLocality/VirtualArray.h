@@ -162,6 +162,12 @@ public:
 		return iterator_to(m_capacity);
 	}
 
+	static const VirtualArrayIterator& min(const VirtualArrayIterator& it1,
+	                                       const VirtualArrayIterator& it2)
+	{
+		return it1.index() < it2.index() ? it1 : it2;
+	}
+
 	/**
 	 * Increase the capacity of this VirtualArray by the given value.
 	 *

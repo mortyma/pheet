@@ -30,9 +30,8 @@ class ParetoLocalityTaskStorageBlock
 {
 public:
 	typedef typename Item::T T;
-	typedef typename VirtualArray<Item*>::VirtualArrayIterator VAIt;
-
-
+	typedef VirtualArray<Item*> VA;
+	typedef typename VA::VirtualArrayIterator VAIt;
 
 	ParetoLocalityTaskStorageBlock(VirtualArray<Item*>& array, size_t offset,
 	                               PivotQueue* pivots)
@@ -81,12 +80,8 @@ public:
 		Item* best = nullptr;
 		//iterate through items in right-most partition
 		auto it = m_partitions->last();
-
-		//TODO: min method in VirtualArrayIterator?
-		size_t end_idx = m_partitions->end().index();
-		size_t dead_idx = m_partitions->dead_partition().index();
-		const auto end_it = end_idx < dead_idx ?
-		                    m_partitions->end() : m_partitions->dead_partition();
+		const auto end_it = VA::min(m_partitions->end(),
+		                            m_partitions->dead_partition());
 		for (; it != end_it; it++) {
 			Item* item = *it;
 			if (item == nullptr) {
@@ -126,7 +121,9 @@ public:
 				 * been deleted during the last partition step. The block may
 				 * contain dead or taken items in the range [0, min(dead, end)[
 				 */
-				clean_up();
+				const auto end_it = VA::min(m_partitions->end(),
+				                            m_partitions->dead_partition());
+				drop_dead_items(m_partitions->first(), end_it);
 			}
 		}
 		return best;
@@ -227,16 +224,6 @@ private:
 		auto dead_it = m_data.iterator_to(m_offset + dead);
 		auto end_it = m_data.iterator_to(m_offset + end);
 		m_partitions = new PartitionPointers<Item>(m_pivots, start_it, dead_it, end_it);
-	}
-
-	void clean_up()
-	{
-		//TODO: min method in VirtualArrayIterator?
-		size_t end_idx = m_partitions->end().index();
-		size_t dead_idx = m_partitions->dead_partition().index();
-		const auto end = end_idx < dead_idx ?
-		                 m_partitions->end() : m_partitions->dead_partition();
-		drop_dead_items(m_partitions->first(), end);
 	}
 
 	/**
