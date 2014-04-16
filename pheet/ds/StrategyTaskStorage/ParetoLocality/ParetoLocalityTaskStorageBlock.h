@@ -492,11 +492,10 @@ private:
 		 */
 		m_pivots->release(pivot);
 		if (pivot->refcnt() == 0) {
-			/* The pivot element isn't used anywhere else. Thus, delete it and
-			 * tell the caller that partitioning failed (So that he can try again
-			 * with a different pivot element).
+			/* The pivot element isn't used anywhere else. Thus, tell the caller
+			 * that partitioning failed (So that he can try again with a
+			 * different pivot element).
 			 */
-			delete pivot;
 			return true;
 		}
 		/* the pivot element that caused [left, dead[ to be empty
