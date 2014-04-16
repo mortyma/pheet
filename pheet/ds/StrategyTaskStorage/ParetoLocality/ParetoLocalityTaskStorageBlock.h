@@ -349,14 +349,13 @@ private:
 				swap(left, dead);
 			}
 		}
-		//TODO: this sometime fails
-		pheet_assert(*left);
+		pheet_assert(left.index() <= m_partitions->dead_partition().index());
 
 		//check if item at left belongs to left or right partition
-		if (left->strategy()->less_priority(p_dim, p_val)) {
+		if (*left && !left->is_taken_or_dead() && left->strategy()->less_priority(p_dim, p_val)) {
 			left++;
+			pheet_assert(left.index() <= m_partitions->dead_partition().index());
 		}
-		pheet_assert(left.index() <= m_partitions->dead_partition().index());
 
 		//check if the last partitioning step needs to be redone
 		if (!partition_failed(pivot, left)) {
