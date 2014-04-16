@@ -32,18 +32,15 @@ public:
 	typedef typename Item::T T;
 	typedef typename VirtualArray<Item*>::VirtualArrayIterator VAIt;
 
+
+
 	ParetoLocalityTaskStorageBlock(VirtualArray<Item*>& array, size_t offset,
 	                               PivotQueue* pivots)
 		: m_data(array), m_offset(offset), m_size(0), m_lvl(0),
 		  m_pivots(pivots), m_next(nullptr)
 	{
 		m_capacity = MAX_PARTITION_SIZE * pow(2, m_lvl);
-
-		//TODO: refactor
-		auto start = m_data.iterator_to(m_offset);
-		auto dead = m_data.iterator_to(m_capacity + m_offset);
-		auto end = start;
-		m_partitions = new PartitionPointers<Item>(pivots, start, dead, end);
+		create_partition_pointers(0, m_capacity, 0);
 	}
 
 	~ParetoLocalityTaskStorageBlock()
@@ -179,15 +176,12 @@ public:
 	void partition()
 	{
 		delete m_partitions;
-		//TODO: refactor
-		auto start = m_data.iterator_to(m_offset);
-		auto dead = m_data.iterator_to(m_capacity + m_offset);
-		auto end = dead;
-		m_partitions = new PartitionPointers<Item>(m_pivots, start, dead, end);
-		//TODO: refactor
+		create_partition_pointers(0, m_capacity, m_capacity);
+
 		auto left = m_data.iterator_to(m_offset);
 		auto right = m_data.iterator_to(m_offset + m_capacity - 1);
 		partition(0, left, right);
+
 		drop_dead_items();
 	}
 
@@ -228,7 +222,13 @@ public:
 
 private:
 
-
+	void create_partition_pointers(size_t start, size_t dead, size_t end)
+	{
+		auto start_it = m_data.iterator_to(m_offset + start);
+		auto dead_it = m_data.iterator_to(m_offset + dead);
+		auto end_it = m_data.iterator_to(m_offset + end);
+		m_partitions = new PartitionPointers<Item>(m_pivots, start_it, dead_it, end_it);
+	}
 
 	void clean_up()
 	{
