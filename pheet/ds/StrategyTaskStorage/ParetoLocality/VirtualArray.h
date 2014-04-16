@@ -156,10 +156,10 @@ public:
 		return it;
 	}
 
-	/** The iterator returned by end() points to the last accessible element + 1. */
+	/** The iterator returned by end() points to the last accessible element */
 	VirtualArrayIterator end() const
 	{
-		return iterator_to(m_capacity);
+		return iterator_to(m_capacity - 1);
 	}
 
 	static const VirtualArrayIterator& min(const VirtualArrayIterator& it1,
