@@ -83,7 +83,6 @@ public:
 		auto it = m_partitions->last();
 
 		//TODO: min method in VirtualArrayIterator?
-		size_t it_idx = it.index();
 		size_t end_idx = m_partitions->end().index();
 		size_t dead_idx = m_partitions->dead_partition().index();
 		const auto end_it = end_idx < dead_idx ?
@@ -250,8 +249,6 @@ private:
 
 	void drop_dead_items(VAIt start, VAIt end)
 	{
-		//auto it = m_data.iterator_to(m_offset + start);
-		//const auto end_it = m_data.iterator_to(m_offset + end);
 		for (; start != end; start++) {
 			Item* item = *start;
 			pheet_assert(!item || item->is_taken_or_dead());
@@ -410,15 +407,9 @@ private:
 
 	/**
 	 * Check if the block is in a valid state.
-	 *
-	 * In detail:
-	 * TODO
-	 *
 	 */
 	void check_correctness()
 	{
-		auto it = m_data.iterator_to(m_offset);
-
 		for (size_t i = 1; i < m_partitions->size(); i++) {
 			auto start = m_partitions->get(i - 1).first;
 			PivotElement* pivot = m_partitions->get(i).second;
@@ -429,6 +420,15 @@ private:
 
 		check_dead();
 	}
+
+	/**
+	 * Check a partition of this block for correctness.
+	 *
+	 * In detail:
+	 * - In [start, pp[, all elements have to be > pivot (i.e., the pivot element is <
+	 *  than any element in the given range (for the dimension given by the pivot)
+	 * - In [pp, end[, all elements have to be <= pivot
+	 */
 	void check_partition(PivotElement* pivot, VAIt& start, VAIt& pp, VAIt& end)
 	{
 		Item* item;
@@ -464,13 +464,12 @@ private:
 
 	void swap(VAIt& lhs, VAIt& rhs)
 	{
-		//Note: the below does not work since std::atomic is not copy-assignable
-		//*lhs = *rhs;
-
 		Item* left = *lhs;
 		Item* right = *rhs;
 		*lhs = right;
 		*rhs = left;
+		//Note: the below does not work since std::atomic is not copy-assignable
+		//*lhs = *rhs;
 	}
 
 	/**
