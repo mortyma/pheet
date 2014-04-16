@@ -91,7 +91,7 @@ public:
 
 		bool operator==(const VirtualArrayIterator& that)
 		{
-			return (m_block == that.m_block && m_idx_in_block == that.m_idx_in_block);
+			return (m_block_nr == that.m_block_nr && m_idx_in_block == that.m_idx_in_block);
 		}
 
 		bool operator!=(const VirtualArrayIterator& that)
