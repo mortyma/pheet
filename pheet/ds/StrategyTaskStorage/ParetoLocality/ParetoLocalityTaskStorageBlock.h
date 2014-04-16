@@ -342,7 +342,7 @@ private:
 		//check if left points to dead item
 		if (!*left || left->is_taken_or_dead()) {
 			m_partitions->decrease_dead();
-			if (left == m_partitions->dead_partition()) {
+			if (left == m_partitions->dead_partition() && left.index(m_offset) > 0) {
 				--left;
 			} else {
 				VAIt dead = m_partitions->dead_partition();
