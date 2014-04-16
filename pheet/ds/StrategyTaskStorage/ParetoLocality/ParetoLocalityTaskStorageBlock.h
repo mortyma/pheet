@@ -83,7 +83,8 @@ public:
 		auto it = m_partitions->last();
 		const auto end_it = VA::min(m_partitions->end(),
 		                            m_partitions->dead_partition());
-		for (; it != end_it; it++) {
+		for (; it < end_it; it++) {
+			pheet_assert(it.index() < end_it.index());
 			Item* item = *it;
 			if (item == nullptr) {
 				continue;
