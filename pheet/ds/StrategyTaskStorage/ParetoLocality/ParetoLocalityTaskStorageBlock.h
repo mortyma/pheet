@@ -61,6 +61,7 @@ public:
 		pheet_assert(m_size < m_capacity);
 		//we only put data in a lvl 0 block
 		pheet_assert(m_lvl == 0);
+		//no CAS needed, since only the owning thread writes to local VirtualArray
 		m_data[m_size + m_offset] = item;
 		m_partitions->increment_end();
 		++m_size;
