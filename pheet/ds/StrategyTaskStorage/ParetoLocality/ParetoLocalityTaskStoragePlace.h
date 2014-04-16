@@ -47,6 +47,11 @@ public:
 	T steal(BaseItem* boundary);
 	void clean_up();
 
+	const VirtualArray<Item*>& array()
+	{
+		return m_array;
+	}
+
 private:
 	/**
 	 * A merge is required if:
@@ -221,11 +226,27 @@ ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strat
 steal(BaseItem* boundary)
 {
 	Item* item = reinterpret_cast<Item*>(boundary);
-	pheet_assert(item->owner() != this);
+	Self* other_place = item->owner();
+	pheet_assert(other_place != this);
 
+	//TODO: steal only if place to steal from has a lot more items than this place
 	if (!item->is_taken()) {
 		put(*item);
 		parent_place->push(item);
+
+		auto it = other_place->array().begin();
+		auto end = other_place->array().end();
+
+		//TODO: this works, but may not be very efficient
+		for (; it != end; it++) {
+			pheet_assert(it.index() < end.index());
+			Item* item = *it;
+			if (item && !item->is_taken_or_dead()) {
+				put(*item);
+			}
+		}
+
+		//TODO: linearization; make sure boundary item is not taken
 		return pop(boundary);
 	}
 
