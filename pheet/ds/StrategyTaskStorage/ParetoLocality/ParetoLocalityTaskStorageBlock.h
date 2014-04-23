@@ -132,9 +132,10 @@ public:
 	T take(VAIt item)
 	{
 		T data = item->take();
-		// Memory manager will take care of deleting items
-		// TODO: if we had an iterator to the item, we could set it null
-		// (so other threads can decide faster whether to steal this item or not)
+		/* Set the Item to nullptr in the VirtualArray so other threads
+		   and operations don't see it any more. Memory manager will take care of
+		   deleting the Item */
+		*item = nullptr;
 		return data;
 	}
 
