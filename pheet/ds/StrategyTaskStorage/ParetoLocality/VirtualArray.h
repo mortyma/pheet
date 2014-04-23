@@ -79,6 +79,11 @@ public:
 			return *this;
 		}
 
+		bool valid() const
+		{
+			return m_block;
+		}
+
 		bool validItem() const
 		{
 			return m_block && m_block->operator [](m_idx_in_block);

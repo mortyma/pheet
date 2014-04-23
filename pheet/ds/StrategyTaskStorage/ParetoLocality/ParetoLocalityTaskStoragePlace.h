@@ -239,7 +239,7 @@ steal(BaseItem* boundary)
 		auto end = other_place->array().end();
 
 		//TODO: this works, but may not be very efficient
-		for (; it != end; it++) {
+		for (; end.valid() && it != end; it++) {
 			pheet_assert(it.index() < end.index());
 			Item* item = *it;
 			if (item && !item->is_taken_or_dead()) {
