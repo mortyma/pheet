@@ -17,9 +17,9 @@ release:
 	mkdir -p build
 	cd build; cmake -DCMAKE_BUILD_TYPE="Release" ..; make -j6
 
-check: build
-	cd build; ctest --output-on-failure
-
+test: build
+	cd build;  ./test/msp/test/msp-test 
+	
 saturn:
 	$(RSYNC) $(RFLAGS) $(SOURCE) $(SATURN):$(REMOTEDIR)
 	
