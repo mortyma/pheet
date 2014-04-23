@@ -1,3 +1,12 @@
+RSYNC = rsync
+SSH = ssh
+
+RFLAGS = --recursive --progress --copy-links --exclude=build/ --exclude=.git/ -e "$(SSH)"
+SATURN = saturn
+MARS = mars
+REMOTEDIR = ~/pheet
+SOURCE = .
+
 all: build
 
 build:
@@ -11,6 +20,13 @@ release:
 check: build
 	cd build; ctest --output-on-failure
 
+saturn:
+	$(RSYNC) $(RFLAGS) $(SOURCE) $(SATURN):$(REMOTEDIR)
+	
+mars:
+	$(RSYNC) $(RFLAGS) $(SOURCE) $(MARS):$(REMOTEDIR)
+
+	
 clean:
 	rm -rf build
 
