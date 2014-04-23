@@ -11,7 +11,7 @@
 #include "ParetoLocalityTaskStorageItem.h"
 #include "ParetoLocalityTaskStorageItemReuseCheck.h"
 
-#include "pheet/memory/ItemReuse/ItemReuseMemoryManager.h"
+#include "pheet/memory/BlockItemReuse/BlockItemReuseMemoryManager.h"
 
 
 
@@ -35,7 +35,7 @@ public:
 	typedef ParetoLocalityTaskStorageItem<Pheet, Self, BaseItem, Strategy> Item;
 	typedef ParetoLocalityTaskStorageBlock<Item, MAX_PARTITION_SIZE> Block;
 	typedef typename BaseItem::T T;
-	typedef ItemReuseMemoryManager<Pheet, Item, ParetoLocalityTaskStorageItemReuseCheck<Item>>
+	typedef BlockItemReuseMemoryManager<Pheet, Item, ParetoLocalityTaskStorageItemReuseCheck<Item>>
 	        ItemMemoryManager;
 	typedef VirtualArray<Item*> VA;
 	typedef typename VA::VirtualArrayIterator VAIt;
