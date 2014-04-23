@@ -54,7 +54,6 @@ step(Edge const* edge) const
 
 	for (size_t i = 0; i < ws.size(); i++) {
 		p->m_weight[i] += ws[i];
-		//TODOMK: if weighted sum is not required anymore, remove:
 		p->m_weight_sum += ws[i];
 	}
 
