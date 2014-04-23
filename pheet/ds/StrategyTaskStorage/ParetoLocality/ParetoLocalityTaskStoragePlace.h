@@ -37,6 +37,8 @@ public:
 	typedef typename BaseItem::T T;
 	typedef ItemReuseMemoryManager<Pheet, Item, ParetoLocalityTaskStorageItemReuseCheck<Item>>
 	        ItemMemoryManager;
+	typedef VirtualArray<Item*> VA;
+	typedef typename VA::VirtualArrayIterator VAIt;
 
 
 	ParetoLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place);
@@ -177,35 +179,34 @@ ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strat
 pop(BaseItem* boundary)
 {
 	Item* boundary_item = reinterpret_cast<Item*>(boundary);
-	//TODO: use iterators
 	while (!boundary_item->is_taken()) {
 		Block* best_block = nullptr;
-		Item* best_item = nullptr;
+		VAIt best_it;
 		//iterate through all blocks
 		for (Block* it = first; it != nullptr; it = it->next()) {
-			Item* const top = it->top();
+			VAIt top_it = it->top();
 			//is the block empty?
-			if (top == nullptr) {
-				/* it->top() returned nullptr, thus no more active items are in
-				 * block it. */
+			if (!top_it.validItem()) {
+				/* it->top() returned non-valid iterator, thus no more active
+				 * items are in block it. */
 				continue;
 			}
 			//We found a new best item
-			if (best_item == nullptr ||
-			        top->strategy()->prioritize(*(best_item->strategy()))) {
-				best_item = top;
+			if (!best_it.validItem() ||
+			        top_it->strategy()->prioritize(*(best_it)->strategy())) {
 				best_block = it;
+				best_it = top_it;
 			}
 		}
 
 		//if the boundary item was taken in the meantime, pop has to return null...
-		if (boundary_item->is_taken() || best_item == nullptr) {
+		if (boundary_item->is_taken() || !best_it.validItem()) {
 			return nullable_traits<T>::null_value;
 		}
 		//..otherwise a best item (and the block it is stored in) has to exist
 		pheet_assert(best_block);
-		pheet_assert(best_item);
-		T pop = best_block->take(best_item);
+		pheet_assert(best_it.validItem());
+		T pop = best_block->take(best_it);
 		//If take did not succeed, best_item was taken by another thread in the
 		//meantime. Try again.
 		if (pop != nullable_traits<T>::null_value) {

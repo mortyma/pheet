@@ -68,46 +68,46 @@ public:
 	}
 
 	/**
-	 * Return an item that is not dominated by any other item in this block.
+	 * Return an iterator to an item that is not dominated by any other item in this block.
 	 *
 	 * Do not remove this item from the block. If such an item does not exist,
 	 * return nullptr.
 	 *
-	 * Any dead items that are inspected are cleaned up. Thus, if nullptr is
-	 * returned, the block can be destructed.
+	 * Any dead items that are inspected are cleaned up. Thus, if an Iterator
+	 * to a non-valid Item is returned, the block can be destructed.
 	 */
-	Item* top()
+	VAIt top()
 	{
-		Item* best = nullptr;
+		VAIt best_it;
 		//iterate through items in right-most partition
 		auto it = m_partitions->last();
 		const auto end_it = VA::min(m_partitions->end(),
 		                            m_partitions->dead_partition());
 		for (; it < end_it; it++) {
 			pheet_assert(it.index() < end_it.index());
-			Item* item = *it;
-			if (item == nullptr || item->is_taken()) {
+			if (!it.validItem() || it->is_taken()) {
 				continue;
 			}
 
-			if (item->is_dead()) {
-				item->take_and_delete();
+			if (it->is_dead()) {
+				it->take_and_delete();
 				// Memory manager will take care of deleting items
 				*it = nullptr;
 				continue;
 			}
 
-			if (best == nullptr || item->strategy()->prioritize(*best->strategy())) {
-				best = item;
+			if (!best_it.validItem()
+			        || it->strategy()->prioritize(*(best_it)->strategy())) {
+				best_it = it;
 			}
 		}
 
 		//only happens if no more item that is not taken or dead is in current partition
-		if (best == nullptr) {
+		if (!best_it.validItem()) {
 			//fall back to previous partition, if possible
 			if (m_partitions->fall_back()) {
 				//call top() again, now operating on previous partition
-				best = top();
+				best_it = top();
 			} else {
 				/* We called top() on the first (and only) partition and did not
 				 * get an active item back. Thus, we can clean up and free the
@@ -120,8 +120,7 @@ public:
 				drop_dead_items(m_partitions->first(), end_it);
 			}
 		}
-		//TODO: use iterators
-		return best;
+		return best_it;
 	}
 
 	/**
@@ -130,9 +129,8 @@ public:
 	 * An item that is taken is marked for deletion/reuse and will not be returned
 	 * via a call to top() anymore.
 	 */
-	T take(Item* item)
+	T take(VAIt item)
 	{
-		//TODO: use iterators
 		T data = item->take();
 		// Memory manager will take care of deleting items
 		// TODO: if we had an iterator to the item, we could set it null

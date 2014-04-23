@@ -79,6 +79,11 @@ public:
 			return *this;
 		}
 
+		bool validItem() const
+		{
+			return m_block && m_block->operator [](m_idx_in_block);
+		}
+
 		std::atomic<T>& operator*() const
 		{
 			pheet_assert(m_block);
