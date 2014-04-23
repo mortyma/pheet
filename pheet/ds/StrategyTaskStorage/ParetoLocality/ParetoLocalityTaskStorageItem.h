@@ -57,7 +57,7 @@ public:
 
 	bool is_taken() const
 	{
-		return this->taken.load(/*TODO: aquire?*/);
+		return this->taken.load(/*TODOMK: aquire?*/);
 	}
 
 	bool is_taken_or_dead()

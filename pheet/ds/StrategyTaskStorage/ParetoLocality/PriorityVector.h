@@ -32,7 +32,7 @@ public:
 		m_w = w;
 	}
 
-	//TODO: this is just a temp quick and dirty fix
+	//TODOMK: this is just a temp quick and dirty fix
 	PriorityVector(sp::PathPtr path)
 	{
 		pheet_assert(path->degree() == N);

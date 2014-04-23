@@ -113,7 +113,7 @@ Strategy2MspStrategy<Pheet, TaskStorageT>::
 less_priority(size_t dim, size_t other_val) const
 {
 	assert(dim < w->dimensions());
-	//TODO: < should be specified somewhere
+	//TODOMK: < should be specified somewhere
 	return w->at(dim) > other_val;
 }
 template <class Pheet, template <class, class> class TaskStorageT>

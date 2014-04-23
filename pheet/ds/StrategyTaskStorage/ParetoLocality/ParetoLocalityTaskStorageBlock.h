@@ -141,8 +141,8 @@ public:
 
 	ParetoLocalityTaskStorageBlock* merge_next()
 	{
-		pheet_assert(m_next.load(/*TODO*/) != nullptr);
-		pheet_assert(m_next.load(/*TODO*/)->lvl() == m_lvl);
+		pheet_assert(m_next.load(/*TODOMK*/) != nullptr);
+		pheet_assert(m_next.load(/*TODOMK*/)->lvl() == m_lvl);
 		//we only merge full blocks
 		pheet_assert(m_size == m_capacity);
 
@@ -153,11 +153,11 @@ public:
 		m_size = m_capacity;
 
 		//splice out next
-		ParetoLocalityTaskStorageBlock* tmp  = m_next.load(/*TODO*/);
+		ParetoLocalityTaskStorageBlock* tmp  = m_next.load(/*TODOMK*/);
 		if (tmp->next()) {
 			tmp->next()->prev(this);
 		}
-		m_next.store(tmp->next() /*TODO*/);
+		m_next.store(tmp->next() /*TODOMK*/);
 		delete tmp;
 
 		return this;
@@ -187,12 +187,12 @@ public:
 
 	ParetoLocalityTaskStorageBlock* next() const
 	{
-		return m_next.load(/*TODO*/);
+		return m_next.load(/*TODOMK*/);
 	}
 
 	void next(ParetoLocalityTaskStorageBlock* b)
 	{
-		m_next.store(b /*TODO*/);
+		m_next.store(b /*TODOMK*/);
 	}
 
 	size_t lvl() const
@@ -267,7 +267,7 @@ private:
 		const size_t p_val = pivot->value();
 
 		do {
-			//TODO: try to call is_taken_or_dead as little as possible (may be expensive, since user implemented)
+			//TODOMK: try to call is_taken_or_dead as little as possible (may be expensive, since user implemented)
 			while (left < right && *left && !left->is_taken_or_dead()
 			        && left->strategy()->less_priority(p_dim, p_val)) {
 				left++;
@@ -382,7 +382,7 @@ private:
 	void check_correctness()
 	{
 #ifdef PHEET_DEBUG_MODE
-		//TODO: this sometimes fails, although the result is correct
+		//TODOMK: this sometimes fails, although the result is correct
 		//(maybe due to concurrency somewhere...
 		return;
 		for (size_t i = 1; i < m_partitions->size(); i++) {
@@ -512,7 +512,7 @@ private:
 		size_t upper = left->strategy()->nr_dimensions() - 1;
 		std::uniform_int_distribution<std::mt19937::result_type> dist_d(0, upper);
 
-		//TODO: sample
+		//TODOMK: sample
 		size_t attempts = 0;
 		Item* item;
 		while (attempts < MAX_ATTEMPTS) {

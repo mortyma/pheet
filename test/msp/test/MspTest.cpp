@@ -342,7 +342,7 @@ TEST_GRAPH(50, 1270, DEGREE, WEIGHT_LIMIT, 33)
 TEST_GRAPH(50, 1000, DEGREE, WEIGHT_LIMIT, 123)
 TEST_GRAPH(333, 1501, DEGREE, WEIGHT_LIMIT, 2031)
 
-/* TODO: Add other correctness criteria. */
+/* TODOMK: Add other correctness criteria. */
 
 } /* namespace */
 

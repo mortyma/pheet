@@ -21,7 +21,7 @@ namespace pheet
  * less({1, 0}, {0, 1}) -> false.
  */
 template<size_t N>
-class less //TODO: we have pareto::less as well
+class less //TODOMK: we have pareto::less as well
 {
 public:
 	bool operator()(PriorityVector<N> const*  l, PriorityVector<N> const* r) const

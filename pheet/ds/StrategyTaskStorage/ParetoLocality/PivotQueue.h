@@ -26,7 +26,7 @@ public:
 	bool try_put(PivotElement* element)
 	{
 		for (size_t i = 0; i < size(); i++) {
-			//TODO: complexity?
+			//TODOMK: complexity?
 			PivotElement* other = elements[size() - i - 1];
 			if (element->dimension() == other->dimension()) {
 				//Assert value of new pivot element is not larger than older pivots

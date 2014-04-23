@@ -230,7 +230,7 @@ steal(BaseItem* boundary)
 	Self* other_place = item->owner();
 	pheet_assert(other_place != this);
 
-	//TODO: steal only if place to steal from has a lot more items than this place
+	//TODOMK: steal only if place to steal from has a lot more items than this place
 	if (!item->is_taken()) {
 		put(*item);
 		parent_place->push(item);
@@ -238,7 +238,7 @@ steal(BaseItem* boundary)
 		auto it = other_place->array().begin();
 		auto end = other_place->array().end();
 
-		//TODO: this works, but may not be very efficient
+		//TODOMK: this works, but may not be very efficient
 		for (; end.valid() && it != end; it++) {
 			pheet_assert(it.index() < end.index());
 			Item* item = *it;
@@ -247,7 +247,7 @@ steal(BaseItem* boundary)
 			}
 		}
 
-		//TODO: linearization; make sure boundary item is not taken
+		//TODOMK: linearization; make sure boundary item is not taken
 		return pop(boundary);
 	}
 

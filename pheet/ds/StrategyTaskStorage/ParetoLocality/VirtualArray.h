@@ -228,7 +228,7 @@ private:
 		//find block that stores element at location idx
 		Block* tmp = m_first;
 		size_t cnt = block_size();
-		//TODO: reduce asymptotic complexity
+		//TODOMK: reduce asymptotic complexity
 		while (cnt <= idx && tmp != nullptr) {
 			tmp = tmp->next;
 			cnt += block_size();

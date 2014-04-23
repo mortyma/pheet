@@ -9,7 +9,7 @@ template <class Item>
 struct ParetoLocalityTaskStorageItemReuseCheck {
 	bool operator()(Item const&) const
 	{
-		return false; //TODO: this is a dummy implementation
+		return false; //TODOMK: this is a dummy implementation
 	}
 };
 
