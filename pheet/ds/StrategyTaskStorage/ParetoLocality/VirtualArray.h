@@ -81,16 +81,19 @@ public:
 
 		std::atomic<T>& operator*() const
 		{
+			pheet_assert(m_block);
 			return m_block->operator [](m_idx_in_block);
 		}
 
 		T operator->() const
 		{
+			pheet_assert(m_block);
 			return m_block->operator [](m_idx_in_block);
 		}
 
 		bool operator==(const VirtualArrayIterator& that)
 		{
+			pheet_assert(m_block);
 			return (m_block_nr == that.m_block_nr && m_idx_in_block == that.m_idx_in_block);
 		}
 
@@ -101,6 +104,8 @@ public:
 
 		bool operator<(const VirtualArrayIterator& that)
 		{
+
+			pheet_assert(m_block);
 			if (m_block_nr < that.m_block_nr) {
 				return true;
 			}
@@ -112,6 +117,7 @@ public:
 
 		size_t index(size_t offset = 0) const
 		{
+			pheet_assert(m_block);
 			size_t idx = m_block_nr * DATA_BLOCK_SIZE + m_idx_in_block - offset;
 			pheet_assert(idx >= 0);
 			return idx;
