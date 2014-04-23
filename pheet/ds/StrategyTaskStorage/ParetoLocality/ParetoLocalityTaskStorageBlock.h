@@ -141,8 +141,8 @@ public:
 
 	ParetoLocalityTaskStorageBlock* merge_next()
 	{
-		pheet_assert(m_next.load(/*TODOMK*/) != nullptr);
-		pheet_assert(m_next.load(/*TODOMK*/)->lvl() == m_lvl);
+		pheet_assert(m_next.load(std::memory_order_acquire) != nullptr);
+		pheet_assert(m_next.load(std::memory_order_acquire)->lvl() == m_lvl);
 		//we only merge full blocks
 		pheet_assert(m_size == m_capacity);
 
@@ -153,11 +153,11 @@ public:
 		m_size = m_capacity;
 
 		//splice out next
-		ParetoLocalityTaskStorageBlock* tmp  = m_next.load(/*TODOMK*/);
+		ParetoLocalityTaskStorageBlock* tmp  = m_next.load(std::memory_order_acquire);
 		if (tmp->next()) {
 			tmp->next()->prev(this);
 		}
-		m_next.store(tmp->next() /*TODOMK*/);
+		m_next.store(tmp->next(), std::memory_order_release);
 		delete tmp;
 
 		return this;
