@@ -1,3 +1,4 @@
+#$1: number of times to execute the tests. Default is 1.
 ulimit -c unlimited
 rm "core" -f
 i="0"
