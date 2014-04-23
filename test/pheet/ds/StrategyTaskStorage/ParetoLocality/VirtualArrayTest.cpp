@@ -80,8 +80,6 @@ TEST_F(VirtualArrayTest, IterPostIncrement)
 
 TEST_F(VirtualArrayTest, IterReverseTraversal)
 {
-	/* TODO: This one is awkward to set up. We need iterator arithmetic
-	 * and a >= operator. */
 	int i = 2;
 	auto it = xs.iterator_to(2);
 	while (true) {
