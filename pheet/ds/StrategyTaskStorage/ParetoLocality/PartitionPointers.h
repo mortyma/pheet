@@ -24,14 +24,14 @@ public:
 	PartitionPointers(PivotQueue* pivot_queue, VAIt start, VAIt dead, VAIt end)
 		: m_pivot_queue(pivot_queue), m_first(start), m_last(start), m_dead(dead), m_end(end)
 	{
-		m_idx.push_back(std::make_pair(start, nullptr));
+		m_partitions.push_back(std::make_pair(start, nullptr));
 	}
 
 	~PartitionPointers()
 	{
-		while (m_idx.size() > 1) {
-			m_pivot_queue->release(m_idx.back().second);
-			m_idx.pop_back();
+		while (m_partitions.size() > 1) {
+			m_pivot_queue->release(m_partitions.back().second);
+			m_partitions.pop_back();
 		}
 	}
 
@@ -44,25 +44,25 @@ public:
 	 */
 	bool fall_back()
 	{
-		pheet_assert(m_pivot_queue->size() >= m_idx.size() - 1);
-		if (m_idx.size() == 1) {
+		pheet_assert(m_pivot_queue->size() >= m_partitions.size() - 1);
+		if (m_partitions.size() == 1) {
 			return false;
 		}
 		m_dead = m_last;
 		//reduce reference count on pivot element used for that partition step
 		//Note: first partition pointer is always index 0 and is not associated
 		//with a pivot element
-		m_pivot_queue->release(m_idx.back().second);
+		m_pivot_queue->release(m_partitions.back().second);
 		//remove the partition pointer
-		m_idx.pop_back();
-		pheet_assert(m_idx.size() > 0);
-		m_last = m_idx.back().first;
+		m_partitions.pop_back();
+		pheet_assert(m_partitions.size() > 0);
+		m_last = m_partitions.back().first;
 		return true;
 	}
 
 	size_t size() const
 	{
-		return m_idx.size();
+		return m_partitions.size();
 	}
 
 	VAIt first() const
@@ -100,23 +100,22 @@ public:
 		m_end++;
 	}
 
-	//TODO: rename idx to something like idx_in_data
-	void add(VAIt idx, PivotElement* pivot)
+	void add(VAIt it, PivotElement* pivot)
 	{
-		m_idx.push_back(std::make_pair(idx, pivot));
-		assert(m_pivot_queue->refcnt(m_idx.size() - 2) > 0);
-		m_last = idx;
+		m_partitions.push_back(std::make_pair(it, pivot));
+		assert(m_pivot_queue->refcnt(m_partitions.size() - 2) > 0);
+		m_last = it;
 	}
 
 	std::pair<VAIt, PivotElement*> get(size_t idx)
 	{
-		assert(idx < m_idx.size());
-		return m_idx[idx];
+		assert(idx < m_partitions.size());
+		return m_partitions[idx];
 	}
 
 private:
 	PivotQueue* m_pivot_queue;
-	std::vector<std::pair<VAIt, PivotElement*>> m_idx; //TODO: rename
+	std::vector<std::pair<VAIt, PivotElement*>> m_partitions;
 	/* start of first partition */
 	VAIt const m_first;
 	/* start of last partition (excluding dead items) */
