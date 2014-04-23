@@ -99,7 +99,7 @@ public:
 
 		bool operator!=(const VirtualArrayIterator& that)
 		{
-			return !operator ==(that);
+			return !operator == (that);
 		}
 
 		bool operator<(const VirtualArrayIterator& that)
