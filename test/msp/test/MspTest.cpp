@@ -125,7 +125,7 @@ private:
 	PathPtr const start;
 };
 
-typedef ::testing::Types<Strategy2Test> TestTypes;
+typedef ::testing::Types<SequentialTest, StrategyTest, Strategy2Test> TestTypes;
 TYPED_TEST_CASE(TESTCASE, TestTypes);
 
 template <typename T>
