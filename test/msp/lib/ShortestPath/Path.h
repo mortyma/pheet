@@ -36,15 +36,18 @@ public:
 	graph::Node const* tail() const;
 	graph::Node const* head() const;
 
-	inline graph::weight_vector_t const& weight() const {
+	inline graph::weight_vector_t const& weight() const
+	{
 		return m_weight;
 	}
 
-	inline graph::weight_t weight_sum() const {
+	inline graph::weight_t weight_sum() const
+	{
 		return m_weight_sum;
 	}
 
-	inline size_t degree() const {
+	inline size_t degree() const
+	{
 		return m_degree;
 	}
 
