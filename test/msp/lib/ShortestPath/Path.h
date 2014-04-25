@@ -61,7 +61,7 @@ private:
 	graph::Node const* m_tail;
 	graph::Node const* m_head;
 	Path const* m_pred;
-	std::vector<graph::weight_t> m_weight;
+	graph::weight_vector_t m_weight;
 	graph::weight_t m_weight_sum;
 	const size_t m_degree;
 	std::atomic_bool m_dominated;
