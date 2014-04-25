@@ -245,24 +245,16 @@ private:
 	void partition(size_t depth, VAIt& left, VAIt& right)
 	{
 		check_correctness();
-
 		pheet_assert(left.index() < right.index());
 		const auto old_left = left;
 
-		//generate new pivot element if neccesarry
-		PivotElement* pivot;
-		if (m_pivots->size() <= depth) {
-			pivot = generate_pivot(left, right, depth);
-			if (pivot == nullptr) {
-				/* could not generate suitable pivot element -> Abort partitioning
-				 * Right-most partition will exceed MAX_PARTITION_SIZE
-				 */
-				return;
-			}
-		} else {
-			pivot = m_pivots->get(depth);
+		PivotElement* pivot = get_pivot(depth, left, right);
+		if (pivot == nullptr) {
+			/* could not generate suitable pivot element -> Abort partitioning
+			 * Right-most partition will exceed MAX_PARTITION_SIZE
+			 */
+			return;
 		}
-
 		const size_t p_dim = pivot->dimension();
 		const size_t p_val = pivot->value();
 
@@ -383,64 +375,6 @@ private:
 		check_correctness();
 	}
 
-	/**
-	 * Check if the block is in a valid state.
-	 */
-	void check_correctness()
-	{
-#ifdef PHEET_DEBUG_MODE
-		for (size_t i = 1; i < m_partitions->size(); i++) {
-			auto start = m_partitions->get(i - 1).first;
-			PivotElement* pivot = m_partitions->get(i).second;
-			auto pp = m_partitions->get(i).first;
-			auto end = m_partitions->dead_partition();
-			check_partition(pivot, start, pp, end);
-		}
-		check_dead();
-#endif
-	}
-
-	/**
-	 * Check a partition of this block for correctness.
-	 *
-	 * In detail:
-	 * - In [start, pp[, all elements have to be > pivot (i.e., the pivot element is <
-	 *  than any element in the given range (for the dimension given by the pivot)
-	 * - In [pp, end[, all elements have to be <= pivot
-	 */
-	void check_partition(PivotElement* pivot, VAIt& start, VAIt& pp, VAIt& end)
-	{
-		Item* item;
-		for (; start != pp; start++) {
-			item = *start;
-			assert(item->strategy()->priority_at(pivot->dimension()) > pivot->value());
-		}
-		for (; pp != end; pp++) {
-			item = *pp;
-			assert(item->strategy()->priority_at(pivot->dimension()) <= pivot->value());
-		}
-	}
-
-	/**
-	 * Check the "dead" partition of this block for correctness.
-	 *
-	 * In detail:
-	 * - check that all items in the "dead" partition are either (i) null,
-	 * (ii) dead or (iii) taken.
-	 */
-	void check_dead()
-	{
-		auto it = m_partitions->dead_partition();
-		const auto end_it = m_partitions->end();
-		for (; it != end_it; it++) {
-			if (*it == nullptr || it->is_taken() || it->is_dead()) {
-				continue;
-			}
-			//should never get here
-			assert(false);
-		}
-	}
-
 	void swap(VAIt& lhs, VAIt& rhs)
 	{
 		Item* left = *lhs;
@@ -499,6 +433,18 @@ private:
 		return false;
 	}
 
+	PivotElement* get_pivot(size_t depth, VAIt& left, VAIt& right)
+	{
+		PivotElement* pivot = nullptr;
+		//generate new pivot element if neccesarry
+		if (m_pivots->size() <= depth) {
+			pivot = generate_pivot(left, right, depth);
+		} else {
+			pivot = m_pivots->get(depth);
+		}
+		return pivot;
+	}
+
 	PivotElement* generate_pivot(VAIt& left, VAIt& right, size_t pos)
 	{
 		std::mt19937 rng;
@@ -533,6 +479,66 @@ private:
 			++attempts;
 		}
 		return nullptr;
+	}
+
+private: //methods to test correctness of data structure
+
+	/**
+	 * Check if the block is in a valid state.
+	 */
+	void check_correctness()
+	{
+#ifdef PHEET_DEBUG_MODE
+		for (size_t i = 1; i < m_partitions->size(); i++) {
+			auto start = m_partitions->get(i - 1).first;
+			PivotElement* pivot = m_partitions->get(i).second;
+			auto pp = m_partitions->get(i).first;
+			auto end = m_partitions->dead_partition();
+			check_partition(pivot, start, pp, end);
+		}
+		check_dead();
+#endif
+	}
+
+	/**
+	 * Check a partition of this block for correctness.
+	 *
+	 * In detail:
+	 * - In [start, pp[, all elements have to be > pivot (i.e., the pivot element is <
+	 *  than any element in the given range (for the dimension given by the pivot)
+	 * - In [pp, end[, all elements have to be <= pivot
+	 */
+	void check_partition(PivotElement* pivot, VAIt& start, VAIt& pp, VAIt& end)
+	{
+		Item* item;
+		for (; start != pp; start++) {
+			item = *start;
+			assert(item->strategy()->priority_at(pivot->dimension()) > pivot->value());
+		}
+		for (; pp != end; pp++) {
+			item = *pp;
+			assert(item->strategy()->priority_at(pivot->dimension()) <= pivot->value());
+		}
+	}
+
+	/**
+	 * Check the "dead" partition of this block for correctness.
+	 *
+	 * In detail:
+	 * - check that all items in the "dead" partition are either (i) null,
+	 * (ii) dead or (iii) taken.
+	 */
+	void check_dead()
+	{
+		auto it = m_partitions->dead_partition();
+		const auto end_it = m_partitions->end();
+		for (; it != end_it; it++) {
+			if (*it == nullptr || it->is_taken() || it->is_dead()) {
+				continue;
+			}
+			//should never get here
+			assert(false);
+		}
 	}
 
 private:
