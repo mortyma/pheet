@@ -328,10 +328,11 @@ private:
 
 		//check if left points to dead item
 		if (!*left || left->is_taken_or_dead()) {
+			//decrease the dead partition pointer
 			m_partitions->decrease_dead();
-			if (left == m_partitions->dead_partition() && left.index(m_offset) > 0) {
-				--left;
-			} else {
+			//if left==dead_partition, we don't need to do anything else.
+			//Otherwise, swap dead and left
+			if (left != m_partitions->dead_partition()) {
 				VAIt dead = m_partitions->dead_partition();
 				swap(left, dead);
 			}
