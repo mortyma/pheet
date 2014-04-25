@@ -267,7 +267,7 @@ private:
 		const size_t p_val = pivot->value();
 
 		do {
-			//TODOMK: try to call is_taken_or_dead as little as possible (may be expensive, since user implemented)
+			//TODOMK: try to call is_dead as little as possible (may be expensive, since user implemented)
 			while (left < right && *left && !left->is_taken_or_dead()
 			        && left->strategy()->less_priority(p_dim, p_val)) {
 				left++;
