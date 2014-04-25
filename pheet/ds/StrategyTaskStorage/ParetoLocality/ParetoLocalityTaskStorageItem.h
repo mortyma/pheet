@@ -7,6 +7,8 @@
 #ifndef PARETOLOCALITYTASKSTORAGEITEM_H_
 #define PARETOLOCALITYTASKSTORAGEITEM_H_
 
+#include <atomic>
+
 #include <pheet/misc/type_traits.h>
 
 namespace pheet
@@ -57,7 +59,7 @@ public:
 
 	bool is_taken() const
 	{
-		return this->taken.load(/*TODOMK: aquire?*/);
+		return this->taken.load(std::memory_order_acquire);
 	}
 
 	bool is_taken_or_dead()

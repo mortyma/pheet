@@ -187,12 +187,12 @@ public:
 
 	ParetoLocalityTaskStorageBlock* next() const
 	{
-		return m_next.load(/*TODOMK*/);
+		return m_next.load(std::memory_order_acquire);
 	}
 
 	void next(ParetoLocalityTaskStorageBlock* b)
 	{
-		m_next.store(b /*TODOMK*/);
+		m_next.store(b, std::memory_order_release);
 	}
 
 	size_t lvl() const
