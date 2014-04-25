@@ -17,7 +17,7 @@ release:
 	mkdir -p build
 	cd build; cmake -DCMAKE_BUILD_TYPE="Release" ..; make -j6
 
-test: release
+test: build
 	cd build;  ./test/msp/test/msp-test 
 	
 saturn:
