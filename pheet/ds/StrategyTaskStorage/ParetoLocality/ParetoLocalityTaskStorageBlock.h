@@ -320,14 +320,20 @@ private:
 				}
 			}
 		} while (left < right);
-
 		/* Partitioning finished when left <= right. Left == right +1 is the case
 		 * if the last swap was on indices s.t. left + 1 == right and both items
 		 * were not dead. */
 		pheet_assert(left == right || left.index() == right.index() + 1);
 
-		//check if left points to dead item
-		if (!*left || left->is_taken_or_dead()) {
+		//if the taken or dead status changes between *1 and *2, the item could
+		//be sorted incorrectly if left->is_taken_or_dead() would be called at each
+		//place instead of using this variable.
+		bool was_taken_or_dead = false;
+		if (*left) {
+			was_taken_or_dead = left->is_taken_or_dead();
+		}
+		//*1: check if left points to dead item
+		if (!*left || was_taken_or_dead) {
 			//decrease the dead partition pointer
 			m_partitions->decrease_dead();
 			//if left==dead_partition, we don't need to do anything else.
@@ -339,8 +345,8 @@ private:
 		}
 		pheet_assert(left.index() <= m_partitions->dead_partition().index());
 
-		//check if item at left belongs to left or right partition
-		if (*left && !left->is_taken_or_dead() && left->strategy()->less_priority(p_dim, p_val)) {
+		//*2: check if item at left belongs to left or right partition
+		if (*left && !was_taken_or_dead && left->strategy()->less_priority(p_dim, p_val)) {
 			left++;
 			pheet_assert(left.index() <= m_partitions->dead_partition().index());
 		}
@@ -383,9 +389,6 @@ private:
 	void check_correctness()
 	{
 #ifdef PHEET_DEBUG_MODE
-		//TODOMK: this sometimes fails, although the result is correct
-		//(maybe due to concurrency somewhere...
-		return;
 		for (size_t i = 1; i < m_partitions->size(); i++) {
 			auto start = m_partitions->get(i - 1).first;
 			PivotElement* pivot = m_partitions->get(i).second;
@@ -393,7 +396,6 @@ private:
 			auto end = m_partitions->dead_partition();
 			check_partition(pivot, start, pp, end);
 		}
-
 		check_dead();
 #endif
 	}
