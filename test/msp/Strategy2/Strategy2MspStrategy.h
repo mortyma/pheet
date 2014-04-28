@@ -32,6 +32,9 @@ public:
 	Strategy2MspStrategy(Self& other);
 	Strategy2MspStrategy(Self&& other);
 
+	/**
+	 * Returns true if other has higher priority than this and false otherwise.
+	 */
 	inline bool prioritize(Self& other) const;
 
 	/**
@@ -104,13 +107,21 @@ inline bool
 Strategy2MspStrategy<Pheet, TaskStorageT>::
 prioritize(Self& other) const
 {
-	return pareto_less(this->w, other.w);
+	/* TODOMK The linear comibination of weight vector values is only possible
+	 * because we are using non-negative ints for each dimension, since
+	 * this->weight_sum > other->weight_sum => this != dominates other
+	 * This would not be possible for a more general weight vector with different
+	 * domains and priority function for each dimension.
+	 */
+	//return true if other has (strictly) higher priority than this
+	return this->path->weight_sum() <= other.path->weight_sum() ;
 }
 
 template <class Pheet, template <class, class> class TaskStorageT>
 inline bool
 Strategy2MspStrategy<Pheet, TaskStorageT>::
-less_priority(size_t dim, size_t other_val) const
+less_priority(size_t dim, size_t other_val)
+const //TODOMK: rename to something like dominates, dominated by...
 {
 	assert(dim < w->dimensions());
 	//TODOMK: < should be specified somewhere
