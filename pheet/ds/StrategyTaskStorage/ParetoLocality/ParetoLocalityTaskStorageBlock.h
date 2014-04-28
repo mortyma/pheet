@@ -15,12 +15,15 @@
 #include <cmath>
 #include <random>
 
-/* Maximum number of attempts to
- * - generate a pivot element s.t. an equal element is not yet on the PivotQueue
- * - partition a block s.t. after partitioning the block, the right-most
- *   partition (excluding dead) contains at least 1 item
+/* Maximum number of attempts to partition a block s.t. after partitioning the
+ * block, the right-most partition (excluding dead) contains at least 1 item.
  */
-#define MAX_ATTEMPTS (3)
+#define MAX_ATTEMPTS_TO_PARTITION (3)
+
+/* Maximum number of attempts to generate a pivot element s.t. an equal element
+ * is not yet on the PivotQueue.
+ */
+#define MAX_ATTEMPTS_TO_GENERATE_PIVOT (3)
 
 namespace pheet
 {
@@ -361,7 +364,7 @@ private:
 		}
 
 		if ((m_partitions->dead_partition().index() - left.index() > MAX_PARTITION_SIZE)
-		        && m_failed_attempts < MAX_ATTEMPTS) {
+		        && m_failed_attempts < MAX_ATTEMPTS_TO_PARTITION) {
 			/* If partitioning succeeded but the resulting right-most (excluding
 			 * dead) partition is >MAX_PARTITION_SIZE, partition recursively */
 			if (m_failed_attempts == 0) {
@@ -464,7 +467,7 @@ private:
 		//TODOMK: sample
 		size_t attempts = 0;
 		Item* item;
-		while (attempts < MAX_ATTEMPTS) {
+		while (attempts < MAX_ATTEMPTS_TO_GENERATE_PIVOT) {
 			//random element from block in the range we need to partition
 			item = m_data[dist_e(rng)];
 			if (item && !item->is_taken_or_dead()) {
