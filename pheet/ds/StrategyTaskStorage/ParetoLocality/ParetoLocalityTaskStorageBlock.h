@@ -8,22 +8,30 @@
 #ifndef PARETOLOCALITYTASKSTORAGEBLOCK_H_
 #define PARETOLOCALITYTASKSTORAGEBLOCK_H_
 
+#include "ItemComparator.h"
 #include "PartitionPointers.h"
 #include "PivotQueue.h"
 #include "VirtualArray.h"
 
+#include <algorithm>
 #include <cmath>
 #include <random>
 
 /* Maximum number of attempts to partition a block s.t. after partitioning the
- * block, the right-most partition (excluding dead) contains at least 1 item.
- */
+ * block, the right-most partition (excluding dead) contains at least 1 item. */
 #define MAX_ATTEMPTS_TO_PARTITION (3)
 
 /* Maximum number of attempts to generate a pivot element s.t. an equal element
- * is not yet on the PivotQueue.
- */
+ * is not yet on the PivotQueue. */
 #define MAX_ATTEMPTS_TO_GENERATE_PIVOT (3)
+
+/* Number of sample items to draw for the generation of a pivot element. */
+#define NR_SAMPLES_FOR_PIVOT_GENERATION (3)
+
+/* Maximum number of attemps to sample the NR_SAMPLES_FOR_PIVOT_GENERATION items.
+ * If a sampled item is invalid (null, taken or dead), the sampling failed and is
+ * retried */
+#define MAX_ATTEMPTS_TO_SAMPLE (10)
 
 namespace pheet
 {
@@ -457,28 +465,45 @@ private:
 		seed = 42;
 #endif
 		rng.seed(seed);
-		size_t l = left.index();
-		size_t r = right.index();
-		std::uniform_int_distribution<std::mt19937::result_type> dist_e(l, r);
+		std::uniform_int_distribution<std::mt19937::result_type> dist_e(left.index(), right.index());
 
 		size_t upper = left->strategy()->nr_dimensions() - 1;
 		std::uniform_int_distribution<std::mt19937::result_type> dist_d(0, upper);
 
-		//TODOMK: sample
-		size_t attempts = 0;
 		Item* item;
-		while (attempts < MAX_ATTEMPTS_TO_GENERATE_PIVOT) {
-			//random element from block in the range we need to partition
-			item = m_data[dist_e(rng)];
-			if (item && !item->is_taken_or_dead()) {
-				//random dimension
-				size_t d = dist_d(rng);
-				PivotElement* pivot = new PivotElement(d, item->strategy()->priority_at(d), pos);
-				if (m_pivots->try_put(pivot)) {
-					return pivot;
+		size_t attempts_to_generate_pivot = 0;
+
+		while (attempts_to_generate_pivot < MAX_ATTEMPTS_TO_GENERATE_PIVOT) {
+			//random dimension
+			size_t d = dist_d(rng);
+
+			//sample items
+			size_t attempts_to_sample = 0;
+			std::vector<Item*> samples;
+			while (samples.size() < NR_SAMPLES_FOR_PIVOT_GENERATION) {
+				item = m_data[dist_e(rng)];
+				if (item && !item->is_taken_or_dead()) {
+					samples.push_back(item);
+				}
+				++attempts_to_sample;
+				if (attempts_to_sample == MAX_ATTEMPTS_TO_SAMPLE) {
+					//Could not get required number of sample items
+					//TODOMK: if we got at least one, we could still partition
+					return nullptr;
 				}
 			}
-			++attempts;
+
+			//find the median of priority vectors at dimension d
+			ItemComparator<Item> itemCompare(d);
+			std::sort(samples.begin(), samples.end(), itemCompare);
+			item = samples[(size_t) NR_SAMPLES_FOR_PIVOT_GENERATION / 2];
+
+			//try to generate the pivot
+			PivotElement* pivot = new PivotElement(d, item->strategy()->priority_at(d), pos);
+			if (m_pivots->try_put(pivot)) {
+				return pivot;
+			}
+			++attempts_to_generate_pivot;
 		}
 		return nullptr;
 	}
