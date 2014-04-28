@@ -466,8 +466,7 @@ private:
 		Item* item;
 		while (attempts < MAX_ATTEMPTS) {
 			//random element from block in the range we need to partition
-			size_t idx = dist_e(rng);
-			item = m_data[idx];
+			item = m_data[dist_e(rng)];
 			if (item && !item->is_taken_or_dead()) {
 				//random dimension
 				size_t d = dist_d(rng);
