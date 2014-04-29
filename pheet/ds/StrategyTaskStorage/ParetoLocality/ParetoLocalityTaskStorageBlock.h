@@ -19,14 +19,14 @@
 
 /* Maximum number of attempts to partition a block s.t. after partitioning the
  * block, the right-most partition (excluding dead) contains at least 1 item. */
-#define MAX_ATTEMPTS_TO_PARTITION (3)
+#define MAX_ATTEMPTS_TO_PARTITION (2)
 
 /* Maximum number of attempts to generate a pivot element s.t. an equal element
  * is not yet on the PivotQueue. */
-#define MAX_ATTEMPTS_TO_GENERATE_PIVOT (3)
+#define MAX_ATTEMPTS_TO_GENERATE_PIVOT (2)
 
 /* Number of sample items to draw for the generation of a pivot element. */
-#define NR_SAMPLES_FOR_PIVOT_GENERATION (3)
+#define NR_SAMPLES_FOR_PIVOT_GENERATION (5)
 
 /* Maximum number of attemps to sample the NR_SAMPLES_FOR_PIVOT_GENERATION items.
  * If a sampled item is invalid (null, taken or dead), the sampling failed and is

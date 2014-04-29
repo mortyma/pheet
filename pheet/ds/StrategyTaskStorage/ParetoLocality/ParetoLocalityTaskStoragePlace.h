@@ -13,11 +13,9 @@
 
 #include "pheet/memory/BlockItemReuse/BlockItemReuseMemoryManager.h"
 
-
-
 #include <vector>
 
-#define MAX_PARTITION_SIZE (4)
+#define MAX_PARTITION_SIZE (64)
 
 namespace pheet
 {
