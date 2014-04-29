@@ -297,7 +297,7 @@ private:
 						//swap right with rightmost non-dead element
 						m_partitions->decrease_dead();
 						VAIt dead = m_partitions->dead_partition();
-						swap(right, dead);
+						swap_to_dead(right, dead);
 					}
 				} else if (!*left || left->is_taken_or_dead()) {
 					/* left is dead. Note that left+1==dead may never occur while
@@ -309,7 +309,7 @@ private:
 					 * place */
 					m_partitions->decrease_dead();
 					VAIt dead = m_partitions->dead_partition();
-					swap(left, dead);
+					swap_to_dead(left, dead);
 					//if now right == dead, advance right
 					if (m_partitions->dead_partition() == right) {
 						--right;
@@ -346,7 +346,7 @@ private:
 			//Otherwise, swap dead and left
 			if (left != m_partitions->dead_partition()) {
 				VAIt dead = m_partitions->dead_partition();
-				swap(left, dead);
+				swap_to_dead(left, dead);
 			}
 		}
 		pheet_assert(left.index() <= m_partitions->dead_partition().index());
@@ -389,6 +389,27 @@ private:
 		check_correctness();
 	}
 
+	/**
+	 * Move item at rhs to lhs and set item at rhs to nullptr.
+	 *
+	 * If item at lhs is not null, take and drop it.
+	 */
+	void swap_to_dead(VAIt& lhs, VAIt& rhs)
+	{
+		Item* right = *rhs;
+		Item* left = *lhs;
+		pheet_assert(left == nullptr || left->is_taken_or_dead());
+		//if item is dead but not taken by another place, drop it
+		if (left && !left->is_taken()) {
+			left->take_and_delete();
+		}
+		*lhs = right;
+		*rhs = nullptr;
+	}
+
+	/**
+	 * Swap item at lhs with item of rhs
+	 */
 	void swap(VAIt& lhs, VAIt& rhs)
 	{
 		Item* left = *lhs;
