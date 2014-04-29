@@ -231,31 +231,6 @@ private:
 		m_partitions = new PartitionPointers<Item>(m_pivots, start_it, dead_it, end_it);
 	}
 
-	/**
-	 * Drop all items in the "dead tasks" partition
-	 */
-	void drop_dead_items()
-	{
-		drop_dead_items(m_partitions->dead_partition(), m_partitions->end());
-	}
-
-	void drop_dead_items(VAIt start, VAIt end)
-	{
-		for (; start != end; start++) {
-			Item* item = *start;
-			//we cannot drop items that need yet be processed
-			pheet_assert(!item || item->is_taken_or_dead());
-
-			//if item is taken, the place that took it will drop it
-			//so take and delete only non-null items that are not taken
-			if (item && !item->is_taken()) {
-				item->take_and_delete();
-			}
-			// Memory manager will take care of deleting items
-			*start = nullptr;
-		}
-	}
-
 	void partition(size_t depth, VAIt& left, VAIt& right)
 	{
 		check_correctness();
@@ -390,37 +365,6 @@ private:
 	}
 
 	/**
-	 * Move item at rhs to lhs and set item at rhs to nullptr.
-	 *
-	 * If item at lhs is not null, take and drop it.
-	 */
-	void swap_to_dead(VAIt& lhs, VAIt& rhs)
-	{
-		Item* right = *rhs;
-		Item* left = *lhs;
-		pheet_assert(left == nullptr || left->is_taken_or_dead());
-		//if item is dead but not taken by another place, drop it
-		if (left && !left->is_taken()) {
-			left->take_and_delete();
-		}
-		*lhs = right;
-		*rhs = nullptr;
-	}
-
-	/**
-	 * Swap item at lhs with item of rhs
-	 */
-	void swap(VAIt& lhs, VAIt& rhs)
-	{
-		Item* left = *lhs;
-		Item* right = *rhs;
-		*lhs = right;
-		*rhs = left;
-		//Note: the below does not work since std::atomic is not copy-assignable
-		//*lhs = *rhs;
-	}
-
-	/**
 	 *
 	 * A partitioning step failed iff
 	 * - The newly created right-most partition (excluding dead partition) is
@@ -466,6 +410,62 @@ private:
 		 * pivot element.
 		 */
 		return false;
+	}
+
+	/**
+	 * Move item at rhs to lhs and set item at rhs to nullptr.
+	 *
+	 * If item at lhs is not null, take and drop it.
+	 */
+	void swap_to_dead(VAIt& lhs, VAIt& rhs)
+	{
+		Item* right = *rhs;
+		Item* left = *lhs;
+		pheet_assert(left == nullptr || left->is_taken_or_dead());
+		//if item is dead but not taken by another place, drop it
+		if (left && !left->is_taken()) {
+			left->take_and_delete();
+		}
+		*lhs = right;
+		*rhs = nullptr;
+	}
+
+	/**
+	 * Swap item at lhs with item of rhs
+	 */
+	void swap(VAIt& lhs, VAIt& rhs)
+	{
+		Item* left = *lhs;
+		Item* right = *rhs;
+		*lhs = right;
+		*rhs = left;
+		//Note: the below does not work since std::atomic is not copy-assignable
+		//*lhs = *rhs;
+	}
+
+	/**
+	 * Drop all items in the "dead tasks" partition
+	 */
+	void drop_dead_items()
+	{
+		drop_dead_items(m_partitions->dead_partition(), m_partitions->end());
+	}
+
+	void drop_dead_items(VAIt start, VAIt end)
+	{
+		for (; start != end; start++) {
+			Item* item = *start;
+			//we cannot drop items that need yet be processed
+			pheet_assert(!item || item->is_taken_or_dead());
+
+			//if item is taken, the place that took it will drop it
+			//so take and delete only non-null items that are not taken
+			if (item && !item->is_taken()) {
+				item->take_and_delete();
+			}
+			// Memory manager will take care of deleting items
+			*start = nullptr;
+		}
 	}
 
 	PivotElement* get_pivot(size_t depth, VAIt& left, VAIt& right)
