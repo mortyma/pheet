@@ -182,8 +182,6 @@ public:
 		auto left = m_data.iterator_to(m_offset);
 		auto right = m_data.iterator_to(m_offset + m_capacity - 1);
 		partition(0, left, right);
-
-		drop_dead_items();
 	}
 
 	ParetoLocalityTaskStorageBlock* prev() const
@@ -265,7 +263,8 @@ private:
 					if (m_partitions->dead_partition().index() - right.index()  == 1) {
 						//element after right is dead too. Advance dead and right.
 						//This is safe since left < right
-						m_partitions->dead_partition(right);
+						drop_dead_item(right);
+						m_partitions->decrease_dead();
 						pheet_assert(left < right);
 						--right;
 					} else {
@@ -317,7 +316,8 @@ private:
 		if (!*left || was_taken_or_dead) {
 			//decrease the dead partition pointer
 			m_partitions->decrease_dead();
-			//if left==dead_partition, we don't need to do anything else.
+			//if left==dead_partition, just drop item at left
+			drop_dead_item(left);
 			//Otherwise, swap dead and left
 			if (left != m_partitions->dead_partition()) {
 				VAIt dead = m_partitions->dead_partition();
@@ -423,9 +423,7 @@ private:
 		Item* left = *lhs;
 		pheet_assert(left == nullptr || left->is_taken_or_dead());
 		//if item is dead but not taken by another place, drop it
-		if (left && !left->is_taken()) {
-			left->take_and_delete();
-		}
+		drop_dead_item(lhs);
 		*lhs = right;
 		*rhs = nullptr;
 	}
@@ -443,29 +441,30 @@ private:
 		//*lhs = *rhs;
 	}
 
-	/**
-	 * Drop all items in the "dead tasks" partition
-	 */
-	void drop_dead_items()
-	{
-		drop_dead_items(m_partitions->dead_partition(), m_partitions->end());
-	}
-
 	void drop_dead_items(VAIt start, VAIt end)
 	{
 		for (; start != end; start++) {
-			Item* item = *start;
 			//we cannot drop items that need yet be processed
-			pheet_assert(!item || item->is_taken_or_dead());
+			pheet_assert(*start == nullptr || start->is_taken_or_dead());
 
 			//if item is taken, the place that took it will drop it
 			//so take and delete only non-null items that are not taken
-			if (item && !item->is_taken()) {
-				item->take_and_delete();
-			}
+			drop_dead_item(start);
+
 			// Memory manager will take care of deleting items
 			*start = nullptr;
 		}
+	}
+
+	/**
+	 * If item is not null and not taken by another place, take and delete it.
+	 */
+	void drop_dead_item(VAIt item)
+	{
+		if (*item && !item->is_taken()) {
+			item->take_and_delete();
+		}
+		*item = nullptr;
 	}
 
 	PivotElement* get_pivot(size_t depth, VAIt& left, VAIt& right)
@@ -576,15 +575,14 @@ private: //methods to test correctness of data structure
 	 * Check the "dead" partition of this block for correctness.
 	 *
 	 * In detail:
-	 * - check that all items in the "dead" partition are either (i) null,
-	 * (ii) dead or (iii) taken.
+	 * - check that all items in the "dead" partition are either null.
 	 */
 	void check_dead()
 	{
 		auto it = m_partitions->dead_partition();
 		const auto end_it = m_partitions->end();
 		for (; it != end_it; it++) {
-			if (*it == nullptr || it->is_taken() || it->is_dead()) {
+			if (*it == nullptr) {
 				continue;
 			}
 			//should never get here
