@@ -243,8 +243,11 @@ private:
 	{
 		for (; start != end; start++) {
 			Item* item = *start;
+			//we cannot drop items that need yet be processed
 			pheet_assert(!item || item->is_taken_or_dead());
 
+			//if item is taken, the place that took it will drop it
+			//so take and delete only non-null items that are not taken
 			if (item && !item->is_taken()) {
 				item->take_and_delete();
 			}
