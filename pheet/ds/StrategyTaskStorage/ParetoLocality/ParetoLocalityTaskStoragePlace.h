@@ -37,6 +37,7 @@ public:
 	        ItemMemoryManager;
 	typedef VirtualArray<Item*> VA;
 	typedef typename VA::VirtualArrayIterator VAIt;
+	typedef typename ParentTaskStoragePlace::PerformanceCounters PerformanceCounters;
 
 
 	ParetoLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place);
@@ -76,6 +77,8 @@ private:
 	PivotQueue m_pivots;
 	Block* first;
 	Block* last;
+
+	PerformanceCounters pc;
 };
 
 template < class Pheet,
@@ -84,7 +87,7 @@ template < class Pheet,
            class Strategy >
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
 ParetoLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place)
-	: parent_place(parent_place)
+	: parent_place(parent_place), pc(parent_place->pc)
 {
 	//increase capacity of virtual array
 	m_array.increase_capacity(MAX_PARTITION_SIZE);
