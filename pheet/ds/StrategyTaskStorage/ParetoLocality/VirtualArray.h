@@ -8,6 +8,7 @@
 #ifndef VIRTUAL_ARRAY_H_
 #define VIRTUAL_ARRAY_H_
 
+#include <iostream>
 #include <iterator>
 
 #include "VirtualArrayBlock.h"
@@ -147,6 +148,7 @@ public:
 
 	~VirtualArray()
 	{
+		std::cerr << "Virtual array capacity: " << m_capacity << "\n";
 		while (m_first->next != nullptr) {
 			m_first = m_first->next;
 			delete m_first->prev;
