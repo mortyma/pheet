@@ -46,7 +46,7 @@ public:
 
 	ParetoLocalityTaskStorageBlock(VirtualArray<Item*>& array, size_t offset,
 	                               PivotQueue* pivots)
-		: m_data(array), m_offset(offset), m_size(0), m_lvl(0),
+		: m_data(array), m_offset(offset), m_size(0), m_lvl(0), m_logical_lvl(0),
 		  m_pivots(pivots), m_next(nullptr)
 	{
 		m_capacity = MAX_PARTITION_SIZE * pow(2, m_lvl);
@@ -159,6 +159,7 @@ public:
 
 		//expand this block to cover this as well as next block
 		++m_lvl;
+		m_logical_lvl = m_lvl;
 		m_capacity <<= 1;
 		//merging two full blocks of level lvl results in one full block of lvl+1
 		m_size = m_capacity;
@@ -176,12 +177,19 @@ public:
 
 	void partition()
 	{
+		//drop the old partition pointers and create new ones
 		delete m_partitions;
 		create_partition_pointers(0, m_capacity, m_capacity);
 
+		//partition the whole block
 		auto left = m_data.iterator_to(m_offset);
 		auto right = m_data.iterator_to(m_offset + m_capacity - 1);
 		partition(0, left, right);
+
+		//check if we can reduce the logical size of this block
+		if (m_partitions->dead_partition().index(m_offset) <= m_capacity) {
+			--m_logical_lvl;
+		}
 	}
 
 	ParetoLocalityTaskStorageBlock* prev() const
@@ -595,7 +603,11 @@ private:
 	size_t m_offset;
 	size_t m_capacity;
 	size_t m_size;
+	//lvl is the actual size of this block
 	size_t m_lvl;
+	//If more than half of the items are dead, logical_lvl is reduced by 1.
+	//TODOMK: can we have logical_lvl < lvl - 1?
+	size_t m_logical_lvl;
 
 	PartitionPointers<Item>* m_partitions;
 	PivotQueue* m_pivots;
