@@ -208,7 +208,11 @@ public:
 	 */
 	void decrease_capacity(size_t value)
 	{
+		pheet_assert(value < m_capacity);
 		m_capacity -= value;
+		/* We do not reduce/free the blocks since another thread might currently
+		 * access them. Just keep them for later reusage. They are eventually
+		 * fred in the destructor. */
 	}
 
 	std::atomic<T>& operator[](size_t idx)
