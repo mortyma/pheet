@@ -31,7 +31,7 @@ public:
 	typedef ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy> Self;
 	typedef typename ParentTaskStoragePlace::BaseItem BaseItem;
 	typedef ParetoLocalityTaskStorageItem<Pheet, Self, BaseItem, Strategy> Item;
-	typedef ParetoLocalityTaskStorageBlockBase<Item, MAX_PARTITION_SIZE> BaseBlock;
+	typedef ParetoLocalityTaskStorageBaseBlock<Item, MAX_PARTITION_SIZE> BaseBlock;
 	typedef ParetoLocalityTaskStorageActiveBlock<Item, MAX_PARTITION_SIZE> ActiveBlock;
 	typedef typename BaseItem::T T;
 	typedef BlockItemReuseMemoryManager<Pheet, Item, ParetoLocalityTaskStorageItemReuseCheck<Item>>

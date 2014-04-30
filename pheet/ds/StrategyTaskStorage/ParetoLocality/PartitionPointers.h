@@ -100,6 +100,11 @@ public:
 		m_end++;
 	}
 
+	void end(VAIt val)
+	{
+		m_end = val;
+	}
+
 	void add(VAIt it, PivotElement* pivot)
 	{
 		m_partitions.push_back(std::make_pair(it, pivot));

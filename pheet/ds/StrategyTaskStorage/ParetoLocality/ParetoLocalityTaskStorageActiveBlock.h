@@ -7,26 +7,25 @@
 #ifndef PARETOLOCALITYTASKSTORAGEACTIVEBLOCK_H
 #define PARETOLOCALITYTASKSTORAGEACTIVEBLOCK_H
 
-#include "ParetoLocalityTaskStorageBlockBase.h"
+#include "ParetoLocalityTaskStorageBaseBlock.h"
 
 namespace pheet
 {
 
 template<class Item, size_t MAX_PARTITION_SIZE>
 class ParetoLocalityTaskStorageActiveBlock
-	: public ParetoLocalityTaskStorageBlockBase<Item, MAX_PARTITION_SIZE>
+	: public ParetoLocalityTaskStorageBaseBlock<Item, MAX_PARTITION_SIZE>
 {
 public:
-	typedef ParetoLocalityTaskStorageBlockBase<Item, MAX_PARTITION_SIZE> BaseBlock;
-
-	typedef typename Item::T T;
-	typedef VirtualArray<Item*> VA;
-	typedef typename VA::VirtualArrayIterator VAIt;
+	typedef ParetoLocalityTaskStorageBaseBlock<Item, MAX_PARTITION_SIZE> BaseBlock;
+	typedef typename BaseBlock::T T;
+	typedef typename BaseBlock::VA VA;
+	typedef typename BaseBlock::VAIt VAIt;
 
 	ParetoLocalityTaskStorageActiveBlock(VirtualArray<Item*>& array, size_t offset,
 	                                     PivotQueue* pivots)
-		: ParetoLocalityTaskStorageBlockBase<Item, MAX_PARTITION_SIZE>(array, offset),
-		  m_size(0), m_logical_lvl(0), m_pivots(pivots)
+		: ParetoLocalityTaskStorageBaseBlock<Item, MAX_PARTITION_SIZE>(array, offset),
+		  m_size(0), m_pivots(pivots)
 	{
 		create_partition_pointers(0, m_capacity, 0);
 	}
@@ -56,16 +55,7 @@ public:
 		++m_size;
 	}
 
-	/**
-	 * Return an iterator to an item that is not dominated by any other item in this block.
-	 *
-	 * Do not remove this item from the block. If such an item does not exist,
-	 * return nullptr.
-	 *
-	 * Any dead items that are inspected are cleaned up. Thus, if an Iterator
-	 * to a non-valid Item is returned, the block can be destructed.
-	 */
-	VAIt top()
+	virtual VAIt top()
 	{
 		VAIt best_it;
 		//iterate through items in right-most partition
@@ -112,22 +102,6 @@ public:
 		return best_it;
 	}
 
-	/**
-	 * Take the given item and return its data.
-	 *
-	 * An item that is taken is marked for deletion/reuse and will not be returned
-	 * via a call to top() anymore.
-	 */
-	T take(VAIt item)
-	{
-		T data = item->take();
-		/* Set the Item to nullptr in the VirtualArray so other threads
-		   and operations don't see it any more. Memory manager will take care of
-		   deleting the Item */
-		*item = nullptr;
-		return data;
-	}
-
 	ParetoLocalityTaskStorageActiveBlock* merge_next()
 	{
 		pheet_assert(m_next.load(std::memory_order_acquire) != nullptr);
@@ -137,7 +111,6 @@ public:
 
 		//expand this block to cover this as well as next block
 		++m_lvl;
-		m_logical_lvl = m_lvl;
 		m_capacity <<= 1;
 		//merging two full blocks of level lvl results in one full block of lvl+1
 		m_size = m_capacity;
@@ -165,8 +138,19 @@ public:
 		partition(0, left, right);
 
 		//check if we can reduce the logical size of this block
-		if (m_partitions->dead_partition().index(m_offset) <= m_capacity) {
-			--m_logical_lvl;
+		if (m_partitions->dead_partition().index(m_offset) <= m_capacity / 2) {
+			return;
+			//reduce lvl and capacity
+			//TODOMK: can we reduce by more than 1?
+			--m_lvl;
+			m_capacity >>= 1;
+			//update pointer to end
+			//TODOMK: more efficent way to get new end iterator
+			m_partitions->end(m_data.iterator_to(m_offset + m_capacity / 2));
+
+			//create a new dead block
+			//BaseBlock* deadBlock = new BaseBlock(m_data);
+
 		}
 	}
 
@@ -551,10 +535,6 @@ protected:
 
 private:
 	size_t m_size;
-
-	//If more than half of the items are dead, logical_lvl is reduced by 1.
-	//TODOMK: can we have logical_lvl < lvl - 1?
-	size_t m_logical_lvl;
 
 	PartitionPointers<Item>* m_partitions;
 	PivotQueue* m_pivots;

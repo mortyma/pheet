@@ -5,8 +5,8 @@
  */
 
 
-#ifndef PARETOLOCALITYTASKSTORAGEBLOCK_H_
-#define PARETOLOCALITYTASKSTORAGEBLOCK_H_
+#ifndef PARETOLOCALITYTASKSTORAGEBASEBLOCK_H_
+#define PARETOLOCALITYTASKSTORAGEBASEBLOCK_H_
 
 #include "ItemComparator.h"
 #include "PartitionPointers.h"
@@ -37,16 +37,20 @@ namespace pheet
 {
 
 template<class Item, size_t MAX_PARTITION_SIZE>
-class ParetoLocalityTaskStorageBlockBase
+class ParetoLocalityTaskStorageBaseBlock
 {
 public:
-	ParetoLocalityTaskStorageBlockBase(VirtualArray<Item*>& array, size_t offset)
+	typedef typename Item::T T;
+	typedef VirtualArray<Item*> VA;
+	typedef typename VA::VirtualArrayIterator VAIt;
+
+	ParetoLocalityTaskStorageBaseBlock(VirtualArray<Item*>& array, size_t offset)
 		: m_lvl(0), m_data(array), m_offset(offset), m_next(nullptr)
 	{
 		m_capacity = MAX_PARTITION_SIZE * pow(2, this->m_lvl);
 	}
 
-	virtual ~ParetoLocalityTaskStorageBlockBase()
+	virtual ~ParetoLocalityTaskStorageBaseBlock()
 	{
 
 	}
@@ -67,24 +71,52 @@ public:
 	}
 
 
-	ParetoLocalityTaskStorageBlockBase* prev() const
+	ParetoLocalityTaskStorageBaseBlock* prev() const
 	{
 		return m_prev;
 	}
 
-	void prev(ParetoLocalityTaskStorageBlockBase* b)
+	void prev(ParetoLocalityTaskStorageBaseBlock* b)
 	{
 		m_prev = b;
 	}
 
-	ParetoLocalityTaskStorageBlockBase* next() const
+	ParetoLocalityTaskStorageBaseBlock* next() const
 	{
 		return m_next.load(std::memory_order_acquire);
 	}
 
-	void next(ParetoLocalityTaskStorageBlockBase* b)
+	void next(ParetoLocalityTaskStorageBaseBlock* b)
 	{
 		m_next.store(b, std::memory_order_release);
+	}
+
+	/**
+	 * Return an iterator to an item that is not dominated by any other item in this block.
+	 *
+	 * Do not remove this item from the block. If such an item does not exist,
+	 * return an invalid iterator.
+	 *
+	 * Any dead items that are inspected are cleaned up. Thus, if an Iterator
+	 * to a non-valid Item is returned, the block can be destructed.
+	 */
+	virtual VAIt top() = 0;
+
+	/**
+	 * Take the given item and return its data.
+	 *
+	 * An item that is taken is marked for deletion/reuse and will not be returned
+	 * via a call to top() anymore.
+	 */
+	T take(VAIt item)
+	{
+		pheet_assert(*item);
+		T data = item->take();
+		/* Set the Item to nullptr in the VirtualArray so other threads
+		   and operations don't see it any more. Memory manager will take care of
+		   deleting the Item */
+		*item = nullptr;
+		return data;
 	}
 
 protected:
@@ -95,11 +127,11 @@ protected:
 	size_t m_offset;
 	size_t m_capacity;
 
-	std::atomic<ParetoLocalityTaskStorageBlockBase*> m_next;
-	ParetoLocalityTaskStorageBlockBase* m_prev = nullptr;
+	std::atomic<ParetoLocalityTaskStorageBaseBlock*> m_next;
+	ParetoLocalityTaskStorageBaseBlock* m_prev = nullptr;
 
 };
 
 } /* namespace pheet */
 
-#endif /* PARETOLOCALITYTASKSTORAGEBLOCK_H_ */
+#endif /* PARETOLOCALITYTASKSTORAGEBASEBLOCK_H_ */
