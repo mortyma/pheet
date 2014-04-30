@@ -7,7 +7,7 @@
 #ifndef PARETOLOCALITYTASKSTORAGEPLACE_H_
 #define PARETOLOCALITYTASKSTORAGEPLACE_H_
 
-#include "ParetoLocalityTaskStorageBlock.h"
+#include "ParetoLocalityTaskStorageActiveBlock.h"
 #include "ParetoLocalityTaskStorageItem.h"
 #include "ParetoLocalityTaskStorageItemReuseCheck.h"
 
@@ -31,7 +31,8 @@ public:
 	typedef ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy> Self;
 	typedef typename ParentTaskStoragePlace::BaseItem BaseItem;
 	typedef ParetoLocalityTaskStorageItem<Pheet, Self, BaseItem, Strategy> Item;
-	typedef ParetoLocalityTaskStorageBlock<Item, MAX_PARTITION_SIZE> Block;
+	typedef ParetoLocalityTaskStorageBlockBase<Item, MAX_PARTITION_SIZE> BaseBlock;
+	typedef ParetoLocalityTaskStorageActiveBlock<Item, MAX_PARTITION_SIZE> ActiveBlock;
 	typedef typename BaseItem::T T;
 	typedef BlockItemReuseMemoryManager<Pheet, Item, ParetoLocalityTaskStorageItemReuseCheck<Item>>
 	        ItemMemoryManager;
@@ -75,8 +76,9 @@ private:
 
 	VirtualArray<Item*> m_array;
 	PivotQueue m_pivots;
-	Block* first;
-	Block* last;
+
+	BaseBlock* first;
+	BaseBlock* last;
 
 	PerformanceCounters pc;
 };
@@ -91,7 +93,7 @@ ParetoLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place)
 {
 	//increase capacity of virtual array
 	m_array.increase_capacity(MAX_PARTITION_SIZE);
-	first = new Block(m_array, 0, &m_pivots);
+	first = new ActiveBlock(m_array, 0, &m_pivots);
 	last = first;
 	task_storage = TaskStorage::get(this, parent_place->get_central_task_storage(),
 	                                created_task_storage);
@@ -145,28 +147,33 @@ void
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
 put(Item& item)
 {
-	if (!last->try_put(&item)) {
+	//TODOMK: check for null
+	ActiveBlock* active_last = dynamic_cast<ActiveBlock*>(last);
+	pheet_assert(!active_last->next());
+	if (!active_last->try_put(&item)) {
 		//merge if neccessary
 		if (merge_required()) {
 			//merge recursively, if previous block has same level
 			while (merge_required()) {
-				last = last->prev()->merge_next();
+				active_last = dynamic_cast<ActiveBlock*>(active_last->prev())->merge_next();
 			}
 			//repartition block that resulted from merge
-			last->partition();
+			active_last->partition();
 		}
 
 		//increase capacity of virtual array
 		m_array.increase_capacity(MAX_PARTITION_SIZE);
 		//create new block
-		size_t nb_offset = last->offset() + last->capacity();
-		Block* nb = new Block(m_array, nb_offset, &m_pivots);
-		nb->prev(last);
-		pheet_assert(!last->next());
-		last->next(nb);
-		last = nb;
+		size_t nb_offset = active_last->offset() + active_last->capacity();
+		//TOODMK: has to be BaseBlock
+		ActiveBlock* nb = new ActiveBlock(m_array, nb_offset, &m_pivots);
+		nb->prev(active_last);
+		pheet_assert(!active_last->next());
+		active_last->next(nb);
+		active_last = nb;
 		//put the item in the new block
-		last->put(&item);
+		active_last->put(&item);
+		last = active_last;
 	}
 }
 
@@ -181,22 +188,25 @@ pop(BaseItem* boundary)
 {
 	Item* boundary_item = reinterpret_cast<Item*>(boundary);
 	while (!boundary_item->is_taken()) {
-		Block* best_block = nullptr;
+		ActiveBlock* best_block = nullptr;
 		VAIt best_it;
 		//iterate through all blocks
-		for (Block* it = first; it != nullptr; it = it->next()) {
-			VAIt top_it = it->top();
-			//is the block empty?
-			if (!top_it.validItem()) {
-				/* it->top() returned non-valid iterator, thus no more active
-				 * items are in block it. */
-				continue;
-			}
-			//We found a new best item
-			if (!best_it.validItem() ||
-			        top_it->strategy()->prioritize(*(best_it)->strategy())) {
-				best_block = it;
-				best_it = top_it;
+		for (BaseBlock* block = first; block != nullptr; block = block->next()) {
+			//only check the block if it is an ActiveBlock
+			if (ActiveBlock* active_block = dynamic_cast<ActiveBlock*>(block)) {
+				VAIt top_it = active_block->top();
+				//is the block empty?
+				if (!top_it.validItem()) {
+					/* it->top() returned non-valid iterator, thus no more active
+					* items are in block it. */
+					continue;
+				}
+				//We found a new best item
+				if (!best_it.validItem() ||
+				        top_it->strategy()->prioritize(*(best_it)->strategy())) {
+					best_block = active_block;
+					best_it = top_it;
+				}
 			}
 		}
 

@@ -1,59 +1,37 @@
 /*
- * Copyright Jakob Gruber, Martin Kalany 2014.
+ * Copyright Martin Kalany 2014.
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
  */
 
+#ifndef PARETOLOCALITYTASKSTORAGEACTIVEBLOCK_H
+#define PARETOLOCALITYTASKSTORAGEACTIVEBLOCK_H
 
-#ifndef PARETOLOCALITYTASKSTORAGEBLOCK_H_
-#define PARETOLOCALITYTASKSTORAGEBLOCK_H_
-
-#include "ItemComparator.h"
-#include "PartitionPointers.h"
-#include "PivotQueue.h"
-#include "VirtualArray.h"
-
-#include <algorithm>
-#include <cmath>
-#include <random>
-
-/* Maximum number of attempts to partition a block s.t. after partitioning the
- * block, the right-most partition (excluding dead) contains at least 1 item. */
-#define MAX_ATTEMPTS_TO_PARTITION (2)
-
-/* Maximum number of attempts to generate a pivot element s.t. an equal element
- * is not yet on the PivotQueue. */
-#define MAX_ATTEMPTS_TO_GENERATE_PIVOT (2)
-
-/* Number of sample items to draw for the generation of a pivot element. */
-#define NR_SAMPLES_FOR_PIVOT_GENERATION (5)
-
-/* Maximum number of attemps to sample the NR_SAMPLES_FOR_PIVOT_GENERATION items.
- * If a sampled item is invalid (null, taken or dead), the sampling failed and is
- * retried */
-#define MAX_ATTEMPTS_TO_SAMPLE (10)
+#include "ParetoLocalityTaskStorageBlockBase.h"
 
 namespace pheet
 {
 
 template<class Item, size_t MAX_PARTITION_SIZE>
-class ParetoLocalityTaskStorageBlock
+class ParetoLocalityTaskStorageActiveBlock
+	: public ParetoLocalityTaskStorageBlockBase<Item, MAX_PARTITION_SIZE>
 {
 public:
+	typedef ParetoLocalityTaskStorageBlockBase<Item, MAX_PARTITION_SIZE> BaseBlock;
+
 	typedef typename Item::T T;
 	typedef VirtualArray<Item*> VA;
 	typedef typename VA::VirtualArrayIterator VAIt;
 
-	ParetoLocalityTaskStorageBlock(VirtualArray<Item*>& array, size_t offset,
-	                               PivotQueue* pivots)
-		: m_data(array), m_offset(offset), m_size(0), m_lvl(0), m_logical_lvl(0),
-		  m_pivots(pivots), m_next(nullptr)
+	ParetoLocalityTaskStorageActiveBlock(VirtualArray<Item*>& array, size_t offset,
+	                                     PivotQueue* pivots)
+		: ParetoLocalityTaskStorageBlockBase<Item, MAX_PARTITION_SIZE>(array, offset),
+		  m_size(0), m_logical_lvl(0), m_pivots(pivots)
 	{
-		m_capacity = MAX_PARTITION_SIZE * pow(2, m_lvl);
 		create_partition_pointers(0, m_capacity, 0);
 	}
 
-	~ParetoLocalityTaskStorageBlock()
+	~ParetoLocalityTaskStorageActiveBlock()
 	{
 		delete m_partitions;
 	}
@@ -150,7 +128,7 @@ public:
 		return data;
 	}
 
-	ParetoLocalityTaskStorageBlock* merge_next()
+	ParetoLocalityTaskStorageActiveBlock* merge_next()
 	{
 		pheet_assert(m_next.load(std::memory_order_acquire) != nullptr);
 		pheet_assert(m_next.load(std::memory_order_acquire)->lvl() == m_lvl);
@@ -165,7 +143,7 @@ public:
 		m_size = m_capacity;
 
 		//splice out next
-		ParetoLocalityTaskStorageBlock* tmp  = m_next.load(std::memory_order_acquire);
+		auto tmp  = m_next.load(std::memory_order_acquire);
 		if (tmp->next()) {
 			tmp->next()->prev(this);
 		}
@@ -179,7 +157,7 @@ public:
 	{
 		//drop the old partition pointers and create new ones
 		delete m_partitions;
-		create_partition_pointers(0, m_capacity, m_capacity);
+		create_partition_pointers(0,  m_capacity, m_capacity);
 
 		//partition the whole block
 		auto left = m_data.iterator_to(m_offset);
@@ -190,41 +168,6 @@ public:
 		if (m_partitions->dead_partition().index(m_offset) <= m_capacity) {
 			--m_logical_lvl;
 		}
-	}
-
-	ParetoLocalityTaskStorageBlock* prev() const
-	{
-		return m_prev;
-	}
-
-	void prev(ParetoLocalityTaskStorageBlock* b)
-	{
-		m_prev = b;
-	}
-
-	ParetoLocalityTaskStorageBlock* next() const
-	{
-		return m_next.load(std::memory_order_acquire);
-	}
-
-	void next(ParetoLocalityTaskStorageBlock* b)
-	{
-		m_next.store(b, std::memory_order_release);
-	}
-
-	size_t lvl() const
-	{
-		return m_lvl;
-	}
-
-	size_t capacity() const
-	{
-		return m_capacity;
-	}
-
-	size_t offset() const
-	{
-		return m_offset;
 	}
 
 private:
@@ -598,13 +541,17 @@ private: //methods to test correctness of data structure
 		}
 	}
 
+protected:
+	using BaseBlock::m_data;
+	using BaseBlock::m_capacity;
+	using BaseBlock::m_lvl;
+	using BaseBlock::m_offset;
+	using BaseBlock::m_next;
+	using BaseBlock::m_prev;
+
 private:
-	VirtualArray<Item*>& m_data;
-	size_t m_offset;
-	size_t m_capacity;
 	size_t m_size;
-	//lvl is the actual size of this block
-	size_t m_lvl;
+
 	//If more than half of the items are dead, logical_lvl is reduced by 1.
 	//TODOMK: can we have logical_lvl < lvl - 1?
 	size_t m_logical_lvl;
@@ -612,12 +559,8 @@ private:
 	PartitionPointers<Item>* m_partitions;
 	PivotQueue* m_pivots;
 	size_t m_failed_attempts;
-
-	std::atomic<ParetoLocalityTaskStorageBlock*> m_next;
-	ParetoLocalityTaskStorageBlock* m_prev = nullptr;
-
 };
 
-} /* namespace pheet */
+} //namespace pheet
 
-#endif /* PARETOLOCALITYTASKSTORAGEBLOCK_H_ */
+#endif // PARETOLOCALITYTASKSTORAGEACTIVEBLOCK_H
