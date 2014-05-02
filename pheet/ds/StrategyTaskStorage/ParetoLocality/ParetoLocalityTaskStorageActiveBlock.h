@@ -117,6 +117,8 @@ public:
 
 	void partition()
 	{
+		pheet_assert(!this->next());
+
 		//drop the old partition pointers and create new ones
 		delete m_partitions;
 		create_partition_pointers(0,  m_capacity, m_capacity);
@@ -126,20 +128,22 @@ public:
 		auto right = m_data.iterator_to(m_offset + m_capacity - 1);
 		partition(0, left, right);
 
-		//check if we can reduce the logical size of this block
+		//check if we can reduce the level of this block
 		if (m_partitions->dead_partition().index(m_offset) <= m_capacity / 2) {
-			return;
 			//reduce lvl and capacity
 			//TODOMK: can we reduce by more than 1?
 			--m_lvl;
 			m_capacity >>= 1;
-			//update pointer to end
+			//update end pointer
 			//TODOMK: more efficent way to get new end iterator
-			m_partitions->end(m_data.iterator_to(m_offset + m_capacity / 2));
+			VAIt it = m_data.iterator_to(m_offset + m_capacity);
+			m_partitions->end(it);
+			pheet_assert(m_capacity == m_partitions->end().index()
+			             - m_partitions->first().index());
 
-			//TODOMK: create a new dead block
-			//BaseBlock* deadBlock = new BaseBlock(m_data);
-
+			/* delete the rest of the block (by reducing the capacity of the
+			 * VirtualArray) */
+			m_data.decrease_capacity(m_capacity);
 		}
 	}
 
