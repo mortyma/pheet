@@ -8,6 +8,7 @@
 #define PARETOLOCALITYTASKSTORAGEACTIVEBLOCK_H
 
 #include "ParetoLocalityTaskStorageBaseBlock.h"
+#include "ParetoLocalityTaskStorageDeadBlock.h"
 
 namespace pheet
 {
@@ -21,8 +22,9 @@ public:
 	typedef typename BaseBlock::T T;
 	typedef typename BaseBlock::VA VA;
 	typedef typename BaseBlock::VAIt VAIt;
+	typedef ParetoLocalityTaskStorageDeadBlock<Item, MAX_PARTITION_SIZE> DeadBlock;
 
-	ParetoLocalityTaskStorageActiveBlock(VirtualArray<Item*>& array, size_t offset,
+	ParetoLocalityTaskStorageActiveBlock(VA& array, size_t offset,
 	                                     PivotQueue* pivots)
 		: ParetoLocalityTaskStorageBaseBlock<Item, MAX_PARTITION_SIZE>(array, offset),
 		  m_pivots(pivots)
@@ -35,25 +37,15 @@ public:
 		delete m_partitions;
 	}
 
-	bool try_put(Item* item)
-	{
-		if (m_partitions->end().index(m_offset) == m_capacity) {
-			return false;
-		}
-		put(item);
-		return true;
-	}
-
-	void put(Item* item)
-	{
-		pheet_assert(m_partitions->end().index(m_offset) < m_capacity);
-		//we only put data in a lvl 0 block
-		pheet_assert(m_lvl == 0);
-		//no CAS needed, since only the owning thread writes to local VirtualArray
-		*(m_partitions->end()) = item;
-		m_partitions->increment_end();
-	}
-
+	/**
+	 * Return an iterator to an item that is not dominated by any other item in this block.
+	 *
+	 * Do not remove this item from the block. If such an item does not exist,
+	 * return an invalid iterator.
+	 *
+	 * Any dead items that are inspected are cleaned up. Thus, if an Iterator
+	 * to a non-valid Item is returned, the block can be destructed.
+	 */
 	virtual VAIt top()
 	{
 		VAIt best_it;
@@ -145,7 +137,7 @@ public:
 			//TODOMK: more efficent way to get new end iterator
 			m_partitions->end(m_data.iterator_to(m_offset + m_capacity / 2));
 
-			//create a new dead block
+			//TODOMK: create a new dead block
 			//BaseBlock* deadBlock = new BaseBlock(m_data);
 
 		}
@@ -529,9 +521,9 @@ protected:
 	using BaseBlock::m_offset;
 	using BaseBlock::m_next;
 	using BaseBlock::m_prev;
+	PartitionPointers<Item>* m_partitions;
 
 private:
-	PartitionPointers<Item>* m_partitions;
 	PivotQueue* m_pivots;
 	size_t m_failed_attempts;
 };

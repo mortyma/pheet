@@ -8,6 +8,7 @@
 #define PARETOLOCALITYTASKSTORAGEPLACE_H_
 
 #include "ParetoLocalityTaskStorageActiveBlock.h"
+#include "ParetoLocalityTaskStorageLastBlock.h"
 #include "ParetoLocalityTaskStorageItem.h"
 #include "ParetoLocalityTaskStorageItemReuseCheck.h"
 
@@ -33,6 +34,7 @@ public:
 	typedef ParetoLocalityTaskStorageItem<Pheet, Self, BaseItem, Strategy> Item;
 	typedef ParetoLocalityTaskStorageBaseBlock<Item, MAX_PARTITION_SIZE> BaseBlock;
 	typedef ParetoLocalityTaskStorageActiveBlock<Item, MAX_PARTITION_SIZE> ActiveBlock;
+	typedef ParetoLocalityTaskStorageLastBlock<Item, MAX_PARTITION_SIZE> LastBlock;
 	typedef typename BaseItem::T T;
 	typedef BlockItemReuseMemoryManager<Pheet, Item, ParetoLocalityTaskStorageItemReuseCheck<Item>>
 	        ItemMemoryManager;
@@ -78,7 +80,7 @@ private:
 	PivotQueue m_pivots;
 
 	BaseBlock* first;
-	BaseBlock* last;
+	LastBlock* last;
 
 	PerformanceCounters pc;
 };
@@ -93,8 +95,8 @@ ParetoLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place)
 {
 	//increase capacity of virtual array
 	m_array.increase_capacity(MAX_PARTITION_SIZE);
-	first = new ActiveBlock(m_array, 0, &m_pivots);
-	last = first;
+	last = new LastBlock(m_array, 0, &m_pivots);
+	first = last;
 	task_storage = TaskStorage::get(this, parent_place->get_central_task_storage(),
 	                                created_task_storage);
 }
@@ -109,12 +111,12 @@ ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strat
 	if (created_task_storage) {
 		delete task_storage;
 	}
-
-	while (last->prev()) {
-		last = last->prev();
-		delete last->next();
+	BaseBlock* block = last;
+	while (block->prev()) {
+		block = block->prev();
+		delete block->next();
 	}
-	delete last;
+	delete block;
 }
 
 template < class Pheet,
@@ -147,33 +149,30 @@ void
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
 put(Item& item)
 {
-	//TODOMK: check for null
-	ActiveBlock* active_last = dynamic_cast<ActiveBlock*>(last);
-	pheet_assert(!active_last->next());
-	if (!active_last->try_put(&item)) {
+	pheet_assert(!last->next());
+	if (!last->try_put(&item)) {
+		ActiveBlock* block = last;
 		//merge if neccessary
-		if (merge_required(active_last)) {
+		if (merge_required(block)) {
 			//merge recursively, if previous block has same level
-			while (merge_required(active_last)) {
-				active_last = dynamic_cast<ActiveBlock*>(active_last->prev())->merge_next();
+			while (merge_required(block)) {
+				block = dynamic_cast<ActiveBlock*>(block->prev())->merge_next();
 			}
 			//repartition block that resulted from merge
-			active_last->partition();
+			block->partition();
 		}
 
 		//increase capacity of virtual array
 		m_array.increase_capacity(MAX_PARTITION_SIZE);
 		//create new block
-		size_t nb_offset = active_last->offset() + active_last->capacity();
-		//TOODMK: has to be BaseBlock
-		ActiveBlock* nb = new ActiveBlock(m_array, nb_offset, &m_pivots);
-		nb->prev(active_last);
-		pheet_assert(!active_last->next());
-		active_last->next(nb);
-		active_last = nb;
+		size_t nb_offset = block->offset() + block->capacity();
+		LastBlock* nb = new LastBlock(m_array, nb_offset, &m_pivots);
+		nb->prev(block);
+		pheet_assert(!block->next());
+		block->next(nb);
+		last = nb;
 		//put the item in the new block
-		active_last->put(&item);
-		last = active_last;
+		last->put(&item);
 	}
 }
 

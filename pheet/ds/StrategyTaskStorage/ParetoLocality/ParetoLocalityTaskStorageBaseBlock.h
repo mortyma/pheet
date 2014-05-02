@@ -44,8 +44,8 @@ public:
 	typedef VirtualArray<Item*> VA;
 	typedef typename VA::VirtualArrayIterator VAIt;
 
-	ParetoLocalityTaskStorageBaseBlock(VirtualArray<Item*>& array, size_t offset)
-		: m_lvl(0), m_data(array), m_offset(offset), m_next(nullptr)
+	ParetoLocalityTaskStorageBaseBlock(VA& array, size_t offset, size_t lvl = 0)
+		: m_lvl(lvl), m_data(array), m_offset(offset), m_next(nullptr)
 	{
 		m_capacity = MAX_PARTITION_SIZE * pow(2, this->m_lvl);
 	}
@@ -92,17 +92,6 @@ public:
 	}
 
 	/**
-	 * Return an iterator to an item that is not dominated by any other item in this block.
-	 *
-	 * Do not remove this item from the block. If such an item does not exist,
-	 * return an invalid iterator.
-	 *
-	 * Any dead items that are inspected are cleaned up. Thus, if an Iterator
-	 * to a non-valid Item is returned, the block can be destructed.
-	 */
-	virtual VAIt top() = 0;
-
-	/**
 	 * Take the given item and return its data.
 	 *
 	 * An item that is taken is marked for deletion/reuse and will not be returned
@@ -127,6 +116,7 @@ protected:
 	size_t m_offset;
 	size_t m_capacity;
 
+	//TODOMK: maybe next should be private and accessed via functions only?
 	std::atomic<ParetoLocalityTaskStorageBaseBlock*> m_next;
 	ParetoLocalityTaskStorageBaseBlock* m_prev = nullptr;
 

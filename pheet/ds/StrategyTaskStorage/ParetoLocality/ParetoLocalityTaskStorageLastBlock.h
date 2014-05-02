@@ -23,16 +23,15 @@ public:
 	typedef typename ActiveBlock::VA VA;
 	typedef typename ActiveBlock::VAIt VAIt;
 
-	ParetoLocalityTaskStorageLastBlock(VirtualArray<Item*>& array, size_t offset, PivotQueue* pivots)
+	ParetoLocalityTaskStorageLastBlock(VA& array, size_t offset, PivotQueue* pivots)
 		: ParetoLocalityTaskStorageActiveBlock<Item, MAX_PARTITION_SIZE>(array, offset, pivots)
-		, m_size(0)
 	{
 
 	}
 
 	bool try_put(Item* item)
 	{
-		if (m_size == m_capacity) {
+		if (m_partitions->end().index(m_offset) == m_capacity) {
 			return false;
 		}
 		put(item);
@@ -41,25 +40,21 @@ public:
 
 	void put(Item* item)
 	{
-		pheet_assert(m_size < m_capacity);
+		pheet_assert(m_partitions->end().index(m_offset) < m_capacity);
 		//we only put data in a lvl 0 block
 		pheet_assert(m_lvl == 0);
 		//no CAS needed, since only the owning thread writes to local VirtualArray
-		m_data[m_size + m_offset] = item;
-		//m_partitions->increment_end();
-		++m_size;
+		*(m_partitions->end()) = item;
+		m_partitions->increment_end();
 	}
+
 
 private:
 	using ActiveBlock::m_data;
 	using ActiveBlock::m_capacity;
 	using ActiveBlock::m_lvl;
 	using ActiveBlock::m_offset;
-
-	//TODOMK: use iterators instead?
-	size_t m_size;
-
-
+	using ActiveBlock::m_partitions;
 };
 
 } //namespace pheet
