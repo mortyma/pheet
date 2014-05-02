@@ -57,10 +57,10 @@ public:
 private:
 	/**
 	 * A merge is required if:
-	 * - last->prev() exists
-	 * - and has the same level (equal to same capacity) as last
+	 * - block->prev() exists
+	 * - and has the same level (equal to same capacity) as block
 	 */
-	bool merge_required() const;
+	bool merge_required(BaseBlock* block) const;
 
 	/**
 	 * Put the item in the topmost block.
@@ -152,9 +152,9 @@ put(Item& item)
 	pheet_assert(!active_last->next());
 	if (!active_last->try_put(&item)) {
 		//merge if neccessary
-		if (merge_required()) {
+		if (merge_required(active_last)) {
 			//merge recursively, if previous block has same level
-			while (merge_required()) {
+			while (merge_required(active_last)) {
 				active_last = dynamic_cast<ActiveBlock*>(active_last->prev())->merge_next();
 			}
 			//repartition block that resulted from merge
@@ -282,9 +282,9 @@ template < class Pheet,
            class Strategy >
 bool
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
-merge_required() const
+merge_required(BaseBlock* block) const
 {
-	return last->prev() && last->lvl() == last->prev()->lvl();
+	return block->prev() && block->lvl() == block->prev()->lvl();
 }
 
 } /* namespace pheet */
