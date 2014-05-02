@@ -25,7 +25,7 @@ public:
 	ParetoLocalityTaskStorageActiveBlock(VirtualArray<Item*>& array, size_t offset,
 	                                     PivotQueue* pivots)
 		: ParetoLocalityTaskStorageBaseBlock<Item, MAX_PARTITION_SIZE>(array, offset),
-		  m_size(0), m_pivots(pivots)
+		  m_pivots(pivots)
 	{
 		create_partition_pointers(0, m_capacity, 0);
 	}
@@ -37,7 +37,7 @@ public:
 
 	bool try_put(Item* item)
 	{
-		if (m_size == m_capacity) {
+		if (m_partitions->end().index(m_offset) == m_capacity) {
 			return false;
 		}
 		put(item);
@@ -46,13 +46,12 @@ public:
 
 	void put(Item* item)
 	{
-		pheet_assert(m_size < m_capacity);
+		pheet_assert(m_partitions->end().index(m_offset) < m_capacity);
 		//we only put data in a lvl 0 block
 		pheet_assert(m_lvl == 0);
 		//no CAS needed, since only the owning thread writes to local VirtualArray
-		m_data[m_size + m_offset] = item;
+		*(m_partitions->end()) = item;
 		m_partitions->increment_end();
-		++m_size;
 	}
 
 	virtual VAIt top()
@@ -107,13 +106,11 @@ public:
 		pheet_assert(m_next.load(std::memory_order_acquire) != nullptr);
 		pheet_assert(m_next.load(std::memory_order_acquire)->lvl() == m_lvl);
 		//we only merge full blocks
-		pheet_assert(m_size == m_capacity);
+		pheet_assert(m_partitions->end().index(m_offset) == m_capacity);
 
 		//expand this block to cover this as well as next block
 		++m_lvl;
 		m_capacity <<= 1;
-		//merging two full blocks of level lvl results in one full block of lvl+1
-		m_size = m_capacity;
 
 		//splice out next
 		auto tmp  = m_next.load(std::memory_order_acquire);
@@ -534,8 +531,6 @@ protected:
 	using BaseBlock::m_prev;
 
 private:
-	size_t m_size;
-
 	PartitionPointers<Item>* m_partitions;
 	PivotQueue* m_pivots;
 	size_t m_failed_attempts;
