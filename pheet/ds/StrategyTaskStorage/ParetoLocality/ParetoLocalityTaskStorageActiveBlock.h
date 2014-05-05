@@ -55,7 +55,11 @@ public:
 		                            m_partitions->dead_partition());
 		for (; it < end_it; it++) {
 			pheet_assert(it.index() < end_it.index());
-			if (!it.validItem() || it->is_taken()) {
+			if (!it.validItem()) {
+				continue;
+			}
+			if (it->is_taken()) {
+				*it = nullptr;
 				continue;
 			}
 
@@ -72,23 +76,28 @@ public:
 			}
 		}
 
-		//only happens if no more item that is not taken or dead is in current partition
-		if (!best_it.validItem()) {
-			//fall back to previous partition, if possible
-			if (m_partitions->fall_back()) {
-				//call top() again, now operating on previous partition
-				best_it = top();
-			} else {
-				/* We called top() on the first (and only) partition and did not
-				 * get an active item back. Thus, we can clean up and free the
-				 * block. Note that items in the dead partition have already
-				 * been deleted during the last partition step. The block may
-				 * contain dead or taken items in the range [0, min(dead, end)[
-				 */
-				const auto end_it = VA::min(m_partitions->end(),
-				                            m_partitions->dead_partition());
-				drop_dead_items(m_partitions->first(), end_it);
+		//only happens if no more item that is not null is in current partition
+		//thus, fall back to previous partition, if possible
+		if (!best_it.validItem() && m_partitions->fall_back()) {
+			//repartition the new right-most partition (if neccessary)
+			VAIt start_it = m_partitions->last();
+			end_it = VA::min(m_partitions->dead_partition(), m_partitions->end());
+			pheet_assert(end_it.index() >= start_it.index());
+			if (end_it.index() - start_it.index() > MAX_PARTITION_SIZE) {
+				--end_it;
+				partition(m_partitions->size() - 1, start_it, end_it);
+				//check if we can reduce the level of this block by 1
+				/*if(try_shrink()) {
+						//mark the second half as dead
+						DeadBlock* dead_block = new DeadBlock(m_data, m_offset + m_capacity, m_lvl);
+						dead_block->next(this->next());
+						this->next()->prev(dead_block);
+						dead_block->prev(this);
+						this->next(dead_block);
+					}*/
 			}
+			//call top() again
+			best_it = top();
 		}
 		return best_it;
 	}
