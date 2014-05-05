@@ -138,6 +138,25 @@ public:
 		partition(0, left, right);
 
 		//check if we can reduce the level of this block
+		if (try_shrink()) {
+			/* delete the rest of the block (by reducing the capacity of the
+			 * VirtualArray) */
+			m_data.decrease_capacity(m_capacity);
+		}
+	}
+
+private:
+
+	/**
+	 * Try to reduce the level of this block by 1.
+	 *
+	 * If the dead partition of this block is >= half the block size, we can
+	 * reduce the level of the block by 1 (i.e., half its size). The caller is
+	 * responsible for handling the second half of the block!
+	 */
+	bool try_shrink()
+	{
+		//check if we can reduce the level of this block
 		if (m_partitions->dead_partition().index(m_offset) <= m_capacity / 2) {
 			//reduce lvl and capacity
 			//TODOMK: can we reduce by more than 1?
@@ -149,14 +168,10 @@ public:
 			m_partitions->end(it);
 			pheet_assert(m_capacity == m_partitions->end().index()
 			             - m_partitions->first().index());
-
-			/* delete the rest of the block (by reducing the capacity of the
-			 * VirtualArray) */
-			m_data.decrease_capacity(m_capacity);
+			return true;
 		}
+		return false;
 	}
-
-private:
 
 	void create_partition_pointers(size_t start, size_t dead, size_t end)
 	{
