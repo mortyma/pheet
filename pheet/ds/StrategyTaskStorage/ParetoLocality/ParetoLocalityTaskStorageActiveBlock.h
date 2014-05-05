@@ -242,6 +242,8 @@ private:
 		 * were not dead. */
 		pheet_assert(left == right || left.index() == right.index() + 1);
 
+		pheet_assert(left < m_partitions->dead_partition());
+
 		//if the taken or dead status changes between *1 and *2, the item could
 		//be sorted incorrectly if left->is_taken_or_dead() would be called at each
 		//place instead of using this variable.
@@ -356,6 +358,7 @@ private:
 	 */
 	void swap_to_dead(VAIt& lhs, VAIt& rhs)
 	{
+		pheet_assert(lhs < rhs);
 		Item* right = *rhs;
 		Item* left = *lhs;
 		pheet_assert(left == nullptr || left->is_taken_or_dead());
@@ -370,6 +373,7 @@ private:
 	 */
 	void swap(VAIt& lhs, VAIt& rhs)
 	{
+		pheet_assert(lhs < rhs);
 		Item* left = *lhs;
 		Item* right = *rhs;
 		*lhs = right;
