@@ -8,7 +8,6 @@
 #define PARETOLOCALITYTASKSTORAGEPLACE_H_
 
 #include "ParetoLocalityTaskStorageActiveBlock.h"
-#include "ParetoLocalityTaskStorageLastBlock.h"
 #include "ParetoLocalityTaskStorageItem.h"
 #include "ParetoLocalityTaskStorageItemReuseCheck.h"
 
@@ -32,9 +31,7 @@ public:
 	typedef ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy> Self;
 	typedef typename ParentTaskStoragePlace::BaseItem BaseItem;
 	typedef ParetoLocalityTaskStorageItem<Pheet, Self, BaseItem, Strategy> Item;
-	typedef ParetoLocalityTaskStorageBaseBlock<Item, MAX_PARTITION_SIZE> BaseBlock;
 	typedef ParetoLocalityTaskStorageActiveBlock<Item, MAX_PARTITION_SIZE> ActiveBlock;
-	typedef ParetoLocalityTaskStorageLastBlock<Item, MAX_PARTITION_SIZE> LastBlock;
 	typedef typename BaseItem::T T;
 	typedef BlockItemReuseMemoryManager<Pheet, Item, ParetoLocalityTaskStorageItemReuseCheck<Item>>
 	        ItemMemoryManager;
@@ -62,7 +59,7 @@ private:
 	 * - block->prev() exists
 	 * - and has the same level (equal to same capacity) as block
 	 */
-	bool merge_required(BaseBlock* block) const;
+	bool merge_required(ActiveBlock* block) const;
 
 	/**
 	 * Put the item in the topmost block.
@@ -94,8 +91,8 @@ private:
 	VirtualArray<Item*> m_array;
 	PivotQueue m_pivots;
 
-	BaseBlock* first;
-	LastBlock* last;
+	ActiveBlock* first;
+	ActiveBlock* last;
 
 	PerformanceCounters pc;
 };
@@ -110,7 +107,7 @@ ParetoLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place)
 {
 	//increase capacity of virtual array
 	m_array.increase_capacity(MAX_PARTITION_SIZE);
-	last = new LastBlock(m_array, 0, &m_pivots);
+	last = new ActiveBlock(m_array, 0, &m_pivots);
 	first = last;
 	task_storage = TaskStorage::get(this, parent_place->get_central_task_storage(),
 	                                created_task_storage);
@@ -126,7 +123,7 @@ ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strat
 	if (created_task_storage) {
 		delete task_storage;
 	}
-	BaseBlock* block = last;
+	ActiveBlock* block = last;
 	while (block->prev()) {
 		block = block->prev();
 		delete block->next();
@@ -171,7 +168,7 @@ put(Item& item)
 		if (merge_required(block)) {
 			//merge recursively, if previous block has same level
 			while (merge_required(block)) {
-				block = dynamic_cast<ActiveBlock*>(block->prev())->merge_next();
+				block = block->prev()->merge_next();
 			}
 			//repartition block that resulted from merge
 			block->partition();
@@ -181,13 +178,14 @@ put(Item& item)
 		m_array.increase_capacity(MAX_PARTITION_SIZE);
 		//create new block
 		size_t nb_offset = block->offset() + block->capacity();
-		LastBlock* nb = new LastBlock(m_array, nb_offset, &m_pivots);
+		ActiveBlock* nb = new ActiveBlock(m_array, nb_offset, &m_pivots);
 		nb->prev(block);
 		pheet_assert(!block->next());
 		block->next(nb);
 		last = nb;
 		//put the item in the new block
 		last->put(&item);
+		pheet_assert(!last->next());
 	}
 }
 
@@ -205,11 +203,11 @@ pop(BaseItem* boundary)
 		ActiveBlock* best_block = nullptr;
 		VAIt best_it;
 		//iterate through all blocks
-		for (BaseBlock* block = first; block != nullptr; block = block->next()) {
+		for (ActiveBlock* block = first; block != nullptr; block = block->next()) {
 			//only check the block if it is an ActiveBlock
-			if (ActiveBlock* active_block = dynamic_cast<ActiveBlock*>(block)) {
+			if (!block->is_dead()) {
 				//get the top element
-				VAIt top_it = active_block->top();
+				VAIt top_it = block->top();
 				//TODOMK: make sure we do not create a sequence of dead blocks
 				//TODOMK: check if we need to merge
 
@@ -222,7 +220,7 @@ pop(BaseItem* boundary)
 				//We found a new best item
 				if (!best_it.validItem() ||
 				        top_it->strategy()->prioritize(*(best_it)->strategy())) {
-					best_block = active_block;
+					best_block = block;
 					best_it = top_it;
 				}
 			}
@@ -300,7 +298,7 @@ template < class Pheet,
            class Strategy >
 bool
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
-merge_required(BaseBlock* block) const
+merge_required(ActiveBlock* block) const
 {
 	return block->prev() && block->lvl() == block->prev()->lvl();
 }

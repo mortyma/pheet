@@ -7,34 +7,73 @@
 #ifndef PARETOLOCALITYTASKSTORAGEACTIVEBLOCK_H
 #define PARETOLOCALITYTASKSTORAGEACTIVEBLOCK_H
 
-#include "ParetoLocalityTaskStorageBaseBlock.h"
-#include "ParetoLocalityTaskStorageDeadBlock.h"
+#include "ItemComparator.h"
+#include "PartitionPointers.h"
+#include "PivotQueue.h"
+#include "VirtualArray.h"
+
+#include <algorithm>
+#include <cmath>
+#include <random>
+
+/* Maximum number of attempts to partition a block s.t. after partitioning the
+ * block, the right-most partition (excluding dead) contains at least 1 item. */
+#define MAX_ATTEMPTS_TO_PARTITION (2)
+
+/* Maximum number of attempts to generate a pivot element s.t. an equal element
+ * is not yet on the PivotQueue. */
+#define MAX_ATTEMPTS_TO_GENERATE_PIVOT (2)
+
+/* Number of sample items to draw for the generation of a pivot element. */
+#define NR_SAMPLES_FOR_PIVOT_GENERATION (5)
+
+/* Maximum number of attemps to sample the NR_SAMPLES_FOR_PIVOT_GENERATION items.
+ * If a sampled item is invalid (null, taken or dead), the sampling failed and is
+ * retried */
+#define MAX_ATTEMPTS_TO_SAMPLE (10)
 
 namespace pheet
 {
 
 template<class Item, size_t MAX_PARTITION_SIZE>
 class ParetoLocalityTaskStorageActiveBlock
-	: public ParetoLocalityTaskStorageBaseBlock<Item, MAX_PARTITION_SIZE>
 {
 public:
-	typedef ParetoLocalityTaskStorageBaseBlock<Item, MAX_PARTITION_SIZE> BaseBlock;
-	typedef typename BaseBlock::T T;
-	typedef typename BaseBlock::VA VA;
-	typedef typename BaseBlock::VAIt VAIt;
-	typedef ParetoLocalityTaskStorageDeadBlock<Item, MAX_PARTITION_SIZE> DeadBlock;
+	typedef typename Item::T T;
+	typedef VirtualArray<Item*> VA;
+	typedef typename VA::VirtualArrayIterator VAIt;
 
 	ParetoLocalityTaskStorageActiveBlock(VA& array, size_t offset,
 	                                     PivotQueue* pivots, size_t lvl = 0)
-		: ParetoLocalityTaskStorageBaseBlock<Item, MAX_PARTITION_SIZE>(array, offset, lvl),
-		  m_pivots(pivots)
+		: m_lvl(lvl), m_data(array), m_offset(offset), m_pivots(pivots),
+		  m_is_dead(false), m_next(nullptr)
 	{
+		m_capacity = MAX_PARTITION_SIZE * pow(2, m_lvl);
 		create_partition_pointers(0, m_capacity, 0);
 	}
 
 	~ParetoLocalityTaskStorageActiveBlock()
 	{
 		delete m_partitions;
+	}
+
+	bool try_put(Item* item)
+	{
+		if (m_partitions->end().index(m_offset) == m_capacity) {
+			return false;
+		}
+		put(item);
+		return true;
+	}
+
+	void put(Item* item)
+	{
+		pheet_assert(m_partitions->end().index(m_offset) < m_capacity);
+		//we only put data in a lvl 0 block
+		pheet_assert(m_lvl == 0);
+		//no CAS needed, since only the owning thread writes to local VirtualArray
+		*(m_partitions->end()) = item;
+		m_partitions->increment_end();
 	}
 
 	/**
@@ -46,7 +85,7 @@ public:
 	 * Any dead items that are inspected are cleaned up. Thus, if an Iterator
 	 * to a non-valid Item is returned, the block can be destructed.
 	 */
-	virtual VAIt top()
+	VAIt top()
 	{
 		VAIt best_it;
 		//iterate through items in right-most partition
@@ -89,7 +128,7 @@ public:
 				//check if we can reduce the level of this block by 1
 				/*if(try_shrink()) {
 					//mark the second half as dead
-					DeadBlock* dead_block = new DeadBlock(m_data, m_offset + m_capacity, m_lvl);
+					ActiveBlock* dead_block = new ActiveBlock(m_data, m_offset + m_capacity, m_lvl);
 					dead_block->next(this->next());
 					this->next()->prev(dead_block);
 					dead_block->prev(this);
@@ -143,6 +182,69 @@ public:
 			 * VirtualArray) */
 			m_data.decrease_capacity(m_capacity);
 		}
+	}
+
+	/**
+	 * Take the given item and return its data.
+	 *
+	 * An item that is taken is marked for deletion/reuse and will not be returned
+	 * via a call to top() anymore.
+	 */
+	T take(VAIt item)
+	{
+		pheet_assert(*item);
+		T data = item->take();
+		/* Set the Item to nullptr in the VirtualArray so other threads
+		   and operations don't see it any more. Memory manager will take care of
+		   deleting the Item */
+		*item = nullptr;
+		return data;
+	}
+
+	size_t lvl() const
+	{
+		return m_lvl;
+	}
+
+	size_t capacity() const
+	{
+		return m_capacity;
+	}
+
+	size_t offset() const
+	{
+		return m_offset;
+	}
+
+	bool is_dead() const
+	{
+		return m_is_dead;
+	}
+
+	void is_dead(bool dead)
+	{
+		m_is_dead = dead;
+	}
+
+
+	ParetoLocalityTaskStorageActiveBlock* prev() const
+	{
+		return m_prev;
+	}
+
+	void prev(ParetoLocalityTaskStorageActiveBlock* b)
+	{
+		m_prev = b;
+	}
+
+	ParetoLocalityTaskStorageActiveBlock* next() const
+	{
+		return m_next.load(std::memory_order_acquire);
+	}
+
+	void next(ParetoLocalityTaskStorageActiveBlock* b)
+	{
+		m_next.store(b, std::memory_order_release);
 	}
 
 private:
@@ -547,12 +649,18 @@ private: //methods to test correctness of data structure
 	}
 
 protected:
-	using BaseBlock::m_data;
-	using BaseBlock::m_capacity;
-	using BaseBlock::m_lvl;
-	using BaseBlock::m_offset;
-	using BaseBlock::m_next;
-	using BaseBlock::m_prev;
+	//lvl is the actual size of this block
+	size_t m_lvl;
+
+	VirtualArray<Item*>& m_data;
+	size_t m_offset;
+	size_t m_capacity;
+
+	bool m_is_dead;
+
+	//TODOMK: maybe next should be private and accessed via functions only?
+	std::atomic<ParetoLocalityTaskStorageActiveBlock*> m_next;
+	ParetoLocalityTaskStorageActiveBlock* m_prev = nullptr;
 	PartitionPointers<Item>* m_partitions;
 
 private:
