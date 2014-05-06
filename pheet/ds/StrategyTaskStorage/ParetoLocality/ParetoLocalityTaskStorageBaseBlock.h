@@ -70,6 +70,16 @@ public:
 		return m_offset;
 	}
 
+	bool is_dead() const
+	{
+		return m_is_dead;
+	}
+
+	void is_dead(bool dead)
+	{
+		m_is_dead = dead;
+	}
+
 
 	ParetoLocalityTaskStorageBaseBlock* prev() const
 	{
@@ -115,6 +125,8 @@ protected:
 	VirtualArray<Item*>& m_data;
 	size_t m_offset;
 	size_t m_capacity;
+
+	bool m_is_dead;
 
 	//TODOMK: maybe next should be private and accessed via functions only?
 	std::atomic<ParetoLocalityTaskStorageBaseBlock*> m_next;
