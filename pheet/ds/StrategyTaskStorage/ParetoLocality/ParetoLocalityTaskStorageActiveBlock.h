@@ -224,7 +224,7 @@ public:
 		return m_is_dead;
 	}
 
-	void is_dead(bool dead)
+	void set_dead(bool dead)
 	{
 		m_is_dead = dead;
 	}
