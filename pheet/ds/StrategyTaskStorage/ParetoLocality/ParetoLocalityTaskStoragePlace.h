@@ -69,6 +69,21 @@ private:
 	 */
 	void put(Item& item);
 
+	/**
+	 * Move item at rhs to lhs and set item at rhs to nullptr.
+	 *
+	 * If item at lhs is not null, take and drop it.
+	 */
+	void swap_to_dead(VAIt& lhs, VAIt& rhs)
+	{
+		Item* right = *rhs;
+		Item* left = *lhs;
+		pheet_assert(left == nullptr);
+		*lhs = right;
+		*rhs = nullptr;
+	}
+
+
 private:
 	ParentTaskStoragePlace* parent_place;
 	TaskStorage* task_storage;
@@ -193,7 +208,11 @@ pop(BaseItem* boundary)
 		for (BaseBlock* block = first; block != nullptr; block = block->next()) {
 			//only check the block if it is an ActiveBlock
 			if (ActiveBlock* active_block = dynamic_cast<ActiveBlock*>(block)) {
+				//get the top element
 				VAIt top_it = active_block->top();
+				//TODOMK: make sure we do not create a sequence of dead blocks
+				//TODOMK: check if we need to merge
+
 				//is the block empty?
 				if (!top_it.validItem()) {
 					/* it->top() returned non-valid iterator, thus no more active

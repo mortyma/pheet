@@ -88,13 +88,13 @@ public:
 				partition(m_partitions->size() - 1, start_it, end_it);
 				//check if we can reduce the level of this block by 1
 				/*if(try_shrink()) {
-						//mark the second half as dead
-						DeadBlock* dead_block = new DeadBlock(m_data, m_offset + m_capacity, m_lvl);
-						dead_block->next(this->next());
-						this->next()->prev(dead_block);
-						dead_block->prev(this);
-						this->next(dead_block);
-					}*/
+					//mark the second half as dead
+					DeadBlock* dead_block = new DeadBlock(m_data, m_offset + m_capacity, m_lvl);
+					dead_block->next(this->next());
+					this->next()->prev(dead_block);
+					dead_block->prev(this);
+					this->next(dead_block);
+				}*/
 			}
 			//call top() again
 			best_it = top();
