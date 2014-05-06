@@ -164,16 +164,14 @@ put(Item& item)
 	pheet_assert(!last->next());
 	if (!last->try_put(&item)) {
 		ActiveBlock* block = last;
-		//merge if neccessary
-		if (merge_required(block)) {
-			//merge recursively, if previous block has same level
-			while (merge_required(block)) {
-				block = block->prev()->merge_next();
-			}
+		//merge recursively, if previous block has same level
+		while (merge_required(block)) {
+			block = block->prev()->merge_next();
+		}
+		if (block != last) {
 			//repartition block that resulted from merge
 			block->partition();
 		}
-
 		//increase capacity of virtual array
 		m_array.increase_capacity(MAX_PARTITION_SIZE);
 		//create new block
