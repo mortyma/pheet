@@ -149,8 +149,7 @@ public:
 		pheet_assert(m_partitions->end().index(m_offset) == m_capacity);
 
 		//expand this block to cover this as well as next block
-		++m_lvl;
-		m_capacity <<= 1;
+		increase_level();
 
 		//splice out next
 		auto tmp  = m_next.load(std::memory_order_acquire);
@@ -262,8 +261,7 @@ private:
 		if (m_partitions->dead_partition().index(m_offset) <= m_capacity / 2) {
 			//reduce lvl and capacity
 			//TODOMK: can we reduce by more than 1?
-			--m_lvl;
-			m_capacity >>= 1;
+			decrease_level();
 			//update end pointer
 			//TODOMK: more efficent way to get new end iterator
 			VAIt it = m_data.iterator_to(m_offset + m_capacity);
@@ -648,22 +646,30 @@ private: //methods to test correctness of data structure
 		}
 	}
 
-protected:
+	void increase_level()
+	{
+		m_lvl++;
+		m_capacity <<= 1;
+	}
+
+	void decrease_level()
+	{
+		--m_lvl;
+		m_capacity >>= 1;
+	}
+
+private:
 	//lvl is the actual size of this block
 	size_t m_lvl;
+	size_t m_capacity;
 
 	VirtualArray<Item*>& m_data;
 	size_t m_offset;
-	size_t m_capacity;
-
 	bool m_is_dead;
 
-	//TODOMK: maybe next should be private and accessed via functions only?
 	std::atomic<ParetoLocalityTaskStorageActiveBlock*> m_next;
 	ParetoLocalityTaskStorageActiveBlock* m_prev = nullptr;
 	PartitionPointers<Item>* m_partitions;
-
-private:
 	PivotQueue* m_pivots;
 	size_t m_failed_attempts;
 };
