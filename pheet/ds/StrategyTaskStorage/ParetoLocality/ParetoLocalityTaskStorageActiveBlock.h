@@ -25,8 +25,8 @@ public:
 	typedef ParetoLocalityTaskStorageDeadBlock<Item, MAX_PARTITION_SIZE> DeadBlock;
 
 	ParetoLocalityTaskStorageActiveBlock(VA& array, size_t offset,
-	                                     PivotQueue* pivots)
-		: ParetoLocalityTaskStorageBaseBlock<Item, MAX_PARTITION_SIZE>(array, offset),
+	                                     PivotQueue* pivots, size_t lvl = 0)
+		: ParetoLocalityTaskStorageBaseBlock<Item, MAX_PARTITION_SIZE>(array, offset, lvl),
 		  m_pivots(pivots)
 	{
 		create_partition_pointers(0, m_capacity, 0);

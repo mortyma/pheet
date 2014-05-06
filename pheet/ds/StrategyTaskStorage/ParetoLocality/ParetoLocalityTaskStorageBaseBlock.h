@@ -44,8 +44,8 @@ public:
 	typedef VirtualArray<Item*> VA;
 	typedef typename VA::VirtualArrayIterator VAIt;
 
-	ParetoLocalityTaskStorageBaseBlock(VA& array, size_t offset, size_t lvl = 0)
-		: m_lvl(lvl), m_data(array), m_offset(offset), m_next(nullptr)
+	ParetoLocalityTaskStorageBaseBlock(VA& array, size_t offset, size_t lvl)
+		: m_lvl(lvl), m_data(array), m_offset(offset), m_is_dead(false), m_next(nullptr)
 	{
 		m_capacity = MAX_PARTITION_SIZE * pow(2, this->m_lvl);
 	}
