@@ -59,7 +59,7 @@ private:
 	 * - block->prev() exists
 	 * - and has the same level (equal to same capacity) as block
 	 */
-	bool merge_required(ActiveBlock* block) const;
+	bool merge_required(ActiveBlock* block);
 
 	/**
 	 * Put the item in the topmost block.
@@ -67,17 +67,36 @@ private:
 	void put(Item& item);
 
 	/**
-	 * Move item at rhs to lhs and set item at rhs to nullptr.
+	 * Move all item pointers from source to destination.
 	 *
-	 * If item at lhs is not null, take and drop it.
+	 * Source and destination blocks must have the same level. Additionally,
+	 * the destination block is assumed to be a dead block.
+	 *
+	 * On return, source will be a dead and destination will be and active block.
+	 *
 	 */
-	void swap_to_dead(VAIt& lhs, VAIt& rhs)
+	void move(ActiveBlock* source, ActiveBlock* destination)
 	{
-		Item* right = *rhs;
-		Item* left = *lhs;
-		pheet_assert(left == nullptr);
-		*lhs = right;
-		*rhs = nullptr;
+		pheet_assert(destination->is_dead());
+		pheet_assert(source->lvl() == destination->lvl());
+
+		VAIt source_it = m_array.iterator_to(source->offset());
+		VAIt end_it = m_array.iterator_to(source->offset() + source->capacity());
+		VAIt destination_it = m_array.iterator_to(destination->offset());
+		for (; source_it != end_it; source_it++) {
+			Item* source = *source_it;
+			Item* destination = *destination_it;
+			pheet_assert(destination == nullptr);
+			*destination_it = source;
+			*source_it = nullptr;
+			destination_it++;
+		}
+
+		//change the previously dead to an active block
+		destination->set_dead(false);
+
+		//change the previously active to a dead block
+		source->set_dead(true);
 	}
 
 
@@ -305,7 +324,7 @@ template < class Pheet,
            class Strategy >
 bool
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
-merge_required(ActiveBlock* block) const
+merge_required(ActiveBlock* block)
 {
 	return block->prev() && block->lvl() == block->prev()->lvl();
 
@@ -328,29 +347,9 @@ merge_required(ActiveBlock* block) const
 	if (block->lvl() == predecessor->lvl()) {
 		if (move_required) {
 			ActiveBlock* destination = predecessor->next();
-			pheet_assert(destination->is_dead());
-			pheet_assert(block->lvl() == destination->lvl());
 			pheet_assert(predecessor->lvl() == destination->lvl());
-
 			//move item pointers from source (block) to destination
-			VAIt source_it = m_array.iterator_to(block->offset());
-			VAIt end_it = m_array.iterator_to(block->offset() + block->capacity());
-			VAIt destination_it = m_array.iterator_to(destination->offset());
-			for (; source_it != end_it; source_it++) {
-				Item* source = *source_it;
-				Item* destination = *destination_it;
-				pheet_assert(destination == nullptr);
-				*destination_it = source;
-				*source_it = nullptr;
-
-				destination_it++;
-			}
-
-			//change the previously dead to an active block
-			destination->set_dead(false);
-
-			//change the previously active to a dead block
-			block->set_dead(true);
+			move(block, destination);
 		}
 		pheet_assert(!last->next());
 		return true;
