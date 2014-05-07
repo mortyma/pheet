@@ -42,6 +42,7 @@ public:
 	typedef typename Item::T T;
 	typedef VirtualArray<Item*> VA;
 	typedef typename VA::VirtualArrayIterator VAIt;
+	typedef ParetoLocalityTaskStorageActiveBlock<Item, MAX_PARTITION_SIZE> ActiveBlock;
 
 	ParetoLocalityTaskStorageActiveBlock(VA& array, size_t offset,
 	                                     PivotQueue* pivots, size_t lvl = 0)
@@ -132,8 +133,9 @@ public:
 				//check if we can reduce the level of this block by 1
 				/*if(try_shrink()) {
 					//mark the second half as dead
-					ActiveBlock* dead_block = new ActiveBlock(m_data, m_offset + m_capacity, m_lvl);
-					dead_block->is_dead(true);
+					ActiveBlock* dead_block = new ActiveBlock(m_data,
+							m_offset + m_capacity, m_pivots, m_lvl);
+					dead_block->set_dead(true);
 					dead_block->next(this->next());
 					this->next()->prev(dead_block);
 					dead_block->prev(this);
@@ -146,7 +148,7 @@ public:
 		return best_it;
 	}
 
-	ParetoLocalityTaskStorageActiveBlock* merge_next()
+	ActiveBlock* merge_next()
 	{
 		pheet_assert(m_next.load(std::memory_order_acquire) != nullptr);
 		pheet_assert(m_next.load(std::memory_order_acquire)->lvl() == m_lvl);
