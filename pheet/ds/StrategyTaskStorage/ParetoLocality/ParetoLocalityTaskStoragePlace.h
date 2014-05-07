@@ -55,11 +55,12 @@ public:
 
 private:
 	/**
+	  TODOMK
 	 * A merge is required if:
 	 * - block->prev() exists
 	 * - and has the same level (equal to same capacity) as block
 	 */
-	bool merge_required(ActiveBlock* block);
+	ActiveBlock* merge_required(ActiveBlock* block);
 
 	/**
 	 * Put the item in the topmost block.
@@ -192,14 +193,18 @@ put(Item& item)
 	pheet_assert(!last->next());
 	if (!last->try_put(&item)) {
 		ActiveBlock* block = last;
+		bool merged = false;
 		//merge recursively, if previous block has same level
-		while (merge_required(block)) {
-			block = block->prev()->merge_next();
+		while (ActiveBlock* merge = merge_required(block)) {
+			block = merge->merge_next();
+			merged = true;
 		}
 		//did we merge?
-		if (block != last) {
+		if (merged) {
 			//free dead blocks at the end of the linked list, if any
-			while (block->next()) {
+			ActiveBlock* to_delete = block->next();
+			while (to_delete) {
+				pheet_assert(block->next()->is_dead());
 				m_array.decrease_capacity(last->capacity());
 				last = last->prev();
 				delete last->next();
@@ -331,15 +336,15 @@ template < class Pheet,
            class TaskStorage,
            class ParentTaskStoragePlace,
            class Strategy >
-bool
+typename ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::ActiveBlock*
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
 merge_required(ActiveBlock* block)
 {
-	return block->prev() && block->lvl() == block->prev()->lvl();
+//	return block->prev() && block->lvl() == block->prev()->lvl();
 
 	// If block does not have a predecessor, no merge is required.
 	if (!block->prev()) {
-		return false;
+		return nullptr;
 	}
 
 	// Else, find active_pred, the closest non-dead predecessor of block. Such a
@@ -359,11 +364,26 @@ merge_required(ActiveBlock* block)
 			pheet_assert(predecessor->lvl() == destination->lvl());
 			//move item pointers from source (block) to destination
 			move(block, destination);
+			if (last == block) {
+				while (last != destination) {
+					pheet_assert(last->is_dead());
+					m_array.decrease_capacity(last->capacity());
+					last = last->prev();
+					delete last->next();
+					last->next(nullptr);
+				}
+
+				last = destination->prev();
+			}
+			return destination->prev();
+
 		}
-		pheet_assert(!last->next());
-		return true;
+		if (last == block) {
+			last = predecessor;
+		}
+		return predecessor;
 	}
-	return false;
+	return nullptr;
 }
 
 } /* namespace pheet */
