@@ -182,6 +182,7 @@ public:
 
 		//check if we can reduce the level of this block
 		if (try_shrink()) {
+			pheet_assert(!this->next());
 			/* delete the rest of the block (by reducing the capacity of the
 			 * VirtualArray) */
 			m_data.decrease_capacity(m_capacity);
@@ -262,6 +263,17 @@ private:
 	 */
 	bool try_shrink()
 	{
+		/* If prev exists and it (i) is not dead, its level has to be larger
+		 * than the level of this block; if (ii) it is dead, its level has to be
+		 * >= the level of this block. */
+		pheet_assert(!prev() ||
+		             (!prev()->is_dead() && prev()->lvl() > this->lvl()) ||
+		             prev()->lvl() >= this->lvl());
+		/* same for next block, but with flipped comparison operators */
+		pheet_assert(!next() ||
+		             (!next()->is_dead() && next()->lvl() < this->lvl()) ||
+		             next()->lvl() <= this->lvl());
+
 		//check if we can reduce the level of this block
 		if (m_partitions->dead_partition().index(m_offset) <= m_capacity / 2) {
 			//reduce lvl and capacity
@@ -275,6 +287,8 @@ private:
 			             - m_partitions->first().index());
 			return true;
 		}
+
+		//could not shrink
 		return false;
 	}
 

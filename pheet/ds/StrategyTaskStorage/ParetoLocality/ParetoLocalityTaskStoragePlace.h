@@ -80,6 +80,15 @@ private:
 		pheet_assert(destination->is_dead());
 		pheet_assert(source->lvl() == destination->lvl());
 
+		//TODOMK: remove debug code
+		for (ActiveBlock* it = source->prev(); it != destination; it = it->prev()) {
+			//all blocks between source and destination must be dead.
+			pheet_assert(it->is_dead());
+			//Additionally, the level of these dead blocks decreases (non-strictly)
+			//monotonically
+			pheet_assert(it->lvl() <= it->next()->lvl());
+		}
+
 		VAIt source_it = m_array.iterator_to(source->offset());
 		VAIt end_it = m_array.iterator_to(source->offset() + source->capacity());
 		VAIt destination_it = m_array.iterator_to(destination->offset());
