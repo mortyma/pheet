@@ -133,6 +133,7 @@ public:
 				/*if(try_shrink()) {
 					//mark the second half as dead
 					ActiveBlock* dead_block = new ActiveBlock(m_data, m_offset + m_capacity, m_lvl);
+					dead_block->is_dead(true);
 					dead_block->next(this->next());
 					this->next()->prev(dead_block);
 					dead_block->prev(this);

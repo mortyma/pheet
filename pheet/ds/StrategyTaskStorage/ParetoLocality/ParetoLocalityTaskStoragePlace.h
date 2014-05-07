@@ -168,10 +168,19 @@ put(Item& item)
 		while (merge_required(block)) {
 			block = block->prev()->merge_next();
 		}
+		//did we merge?
 		if (block != last) {
+			//free dead blocks at the end of the linked list, if any
+			while (block->next()) {
+				m_array.decrease_capacity(last->capacity());
+				last = last->prev();
+				delete last->next();
+				last->next(nullptr);
+			}
 			//repartition block that resulted from merge
 			block->partition();
 		}
+
 		//increase capacity of virtual array
 		m_array.increase_capacity(MAX_PARTITION_SIZE);
 		//create new block
@@ -299,6 +308,54 @@ ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strat
 merge_required(ActiveBlock* block) const
 {
 	return block->prev() && block->lvl() == block->prev()->lvl();
+
+	// If block does not have a predecessor, no merge is required.
+	if (!block->prev()) {
+		return false;
+	}
+
+	// Else, find active_pred, the closest non-dead predecessor of block. Such a
+	//block has to exist.
+	ActiveBlock* predecessor = block->prev();
+	bool move_required = false;
+	while (predecessor->is_dead()) {
+		predecessor = predecessor->prev();
+		//there is at least one dead block between block and active_pred.
+		move_required = true;
+	}
+
+	//if active predecessor is of same level as block, we can merge them
+	if (block->lvl() == predecessor->lvl()) {
+		if (move_required) {
+			ActiveBlock* destination = predecessor->next();
+			pheet_assert(destination->is_dead());
+			pheet_assert(block->lvl() == destination->lvl());
+			pheet_assert(predecessor->lvl() == destination->lvl());
+
+			//move item pointers from source (block) to destination
+			VAIt source_it = m_array.iterator_to(block->offset());
+			VAIt end_it = m_array.iterator_to(block->offset() + block->capacity());
+			VAIt destination_it = m_array.iterator_to(destination->offset());
+			for (; source_it != end_it; source_it++) {
+				Item* source = *source_it;
+				Item* destination = *destination_it;
+				pheet_assert(destination == nullptr);
+				*destination_it = source;
+				*source_it = nullptr;
+
+				destination_it++;
+			}
+
+			//change the previously dead to an active block
+			destination->set_dead(false);
+
+			//change the previously active to a dead block
+			block->set_dead(true);
+		}
+		pheet_assert(!last->next());
+		return true;
+	}
+	return false;
 }
 
 } /* namespace pheet */
