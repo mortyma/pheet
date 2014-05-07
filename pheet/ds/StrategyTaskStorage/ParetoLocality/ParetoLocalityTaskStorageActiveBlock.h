@@ -46,7 +46,7 @@ public:
 	ParetoLocalityTaskStorageActiveBlock(VA& array, size_t offset,
 	                                     PivotQueue* pivots, size_t lvl = 0)
 		: m_lvl(lvl), m_data(array), m_offset(offset), m_is_dead(false),
-		  m_pivots(pivots), m_next(nullptr)
+		  m_next(nullptr), m_pivots(pivots), m_failed_attempts(0)
 	{
 		m_capacity = MAX_PARTITION_SIZE * pow(2, m_lvl);
 		size_t end = 0;
