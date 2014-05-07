@@ -201,18 +201,20 @@ put(Item& item)
 		}
 		//did we merge?
 		if (merged) {
-			//free dead blocks at the end of the linked list, if any
-			ActiveBlock* to_delete = block->next();
-			while (to_delete) {
-				pheet_assert(block->next()->is_dead());
-				m_array.decrease_capacity(last->capacity());
-				last = last->prev();
-				delete last->next();
-				last->next(nullptr);
-			}
 			//repartition block that resulted from merge
 			block->partition();
+
+			if (block->next()) {
+				pheet_assert(block->next()->is_dead());
+				pheet_assert(!block->next()->next());
+				m_array.decrease_capacity(block->next()->capacity());
+				delete block->next();
+				block->next(nullptr);
+				last = block;
+			}
+
 		}
+		pheet_assert(last == block);
 
 		//increase capacity of virtual array
 		m_array.increase_capacity(MAX_PARTITION_SIZE);
@@ -225,7 +227,6 @@ put(Item& item)
 		last = nb;
 		//put the item in the new block
 		last->put(&item);
-		pheet_assert(!last->next());
 	}
 }
 
@@ -340,8 +341,6 @@ typename ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePla
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
 merge_required(ActiveBlock* block)
 {
-//	return block->prev() && block->lvl() == block->prev()->lvl();
-
 	// If block does not have a predecessor, no merge is required.
 	if (!block->prev()) {
 		return nullptr;
@@ -350,16 +349,17 @@ merge_required(ActiveBlock* block)
 	// Else, find active_pred, the closest non-dead predecessor of block. Such a
 	//block has to exist.
 	ActiveBlock* predecessor = block->prev();
-	bool move_required = false;
+	/*bool move_required = false;
 	while (predecessor->is_dead()) {
 		predecessor = predecessor->prev();
 		//there is at least one dead block between block and active_pred.
 		move_required = true;
-	}
+	}*/
 
 	//if active predecessor is of same level as block, we can merge them
 	if (block->lvl() == predecessor->lvl()) {
-		if (move_required) {
+		/*if (move_required) {
+			pheet_assert(false);
 			ActiveBlock* destination = predecessor->next();
 			pheet_assert(predecessor->lvl() == destination->lvl());
 			//move item pointers from source (block) to destination
@@ -376,11 +376,7 @@ merge_required(ActiveBlock* block)
 				last = destination->prev();
 			}
 			return destination->prev();
-
-		}
-		if (last == block) {
-			last = predecessor;
-		}
+		}*/
 		return predecessor;
 	}
 	return nullptr;

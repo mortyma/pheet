@@ -159,7 +159,7 @@ public:
 		increase_level();
 
 		//splice out next
-		auto tmp  = m_next.load(std::memory_order_acquire);
+		ActiveBlock* tmp  = m_next.load(std::memory_order_acquire);
 		if (tmp->next()) {
 			tmp->next()->prev(this);
 		}
@@ -183,12 +183,7 @@ public:
 		partition(0, left, right);
 
 		//check if we can reduce the level of this block
-		if (try_shrink()) {
-			pheet_assert(!this->next());
-			/* delete the rest of the block (by reducing the capacity of the
-			 * VirtualArray) */
-			m_data.decrease_capacity(m_capacity);
-		}
+		try_shrink();
 	}
 
 	/**
@@ -260,10 +255,10 @@ private:
 	 * Try to reduce the level of this block by 1.
 	 *
 	 * If the dead partition of this block is >= half the block size, we can
-	 * reduce the level of the block by 1 (i.e., half its size). The caller is
-	 * responsible for handling the second half of the block!
+	 * reduce the level of the block by 1 (i.e., half its size). The second half
+	 * of the block is marked as a dead block.
 	 */
-	bool try_shrink()
+	void try_shrink()
 	{
 		/* If prev exists and it (i) is not dead, its level has to be larger
 		 * than the level of this block; if (ii) it is dead, its level has to be
@@ -287,11 +282,18 @@ private:
 			m_partitions->end(it);
 			pheet_assert(m_capacity == m_partitions->end().index()
 			             - m_partitions->first().index());
-			return true;
-		}
 
-		//could not shrink
-		return false;
+			//the second half of the block is handled via a dead block
+			ActiveBlock* dead_block = new ActiveBlock(m_data,
+			        m_offset + m_capacity, m_pivots, m_lvl);
+			dead_block->set_dead(true);
+			dead_block->next(this->next());
+			if (this->next()) {
+				this->next()->prev(dead_block);
+			}
+			dead_block->prev(this);
+			this->next(dead_block);
+		}
 	}
 
 	void create_partition_pointers(size_t start, size_t dead, size_t end)
