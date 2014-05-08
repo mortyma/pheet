@@ -109,6 +109,33 @@ private:
 		source->set_dead(true);
 	}
 
+	/**
+	 * Get the last block of the linked list of blocks starting at block.
+	 */
+	ActiveBlock* get_last(ActiveBlock* block)
+	{
+		while (block->next()) {
+			block = block->next();
+		}
+		return block;
+	}
+
+	/**
+	 * Drop all dead blocks at the end of the linked list (until a non-dead
+	 * block is encountered)
+	 */
+	ActiveBlock* drop_dead_blocks(ActiveBlock* last)
+	{
+		while (last->is_dead()) {
+			pheet_assert(last->prev());
+			last = last->prev();
+			m_array.decrease_capacity(last->next()->capacity());
+			delete last->next();
+			last->next(nullptr);
+		}
+		return last;
+	}
+
 
 private:
 	ParentTaskStoragePlace* parent_place;
@@ -204,14 +231,8 @@ put(Item& item)
 			//repartition block that resulted from merge
 			block->partition();
 
-			if (block->next()) {
-				pheet_assert(block->next()->is_dead());
-				pheet_assert(!block->next()->next());
-				m_array.decrease_capacity(block->next()->capacity());
-				delete block->next();
-				block->next(nullptr);
-				last = block;
-			}
+			last = get_last(block);
+			last = drop_dead_blocks(last);
 
 		}
 		pheet_assert(last == block);
