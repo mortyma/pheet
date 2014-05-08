@@ -131,16 +131,7 @@ public:
 				--end_it;
 				partition(m_partitions->size() - 1, start_it, end_it);
 				//check if we can reduce the level of this block by 1
-				/*if(try_shrink()) {
-					//mark the second half as dead
-					ActiveBlock* dead_block = new ActiveBlock(m_data,
-							m_offset + m_capacity, m_pivots, m_lvl);
-					dead_block->set_dead(true);
-					dead_block->next(this->next());
-					this->next()->prev(dead_block);
-					dead_block->prev(this);
-					this->next(dead_block);
-				}*/
+				try_shrink();
 			}
 			//call top() again
 			best_it = top();
@@ -159,11 +150,11 @@ public:
 		increase_level();
 
 		//splice out next
-		ActiveBlock* tmp  = m_next.load(std::memory_order_acquire);
+		ActiveBlock* tmp  = m_next.load(/*TODOMK: std::memory_order_acquire*/);
 		if (tmp->next()) {
 			tmp->next()->prev(this);
 		}
-		m_next.store(tmp->next(), std::memory_order_release);
+		m_next.store(tmp->next() /*TODOMK:, std::memory_order_release*/);
 		delete tmp;
 
 		return this;
@@ -171,7 +162,8 @@ public:
 
 	void partition()
 	{
-		pheet_assert(!this->next());
+//		pheet_assert(!this->next());
+		pheet_assert(!is_dead());
 
 		//drop the old partition pointers and create new ones
 		delete m_partitions;
@@ -249,6 +241,42 @@ public:
 		m_next.store(b, std::memory_order_release);
 	}
 
+	/**
+	 * Increase the level of the block and thus double its capacity.
+	 *
+	 * The block's offset will remain the same. Thus, if
+	 * before the call the block occupied the range [offset, offset + capacity[,
+	 * it will occupy the range [offset, offset + capacity * 2] after the call.
+	 * ("The block grows to the right").
+	 */
+	void increase_level()
+	{
+		m_lvl++;
+		m_capacity <<= 1;
+
+		//update end pointer
+		//TODOMK: more efficent way to get new end iterator
+		VAIt it = m_data.iterator_to(m_offset + m_capacity);
+		m_partitions->end(it);
+	}
+
+	/**
+	 * Decrease the level of the block and thus half its capacity.
+	 *
+	 * The block's offset will remain the same. Thus, if before the call the block
+	 * occupied the range [offset, offset + capacity[, it will occupy the range
+	 * [offset, offset + capacity / 2] after the call.
+	 */
+	void decrease_level()
+	{
+		--m_lvl;
+		m_capacity >>= 1;
+		//update end pointer
+		//TODOMK: more efficent way to get new end iterator
+		VAIt it = m_data.iterator_to(m_offset + m_capacity);
+		m_partitions->end(it);
+	}
+
 private:
 
 	/**
@@ -276,10 +304,6 @@ private:
 			//reduce lvl and capacity
 			//TODOMK: can we reduce by more than 1?
 			decrease_level();
-			//update end pointer
-			//TODOMK: more efficent way to get new end iterator
-			VAIt it = m_data.iterator_to(m_offset + m_capacity);
-			m_partitions->end(it);
 			pheet_assert(m_capacity == m_partitions->end().index()
 			             - m_partitions->first().index());
 
@@ -293,6 +317,18 @@ private:
 			}
 			dead_block->prev(this);
 			this->next(dead_block);
+
+			ActiveBlock* suc = dead_block->next();
+			if (suc) {
+				/* if we split away a dead block (dead_block), its successor
+				 * (suc = dead_block->next) has to be
+				 * (i) dead block >= suc if suc is an active block
+				 * (ii) dead_block < suc if suc is a dead block
+				 */
+				pheet_assert(suc->is_dead() || dead_block->lvl() >= suc->lvl());
+				pheet_assert(!suc->is_dead() || dead_block->lvl() < suc->lvl());
+			}
+
 		}
 	}
 
@@ -642,11 +678,11 @@ private: //methods to test correctness of data structure
 		Item* item;
 		for (; start != pp; start++) {
 			item = *start;
-			assert(item->strategy()->priority_at(pivot->dimension()) > pivot->value());
+			assert(!item || item->strategy()->priority_at(pivot->dimension()) > pivot->value());
 		}
 		for (; pp != end; pp++) {
 			item = *pp;
-			assert(item->strategy()->priority_at(pivot->dimension()) <= pivot->value());
+			assert(!item || item->strategy()->priority_at(pivot->dimension()) <= pivot->value());
 		}
 	}
 
@@ -667,18 +703,6 @@ private: //methods to test correctness of data structure
 			//should never get here
 			assert(false);
 		}
-	}
-
-	void increase_level()
-	{
-		m_lvl++;
-		m_capacity <<= 1;
-	}
-
-	void decrease_level()
-	{
-		--m_lvl;
-		m_capacity >>= 1;
 	}
 
 private:

@@ -70,6 +70,11 @@ public:
 		return m_first;
 	}
 
+	void first(VAIt first)
+	{
+		m_first = first;
+	}
+
 	VAIt last() const
 	{
 		return m_last;
@@ -121,8 +126,8 @@ public:
 private:
 	PivotQueue* m_pivot_queue;
 	std::vector<std::pair<VAIt, PivotElement*>> m_partitions;
-	/* start of first partition */
-	VAIt const m_first;
+	/* start of first partition and thus start of the block */
+	VAIt m_first; //TODOMK: rename to start
 	/* start of last partition (excluding dead items) */
 	VAIt m_last;
 	/* Dead items are stored right of the right-most partition, i.e., at the
