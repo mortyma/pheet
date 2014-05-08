@@ -136,6 +136,44 @@ private:
 		return last;
 	}
 
+private: //methods to check internal consistency
+
+	void check_blocks()
+	{
+#ifdef PHEET_DEBUG_MODE
+		pheet_assert(!last->next());
+		pheet_assert(!last->is_dead());
+		pheet_assert(!first->prev());
+
+		ActiveBlock* it = last;
+		ActiveBlock* prev;
+		while (it) {
+			do {
+				prev = it->prev();
+				if (prev && prev->is_dead()) {
+					if (it == last) {
+						pheet_assert(prev->lvl() >= it->lvl());
+					} else {
+						pheet_assert(prev->lvl() > it->lvl());
+					}
+					if (prev->next()->is_dead()) {
+						pheet_assert(prev->lvl() <= prev->next()->lvl());
+					}
+				}
+			} while (prev && prev->is_dead());
+
+			if (prev) {
+				if (it == last) {
+					pheet_assert(prev->lvl() >= it->lvl());
+				} else {
+					pheet_assert(prev->lvl() > it->lvl());
+				}
+			}
+			it = it->prev();
+		}
+#endif
+	}
+
 
 private:
 	ParentTaskStoragePlace* parent_place;
@@ -217,6 +255,8 @@ void
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
 put(Item& item)
 {
+	check_blocks();
+
 	pheet_assert(!last->next());
 	if (!last->try_put(&item)) {
 		ActiveBlock* block = last;
@@ -236,6 +276,8 @@ put(Item& item)
 
 		}
 		pheet_assert(last == block);
+
+		check_blocks();
 
 		//increase capacity of virtual array
 		m_array.increase_capacity(MAX_PARTITION_SIZE);
@@ -260,6 +302,8 @@ typename ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePla
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
 pop(BaseItem* boundary)
 {
+	check_blocks();
+
 	Item* boundary_item = reinterpret_cast<Item*>(boundary);
 	while (!boundary_item->is_taken()) {
 		ActiveBlock* best_block = nullptr;
@@ -287,6 +331,8 @@ pop(BaseItem* boundary)
 				}
 			}
 		}
+
+		check_blocks();
 
 		//if the boundary item was taken in the meantime, pop has to return null...
 		if (boundary_item->is_taken() || !best_it.validItem()) {
