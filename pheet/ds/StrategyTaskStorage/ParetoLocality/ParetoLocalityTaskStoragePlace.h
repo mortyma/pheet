@@ -269,7 +269,7 @@ private:
 		}
 		//TODOMK: remove debug code
 		if (predecessor->is_dead()) {
-			pheet_assert(predecessor->lvl() < source->lvl());
+			pheet_assert(predecessor->lvl() <= source->lvl());
 		} else {
 			pheet_assert(predecessor->lvl() >= source->lvl());
 		}
@@ -352,8 +352,8 @@ private: //methods to check internal consistency
 					pheet_assert(prev->lvl() > it->lvl());
 				}
 				if (prev->next()->is_dead()) {
-					//if the successor is dead too, prev has to be smaller
-					pheet_assert(prev->lvl() < prev->next()->lvl());
+					//if the successor is dead too, prev has to be of less or equal size
+					pheet_assert(prev->lvl() <= prev->next()->lvl());
 				}
 				//a dead block has to have a predecessor
 				pheet_assert(prev->prev());

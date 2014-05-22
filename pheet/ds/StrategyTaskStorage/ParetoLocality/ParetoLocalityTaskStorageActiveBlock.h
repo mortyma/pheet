@@ -328,7 +328,7 @@ public:
 				 * (ii) dead_block < suc if suc is a dead block
 				 */
 				pheet_assert(suc->is_dead() || dead_block->lvl() >= suc->lvl());
-				pheet_assert(!suc->is_dead() || dead_block->lvl() < suc->lvl());
+				pheet_assert(!suc->is_dead() || dead_block->lvl() <= suc->lvl());
 			}
 
 		}
