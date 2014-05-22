@@ -268,6 +268,7 @@ public:
 	 */
 	void decrease_level()
 	{
+		pheet_assert(m_lvl > 0);
 		--m_lvl;
 		m_capacity >>= 1;
 		//update end pointer
@@ -285,6 +286,10 @@ public:
 	 */
 	void try_shrink()
 	{
+		//can't shrink a block of lvl 0
+		if (m_lvl == 0) {
+			return;
+		}
 		/* If prev exists and it (i) is not dead, its level has to be larger
 		 * than the level of this block; if (ii) it is dead, its level has to be
 		 * >= the level of this block. */
