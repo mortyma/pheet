@@ -60,6 +60,7 @@ private:
 	 */
 	void merge_from_last()
 	{
+		check_linked_list();
 		//merge recursively, if previous block has same level, starting from last
 		if (merge_recursively(last, true)) {
 
@@ -73,6 +74,10 @@ private:
 
 			//reset last and drop dead blocks at the end of the list
 			last = drop_dead_blocks(get_last(last));
+
+			check_linked_list();
+			pheet_assert(!last->is_dead());
+			check_blocks();
 		}
 		check_linked_list();
 		pheet_assert(!last->is_dead());
@@ -273,15 +278,17 @@ private:
 			if (source == last) {
 				last = new_source;
 			}
+			//TODOMK: remove debug code
+			check_linked_list();
+
 			delete source;
 			delete predecessor;
 
-			//TODOMK: remove debug code
-			check_linked_list();
 			source = new_source;
 			predecessor = new_predecessor;
 		}
 		//TODOMK: remove debug code
+		check_linked_list();
 		if (predecessor->is_dead()) {
 			pheet_assert(predecessor->lvl() <= source->lvl());
 		} else {
@@ -574,6 +581,8 @@ pop(BaseItem* boundary)
 
 		//merge if necessary
 		ActiveBlock* block = get_active_successor(best_block);
+		pheet_assert(!last->is_dead());
+		check_linked_list();
 
 		if (block == last) {
 			merge_from_last();
