@@ -79,6 +79,20 @@ private:
 		check_blocks();
 	}
 
+	void merge_from(ActiveBlock*& block)
+	{
+		pheet_assert(block != last);
+		if (merge_recursively(block, false)) {
+			//repartition block that resulted from merge
+			//last does not change, since we never merge it in here
+			block->partition();
+			//TODOMK: should we shrink if possible?
+		}
+		check_linked_list();
+		pheet_assert(!last->is_dead());
+		check_blocks();
+	}
+
 	/**
 	 * Starting from block, merge blocks together as long as neccessary.
 	 *
@@ -301,6 +315,18 @@ private:
 			last->next(nullptr);
 		}
 		return last;
+	}
+
+	ActiveBlock* get_active_successor(ActiveBlock* block)
+	{
+		ActiveBlock* succ = block;
+		do {
+			succ = succ->next();
+		} while (succ && succ->is_dead());
+		if (!succ || succ->is_dead()) {
+			return block;
+		}
+		return succ;
 	}
 
 private: //methods to check internal consistency
@@ -538,6 +564,55 @@ pop(BaseItem* boundary)
 		pheet_assert(best_block);
 		pheet_assert(best_it.validItem());
 		T pop = best_block->take(best_it);
+
+		//check if we can shrink best_block
+		best_block->try_shrink();
+
+		//TODOMK: not nice to get last block here
+		last = get_last(best_block);
+		check_linked_list();
+
+		//merge if necessary
+		ActiveBlock* block = get_active_successor(best_block);
+
+		if (block == last) {
+			merge_from_last();
+		} else {
+			merge_from(block);
+		}
+
+		/*if (ActiveBlock* merge = merge_required(block)) {
+			check_linked_list();
+			best_block = merge->merge_next();
+			pheet_assert(!best_block->is_dead());
+			last = get_last(best_block);
+			last = drop_dead_blocks(last);
+			check_linked_list();
+			merged = true;
+		}
+		pheet_assert(!merge_required(best_block));
+
+		check_linked_list();
+		check_blocks();
+		pheet_assert(!best_block->is_dead());
+
+		//did we merge?
+		if (merged) {
+			last = get_last(best_block);
+			last = drop_dead_blocks(last);
+
+			//repartition block that resulted from merge
+			//TODOMK: can we shrink the block?
+			best_block->partition();
+
+			//reset last and drop dead blocks at the end of the list
+			//last = get_last(best_block);
+			//last = drop_dead_blocks(last);
+
+			check_linked_list();
+
+		}*/
+
 		//If take did not succeed, best_item was taken by another thread in the
 		//meantime. Try again.
 		if (pop != nullable_traits<T>::null_value) {
