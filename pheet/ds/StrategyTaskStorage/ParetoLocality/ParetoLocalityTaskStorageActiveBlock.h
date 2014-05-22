@@ -130,8 +130,6 @@ public:
 			if (end_it.index() - start_it.index() > MAX_PARTITION_SIZE) {
 				--end_it;
 				partition(m_partitions->size() - 1, start_it, end_it);
-				//check if we can reduce the level of this block by 1
-				try_shrink();
 			}
 			//call top() again
 			best_it = top();
@@ -173,9 +171,6 @@ public:
 		auto left = m_data.iterator_to(m_offset);
 		auto right = m_data.iterator_to(m_offset + m_capacity - 1);
 		partition(0, left, right);
-
-		//check if we can reduce the level of this block
-		try_shrink();
 	}
 
 	/**
@@ -277,8 +272,6 @@ public:
 		m_partitions->end(it);
 	}
 
-private:
-
 	/**
 	 * Try to reduce the level of this block by 1.
 	 *
@@ -332,6 +325,7 @@ private:
 		}
 	}
 
+private:
 	void create_partition_pointers(size_t start, size_t dead, size_t end)
 	{
 		auto start_it = m_data.iterator_to(m_offset + start);
