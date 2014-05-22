@@ -55,6 +55,77 @@ public:
 
 private:
 
+	ActiveBlock* swap_dead(ActiveBlock* block)
+	{
+		pheet_assert(block->is_dead());
+		ActiveBlock* predecessor = block->prev();
+		//block must have a predecessor
+		pheet_assert(predecessor);
+		check_linked_list();
+
+		if (predecessor->is_dead() && predecessor->lvl() > block->lvl()) {
+			predecessor = swap_dead(predecessor, block);
+			predecessor = swap_dead(predecessor);
+		}
+		check_linked_list();
+		return predecessor;
+	}
+
+	ActiveBlock* swap_dead(ActiveBlock* predecessor, ActiveBlock* block)
+	{
+		pheet_assert(predecessor->next() == block);
+		pheet_assert(block->prev() == predecessor);
+		check_linked_list();
+		/* We need to swap the two dead blocks. Luckily, since both are dead
+		 * blocks and thus contain only elements pointing to null, we can
+		 * simply decrease the level of predecessor and increase the level of
+		 * block */
+		//create the blocks
+		size_t offset = predecessor->offset();
+		size_t lvl = block->lvl();
+		ActiveBlock* new_predecessor = new ActiveBlock(m_array, offset, &m_pivots, lvl);
+		new_predecessor->set_dead(true);
+
+		pheet_assert(block->offset() >= (predecessor->capacity() - block->capacity()));
+		offset = block->offset() - (predecessor->capacity() - block->capacity());
+		lvl = predecessor->lvl();
+		ActiveBlock* new_block = new ActiveBlock(m_array, offset, &m_pivots, lvl);
+		new_block->set_dead(true);
+
+		//put them into the linked list
+		new_predecessor->prev(predecessor->prev());
+		pheet_assert(new_predecessor->prev());
+		new_predecessor->prev()->next(new_predecessor);
+		new_predecessor->next(new_block);
+
+		new_block->prev(new_predecessor);
+		pheet_assert(new_block->prev()->next() == new_block);
+		new_block->next(block->next());
+		if (new_block->next()) {
+			new_block->next()->prev(new_block);
+		}
+
+		//TODMK: remove debug code
+		pheet_assert(new_predecessor->prev()->offset() + new_predecessor->prev()->capacity() ==
+		             new_predecessor->offset());
+		pheet_assert(new_predecessor->offset() + new_predecessor->capacity() == new_block->offset());
+		if (new_block->next()) {
+			pheet_assert(new_block->offset() + new_block->capacity() == new_block->next()->offset());
+		}
+
+		if (block == last) {
+			last = new_block;
+		}
+
+		check_linked_list();
+
+		delete block;
+		delete predecessor;
+
+
+		return new_predecessor;
+	}
+
 	/**
 	 * Starting from last, merge recursively as long as necessary.
 	 */
@@ -248,61 +319,37 @@ private:
 		//change the previously active to a dead block
 		source->set_dead(true);
 
-		ActiveBlock* predecessor = source->prev();
-		//source must have a predecessor
-		pheet_assert(predecessor);
+		ActiveBlock* result = swap_dead(source);
 
-		check_linked_list();
-		if (predecessor->is_dead() && predecessor->lvl() > source->lvl()) {
-			/* We need to swap the two dead blocks. Luckily, since both are dead
-			 * blocks and thus contain only elements pointing to null, we can
-			 * simply decrease the level of predecessor and increase the level of
-			 * source */
-			size_t offset = predecessor->offset();
-			size_t lvl = predecessor->lvl() - 1;
-			ActiveBlock* new_predecessor = new ActiveBlock(m_array, offset, &m_pivots, lvl);
-			new_predecessor->set_dead(true);
-			//TODOMK: can be done with less assignments
-			new_predecessor->prev(predecessor->prev());
-			new_predecessor->next(predecessor->next());
-			if (new_predecessor->prev()) {
-				new_predecessor->prev()->next(new_predecessor);
-			}
-			new_predecessor->next()->prev(new_predecessor);
-
-			pheet_assert(source->offset() >= source->capacity());
-			offset = source->offset() - source->capacity();
-			lvl = source->lvl() + 1;
-			ActiveBlock* new_source = new ActiveBlock(m_array, offset, &m_pivots, lvl);
-			new_source->set_dead(true);
-
-			new_source->prev(source->prev());
-			new_source->next(source->next());
-			new_source->prev()->next(new_source);
-			if (new_source->next()) {
-				new_source->next()->prev(new_source);
-			}
-
-			if (source == last) {
-				last = new_source;
-			}
-			//TODOMK: remove debug code
-			check_linked_list();
-
-			delete source;
-			delete predecessor;
-
-			source = new_source;
-			predecessor = new_predecessor;
-		}
 		//TODOMK: remove debug code
-		check_linked_list();
-		if (predecessor->is_dead()) {
-			pheet_assert(predecessor->lvl() <= source->lvl());
-		} else {
-			pheet_assert(predecessor->lvl() >= source->lvl());
+		//find the closest non-dead block
+		while (result->is_dead()) {
+			result = result->prev();
 		}
 
+		//the next block is a dead one and thus has to be of size <= result
+		pheet_assert(result->next()->is_dead());
+		pheet_assert(result->lvl() >= result->next()->lvl());
+		//until we reach an active successor or the end of the list,
+		//the size of the encountered dead blocks has to increase monotonically
+		last = get_last(result);
+		last = drop_dead_blocks(last);
+		if (result == last) {
+			return;
+		}
+		ActiveBlock* it = result->next();
+		while (it->next() && it->next()->is_dead()) {
+			if (it->lvl() > it->next()->lvl()) {
+				it = swap_dead(it, it->next());
+			}
+			it = it->next();
+		}
+
+		result = result->next();
+		while (result->next() && result->next()->is_dead()) {
+			pheet_assert(result->lvl() <= result->next()->lvl());
+			result = result->next();
+		}
 	}
 
 	/**
