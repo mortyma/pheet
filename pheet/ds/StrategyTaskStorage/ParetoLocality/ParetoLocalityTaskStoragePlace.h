@@ -54,6 +54,118 @@ public:
 	}
 
 private:
+
+	/**
+	 * Starting from last, merge recursively as long as necessary.
+	 */
+	void merge_from_last()
+	{
+		//merge recursively, if previous block has same level, starting from last
+		if (merge_recursively(last, true)) {
+
+			//repartition block that resulted from merge
+			last->partition();
+
+			//try to shrink the block
+			last->try_shrink();
+
+			//TODOMK: shrink may create a dead block at the very end only.
+
+			//reset last and drop dead blocks at the end of the list
+			last = drop_dead_blocks(get_last(last));
+		}
+		check_linked_list();
+		pheet_assert(!last->is_dead());
+		check_blocks();
+	}
+
+	/**
+	 * Starting from block, merge blocks together as long as neccessary.
+	 *
+	 * Returns true, if blocks were merged. The caller is responsible for
+	 * re-partitioning the resulting last block and cleaning up dead blocks
+	 * at the end of the linked list, if necessary.
+	 */
+	bool merge_recursively(ActiveBlock*& block, bool merge_last)
+	{
+		pheet_assert(!block->is_dead());
+		check_linked_list();
+
+		bool merged = false;
+		size_t nr_merges = 0;
+		while (merge(block, merge_last)) {
+			merged = true;
+			nr_merges++;
+		}
+		return merged;
+	}
+
+	/**
+	 * TODOMK
+	 *
+	 * Merge block with active predecessor, if necessary.
+	 *
+	 * Returns true if a merge was performed; block will point to the
+	 * resulting block
+	 *
+	 */
+	bool merge(ActiveBlock*& block, bool merge_last = false)
+	{
+		pheet_assert(!block->is_dead());
+
+		//if block is the last block and merge_last is not set, return
+		if (block == last && !merge_last) {
+			return false;
+		}
+
+		//If block does not have a predecessor, no merge is required.
+		if (!block->prev()) {
+			return false;
+		}
+
+		//Else, find active_pred, the closest non-dead predecessor of block. Such a
+		//block has to exist.
+		ActiveBlock* predecessor = block->prev();
+		while (predecessor->is_dead()) {
+			predecessor = predecessor->prev();
+		}
+
+		if (predecessor == block->prev()) {
+			/* the two blocks to merge (predecessor and block) are next to each
+			 * other... */
+			if (block->lvl() == predecessor->lvl()) {
+				//..and of the same size. We can merge them.
+				pheet_assert(!predecessor->is_dead());
+				block = predecessor->merge_next();
+				return true;
+			} else {
+				//...but of different size. No more merges are required.
+				pheet_assert(predecessor->lvl() > block->lvl());
+				return false;
+			}
+		}
+
+		//there is at least one dead block between block and predecessor.
+		ActiveBlock* destination = predecessor->next();
+		//predecessor->next has to be dead...
+		pheet_assert(destination->is_dead());
+		//and will take the items from block if it is of same size
+		if (block->lvl() == destination->lvl()) {
+			//move item pointers from source (block) to destination
+			move(block, destination);
+			block = destination;
+			//predecessor and predecessor->next have the same size, we can merge them
+			if (predecessor->lvl() == destination->lvl()) {
+				block = destination->prev()->merge_next();
+				return true;
+			}
+			//otherwise, no need to merge
+			return false;
+		}
+		return false;
+	}
+
+
 	/**
 	  TODOMK
 	 * A merge is required if:
@@ -275,7 +387,6 @@ private: //methods to check internal consistency
 #endif
 	}
 
-
 private:
 	ParentTaskStoragePlace* parent_place;
 	TaskStorage* task_storage;
@@ -360,39 +471,20 @@ put(Item& item)
 
 	pheet_assert(!last->next());
 	if (!last->try_put(&item)) {
-		ActiveBlock* block = last;
-		bool merged = false;
-		//merge recursively, if previous block has same level
-		while (ActiveBlock* merge = merge_required(block)) {
-			block = merge->merge_next();
-			if (!block->next()) {
-				last = block;
-			}
-			merged = true;
-		}
-		//did we merge?
-		if (merged) {
-			//repartition block that resulted from merge
-			block->partition();
-
-			//reset last and drop dead blocks at the end of the list
-			last = get_last(block);
-			last = drop_dead_blocks(last);
-
-		}
-		pheet_assert(last == block);
-
-		check_blocks();
+		//last is full. Merge it into previous block
+		merge_from_last();
 
 		//increase capacity of virtual array
 		m_array.increase_capacity(MAX_PARTITION_SIZE);
+
 		//create new block
-		size_t nb_offset = block->offset() + block->capacity();
+		size_t nb_offset = last->offset() + last->capacity();
 		ActiveBlock* nb = new ActiveBlock(m_array, nb_offset, &m_pivots);
-		nb->prev(block);
-		pheet_assert(!block->next());
-		block->next(nb);
+		nb->prev(last);
+		pheet_assert(!last->next());
+		last->next(nb);
 		last = nb;
+
 		//put the item in the new block
 		last->put(&item);
 	}
@@ -421,44 +513,6 @@ pop(BaseItem* boundary)
 				check_linked_list();
 				VAIt top_it = block->top();
 				pheet_assert(!block->is_dead());
-				check_linked_list();
-				//TODOMK: check if we need to merge
-				bool merged = false;
-				//merge recursively, if previous block has same level
-				while (ActiveBlock* merge = merge_required(block)) {
-					check_linked_list();
-					block = merge->merge_next();
-					pheet_assert(!block->is_dead());
-					last = get_last(block);
-					last = drop_dead_blocks(last);
-					check_linked_list();
-					merged = true;
-				}
-				//block may have been set to dead
-				while (block->is_dead()) {
-					block = block->prev();
-				}
-
-				check_linked_list();
-//				check_blocks();
-				pheet_assert(!block->is_dead());
-				//did we merge?
-				if (merged) {
-					last = get_last(block);
-					last = drop_dead_blocks(last);
-
-//					check_blocks();
-					//repartition block that resulted from merge
-					block->partition();
-
-					//reset last and drop dead blocks at the end of the list
-					last = get_last(block);
-					last = drop_dead_blocks(last);
-
-					check_linked_list();
-
-				}
-				check_blocks(block);
 
 				//is the block empty?
 				if (!top_it.validItem()) {
@@ -474,7 +528,6 @@ pop(BaseItem* boundary)
 				}
 			}
 		}
-
 		check_blocks();
 
 		//if the boundary item was taken in the meantime, pop has to return null...
