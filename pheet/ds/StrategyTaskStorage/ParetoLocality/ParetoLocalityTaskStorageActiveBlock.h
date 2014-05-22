@@ -139,10 +139,15 @@ public:
 
 	ActiveBlock* merge_next()
 	{
-		pheet_assert(m_next.load(std::memory_order_acquire) != nullptr);
-		pheet_assert(m_next.load(std::memory_order_acquire)->lvl() == m_lvl);
+		pheet_assert(next() != nullptr);
+		pheet_assert(next()->lvl() == m_lvl);
+
 		//we only merge full blocks
 		pheet_assert(m_partitions->end().index(m_offset) == m_capacity);
+
+		//we don't merge dead blocks
+		pheet_assert(!m_is_dead);
+		pheet_assert(!next()->is_dead());
 
 		//expand this block to cover this as well as next block
 		increase_level();
@@ -160,7 +165,6 @@ public:
 
 	void partition()
 	{
-//		pheet_assert(!this->next());
 		pheet_assert(!is_dead());
 
 		//drop the old partition pointers and create new ones
