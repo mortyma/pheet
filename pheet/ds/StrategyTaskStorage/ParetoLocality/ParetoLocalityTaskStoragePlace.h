@@ -172,7 +172,16 @@ private:
 		if (block->lvl() == destination->lvl()) {
 			//move item pointers from source (block) to destination
 			move(block, destination);
+			check_linked_list();
+
+			//TODOMK:
+			bool was_last = block == last;
 			block = destination;
+			if (was_last) {
+				last = drop_dead_blocks(get_last(block));
+			}
+
+			check_linked_list();
 			//predecessor and predecessor->next have the same size, we can merge them
 			if (predecessor->lvl() == destination->lvl()) {
 				block = destination->prev()->merge_next();
@@ -249,7 +258,6 @@ private:
 			 * blocks and thus contain only elements pointing to null, we can
 			 * simply decrease the level of predecessor and increase the level of
 			 * source */
-			//predecessor->decrease_level();
 			size_t offset = predecessor->offset();
 			size_t lvl = predecessor->lvl() - 1;
 			ActiveBlock* new_predecessor = new ActiveBlock(m_array, offset, &m_pivots, lvl);
@@ -576,7 +584,7 @@ pop(BaseItem* boundary)
 		best_block->try_shrink();
 
 		//TODOMK: not nice to get last block here
-		last = get_last(best_block);
+		last = drop_dead_blocks(get_last(best_block));
 		check_linked_list();
 
 		//merge if necessary
