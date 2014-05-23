@@ -264,15 +264,6 @@ private:
 		return false;
 	}
 
-
-	/**
-	  TODOMK
-	 * A merge is required if:
-	 * - block->prev() exists
-	 * - and has the same level (equal to same capacity) as block
-	 */
-	ActiveBlock* merge_required(ActiveBlock* block);
-
 	/**
 	 * Put the item in the topmost block.
 	 */
@@ -645,38 +636,6 @@ pop(BaseItem* boundary)
 			merge_from(block);
 		}
 
-		/*if (ActiveBlock* merge = merge_required(block)) {
-			check_linked_list();
-			best_block = merge->merge_next();
-			pheet_assert(!best_block->is_dead());
-			last = get_last(best_block);
-			last = drop_dead_blocks(last);
-			check_linked_list();
-			merged = true;
-		}
-		pheet_assert(!merge_required(best_block));
-
-		check_linked_list();
-		check_blocks();
-		pheet_assert(!best_block->is_dead());
-
-		//did we merge?
-		if (merged) {
-			last = get_last(best_block);
-			last = drop_dead_blocks(last);
-
-			//repartition block that resulted from merge
-			//TODOMK: can we shrink the block?
-			best_block->partition();
-
-			//reset last and drop dead blocks at the end of the list
-			//last = get_last(best_block);
-			//last = drop_dead_blocks(last);
-
-			check_linked_list();
-
-		}*/
-
 		//If take did not succeed, best_item was taken by another thread in the
 		//meantime. Try again.
 		if (pop != nullable_traits<T>::null_value) {
@@ -734,83 +693,6 @@ clean_up()
 {
 
 }
-
-template < class Pheet,
-           class TaskStorage,
-           class ParentTaskStoragePlace,
-           class Strategy >
-typename ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::ActiveBlock*
-ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
-merge_required(ActiveBlock* block)
-{
-	check_linked_list();
-	pheet_assert(!block->is_dead());
-
-	//If block does not have a predecessor, no merge is required.
-	if (!block->prev()) {
-		return nullptr;
-	}
-
-	//Else, find active_pred, the closest non-dead predecessor of block. Such a
-	//block has to exist.
-	ActiveBlock* predecessor = block->prev();
-	while (predecessor->is_dead()) {
-		predecessor = predecessor->prev();
-	}
-
-	if (predecessor == block->prev()) {
-		/* the two blocks to merge (predecessor and block) are next to each
-		 * other... */
-		if (block->lvl() == predecessor->lvl()) {
-			//..and of the same size. We can merge them.
-			pheet_assert(!predecessor->is_dead());
-			check_linked_list();
-			return predecessor;
-		} else {
-			//...but of different size. No more merges are required.
-			pheet_assert(predecessor->lvl() > block->lvl());
-			return nullptr;
-		}
-
-	}
-
-	//there is at least one dead block between block and predecessor.
-	ActiveBlock* destination = predecessor->next();
-	//predecessor->next has to be dead...
-	pheet_assert(destination->is_dead());
-	//and will take the items from block if it is of same size
-	if (block->lvl() == destination->lvl()) {
-		//move item pointers from source (block) to destination
-		move(block, destination);
-		//predecessor and predecessor->next have the same size, we can merge them
-		if (predecessor->lvl() == destination->lvl()) {
-			return destination->prev();
-		}
-		//otherwise, no need to merge
-		return nullptr;
-	}
-
-	return nullptr;
-
-
-	//if active predecessor is of same level as block, we can merge them
-	if (block->lvl() == predecessor->lvl()) {
-		if (predecessor != block->prev()) {
-			//there is at least one dead block between block and active_pred.
-			ActiveBlock* destination = predecessor->next();
-			pheet_assert(predecessor->lvl() == destination->lvl());
-			//move item pointers from source (block) to destination
-			move(block, destination);
-			check_linked_list();
-			return destination->prev();
-		}
-		pheet_assert(!predecessor->is_dead());
-		check_linked_list();
-		return predecessor;
-	}
-	return nullptr;
-}
-
 } /* namespace pheet */
 
 #endif /* PARETOLOCALITYTASKSTORAGEPLACE_H_ */
