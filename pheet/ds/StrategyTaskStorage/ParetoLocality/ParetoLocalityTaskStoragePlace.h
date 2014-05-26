@@ -55,7 +55,7 @@ public:
 
 private:
 
-	ActiveBlock* swap_dead(ActiveBlock* block)
+	ActiveBlock* handle_dead(ActiveBlock* block)
 	{
 		pheet_assert(block->is_dead());
 		ActiveBlock* predecessor = block->prev();
@@ -65,7 +65,7 @@ private:
 
 		if (predecessor->is_dead() && predecessor->lvl() > block->lvl()) {
 			predecessor = swap_dead(predecessor, block);
-			predecessor = swap_dead(predecessor);
+			predecessor = handle_dead(predecessor);
 		}
 		check_linked_list();
 		return predecessor;
@@ -291,13 +291,13 @@ private:
 			pheet_assert(!it->next()->is_dead() || it->lvl() <= it->next()->lvl());
 		}
 
+		//move all items from block source to block destination
 		VAIt source_it = m_array.iterator_to(source->offset());
 		VAIt end_it = m_array.iterator_to(source->offset() + source->capacity());
 		VAIt destination_it = m_array.iterator_to(destination->offset());
 		for (; source_it != end_it; source_it++) {
 			Item* source_item = *source_it;
-			Item* destination_item = *destination_it;
-			pheet_assert(destination_item == nullptr);
+			pheet_assert(*destination_it == nullptr);
 			*destination_it = source_item;
 			*source_it = nullptr;
 			destination_it++;
@@ -309,37 +309,8 @@ private:
 		//change the previously active to a dead block
 		source->set_dead(true);
 
-		ActiveBlock* result = swap_dead(source);
-
-		//TODOMK: remove debug code
-		//find the closest non-dead block
-		while (result->is_dead()) {
-			result = result->prev();
-		}
-
-		//the next block is a dead one and thus has to be of size <= result
-		pheet_assert(result->next()->is_dead());
-		pheet_assert(result->lvl() >= result->next()->lvl());
-		//until we reach an active successor or the end of the list,
-		//the size of the encountered dead blocks has to increase monotonically
-		last = get_last(result);
-		last = drop_dead_blocks(last);
-		if (result == last) {
-			return;
-		}
-		ActiveBlock* it = result->next();
-		while (it->next() && it->next()->is_dead()) {
-			if (it->lvl() > it->next()->lvl()) {
-				it = swap_dead(it, it->next());
-			}
-			it = it->next();
-		}
-
-		result = result->next();
-		while (result->next() && result->next()->is_dead()) {
-			pheet_assert(result->lvl() <= result->next()->lvl());
-			result = result->next();
-		}
+		//make sure that consecutive dead blocks increase in size
+		handle_dead(source);
 	}
 
 	/**
