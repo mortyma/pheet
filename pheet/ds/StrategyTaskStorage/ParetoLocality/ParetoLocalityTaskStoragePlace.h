@@ -139,12 +139,11 @@ private:
 			last->partition();
 
 			//try to shrink the block
-			last->try_shrink();
-
-			//TODOMK: shrink may create a dead block at the very end only.
-
-			//reset last and drop dead blocks at the end of the list
-			last = drop_dead_blocks(get_last(last));
+			if (last->try_shrink()) {
+				//TODOMK: shrink may create a dead block at the very end only.
+				//reset last and drop dead blocks at the end of the list
+				last = drop_dead_blocks(get_last(last));
+			}
 
 			check_linked_list();
 			pheet_assert(!last->is_dead());

@@ -284,11 +284,11 @@ public:
 	 * reduce the level of the block by 1 (i.e., half its size). The second half
 	 * of the block is marked as a dead block.
 	 */
-	void try_shrink()
+	bool try_shrink()
 	{
 		//can't shrink a block of lvl 0
 		if (m_lvl == 0) {
-			return;
+			return false;
 		}
 		/* If prev exists and it (i) is not dead, its level has to be larger
 		 * than the level of this block; if (ii) it is dead, its level has to be
@@ -330,8 +330,9 @@ public:
 				pheet_assert(suc->is_dead() || dead_block->lvl() >= suc->lvl());
 				pheet_assert(!suc->is_dead() || dead_block->lvl() <= suc->lvl());
 			}
-
+			return true;
 		}
+		return false;
 	}
 
 private:
