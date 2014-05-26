@@ -24,6 +24,7 @@ namespace pheet
 template <class T>
 class VirtualArray
 {
+
 public:
 	typedef VirtualArrayBlock<T, DATA_BLOCK_SIZE> Block;
 
@@ -186,6 +187,19 @@ public:
 		return it1.index() < it2.index() ? it1 : it2;
 	}
 
+	std::atomic<T>& operator[](size_t idx)
+	{
+		pheet_assert(idx < m_capacity); //TODOMK: could be a problem if we reduce capacity on the fly
+
+		Block* block = find_block(idx);
+		return (*block)[idx % block_size()];
+	}
+
+	constexpr size_t block_size() const
+	{
+		return DATA_BLOCK_SIZE;
+	}
+
 	/**
 	 * Increase the capacity of this VirtualArray by the given value.
 	 *
@@ -213,19 +227,6 @@ public:
 		/* We do not reduce/free the blocks since another thread might currently
 		 * access them. Just keep them for later reusage. They are eventually
 		 * fred in the destructor. */
-	}
-
-	std::atomic<T>& operator[](size_t idx)
-	{
-		pheet_assert(idx < m_capacity); //TODOMK: could be a problem if we reduce capacity on the fly
-
-		Block* block = find_block(idx);
-		return (*block)[idx % block_size()];
-	}
-
-	constexpr size_t block_size() const
-	{
-		return DATA_BLOCK_SIZE;
 	}
 
 private:
