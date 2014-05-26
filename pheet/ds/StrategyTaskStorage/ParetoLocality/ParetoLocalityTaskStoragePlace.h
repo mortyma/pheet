@@ -258,8 +258,10 @@ private:
 				return true;
 			}
 			//otherwise, no need to merge
+			pheet_assert(predecessor->lvl() > destination->lvl());
 			return false;
 		}
+		pheet_assert(block->lvl() < destination->lvl());
 		return false;
 	}
 
