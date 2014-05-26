@@ -195,6 +195,11 @@ public:
 		return (*block)[idx % block_size()];
 	}
 
+	size_t capacity() const
+	{
+		return m_capacity;
+	}
+
 	constexpr size_t block_size() const
 	{
 		return DATA_BLOCK_SIZE;

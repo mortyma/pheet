@@ -602,22 +602,30 @@ steal(BaseItem* boundary)
 	 * executed or dropped. */
 	pheet_assert(other_place != this);
 
-	//TODOMK: steal only if place to steal from has a lot more items than this place
 	if (!item->is_taken()) {
 		put(*item);
 		parent_place->push(item);
 
-		auto it = other_place->array().begin();
-		auto end = other_place->array().end();
+		//steal only if place to steal from has a lot more items than this place
+		//TODOMK: choose got factor
+		size_t other_cap = other_place->array().capacity();
+		size_t this_cap = this->array().capacity();
+		if (other_cap > 2 * this_cap) {
+			auto it = other_place->array().begin();
+			auto end = other_place->array().end();
 
-		//TODOMK: this works, but may not be very efficient
-		for (; end.valid() && it != end; it++) {
-			pheet_assert(it.index() < end.index());
-			Item* item = *it;
-			if (item && !item->is_taken_or_dead()) {
-				put(*item);
+			//TODOMK: this works, but may not be very efficient
+			for (; end.valid() && it != end; it++) {
+				pheet_assert(it.index() < end.index());
+				Item* item = *it;
+				if (item && !item->is_taken_or_dead()) {
+					put(*item);
+				}
 			}
-		}
+			//std::cerr << "steal!\n";
+		}/* else {
+			std::cerr << "no steal..other place: " << other_cap << " this place: " << this_cap << " \n";
+		}*/
 
 		//TODOMK: linearization; make sure boundary item is not taken
 		return pop(boundary);
