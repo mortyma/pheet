@@ -61,13 +61,11 @@ private:
 		ActiveBlock* predecessor = block->prev();
 		//block must have a predecessor
 		pheet_assert(predecessor);
-		check_linked_list();
 
 		if (predecessor->is_dead() && predecessor->lvl() > block->lvl()) {
 			predecessor = swap_dead(predecessor, block);
 			predecessor = handle_dead(predecessor);
 		}
-		check_linked_list();
 		return predecessor;
 	}
 
@@ -75,7 +73,6 @@ private:
 	{
 		pheet_assert(predecessor->next() == block);
 		pheet_assert(block->prev() == predecessor);
-		check_linked_list();
 		/* We need to swap the two dead blocks. Luckily, since both are dead
 		 * blocks and thus contain only elements pointing to null, we can
 		 * simply decrease the level of predecessor and increase the level of
@@ -105,23 +102,12 @@ private:
 			new_block->next()->prev(new_block);
 		}
 
-		//TODMK: remove debug code
-		pheet_assert(new_predecessor->prev()->offset() + new_predecessor->prev()->capacity() ==
-		             new_predecessor->offset());
-		pheet_assert(new_predecessor->offset() + new_predecessor->capacity() == new_block->offset());
-		if (new_block->next()) {
-			pheet_assert(new_block->offset() + new_block->capacity() == new_block->next()->offset());
-		}
-
 		if (block == last) {
 			last = new_block;
 		}
 
-		check_linked_list();
-
 		delete block;
 		delete predecessor;
-
 
 		return new_predecessor;
 	}
@@ -131,7 +117,6 @@ private:
 	 */
 	void merge_from_last()
 	{
-		check_linked_list();
 		//merge recursively, if previous block has same level, starting from last
 		if (merge_recursively(last, true)) {
 
@@ -144,14 +129,8 @@ private:
 				//reset last and drop dead blocks at the end of the list
 				last = drop_dead_blocks(get_last(last));
 			}
-
-			check_linked_list();
-			pheet_assert(!last->is_dead());
-			check_blocks();
 		}
-		check_linked_list();
 		pheet_assert(!last->is_dead());
-		check_blocks();
 	}
 
 	void merge_from(ActiveBlock*& block)
@@ -163,9 +142,7 @@ private:
 			block->partition();
 			//TODOMK: should we shrink if possible?
 		}
-		check_linked_list();
 		pheet_assert(!last->is_dead());
-		check_blocks();
 	}
 
 	/**
@@ -178,13 +155,9 @@ private:
 	bool merge_recursively(ActiveBlock*& block, bool merge_last)
 	{
 		pheet_assert(!block->is_dead());
-		check_linked_list();
-
 		bool merged = false;
-		size_t nr_merges = 0;
 		while (merge(block, merge_last)) {
 			merged = true;
-			nr_merges++;
 		}
 		return merged;
 	}
@@ -242,7 +215,6 @@ private:
 		if (block->lvl() == destination->lvl()) {
 			//move item pointers from source (block) to destination
 			move(block, destination);
-			check_linked_list();
 
 			//TODOMK:
 			bool was_last = block == last;
@@ -251,7 +223,6 @@ private:
 				last = drop_dead_blocks(get_last(block));
 			}
 
-			check_linked_list();
 			//predecessor and predecessor->next have the same size, we can merge them
 			if (predecessor->lvl() == destination->lvl()) {
 				block = destination->prev()->merge_next();
@@ -283,15 +254,6 @@ private:
 	{
 		pheet_assert(destination->is_dead());
 		pheet_assert(source->lvl() == destination->lvl());
-
-		//TODOMK: remove debug code
-		for (ActiveBlock* it = source->prev(); it != destination; it = it->prev()) {
-			//all blocks between source and destination must be dead.
-			pheet_assert(it->is_dead());
-			//Additionally, the level of these dead blocks decreases (non-strictly)
-			//monotonically
-			pheet_assert(!it->next()->is_dead() || it->lvl() <= it->next()->lvl());
-		}
 
 		//move all items from block source to block destination
 		VAIt source_it = m_array.iterator_to(source->offset());
@@ -356,9 +318,8 @@ private:
 
 private: //methods to check internal consistency
 
-	void check_linked_list()
+	bool check_linked_list()
 	{
-#ifdef PHEET_DEBUG_MODE
 		//iterate through all the blocks in the linked list, checking basic properties
 		ActiveBlock* it = first;
 		while (it) {
@@ -376,17 +337,16 @@ private: //methods to check internal consistency
 
 			it = it->next();
 		}
-#endif
+		return true;
 	}
 
-	void check_blocks()
+	bool check_blocks()
 	{
-		check_blocks(last);
+		return check_blocks(last);
 	}
 
-	void check_blocks(ActiveBlock* it)
+	bool check_blocks(ActiveBlock* it)
 	{
-#ifdef PHEET_DEBUG_MODE
 		ActiveBlock* prev;
 		//iterate through all the blocks in the linked list, starting at the end
 		while (it) {
@@ -435,7 +395,7 @@ private: //methods to check internal consistency
 			}
 			it = prev;
 		}
-#endif
+		return true;
 	}
 
 private:
@@ -518,8 +478,6 @@ void
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
 put(Item& item)
 {
-	check_blocks();
-
 	pheet_assert(!last->next());
 	if (!last->try_put(&item)) {
 		//last is full. Merge it into previous block
@@ -550,8 +508,6 @@ typename ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePla
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
 pop(BaseItem* boundary)
 {
-	check_blocks();
-
 	Item* boundary_item = reinterpret_cast<Item*>(boundary);
 	while (!boundary_item->is_taken()) {
 		ActiveBlock* best_block = nullptr;
@@ -561,7 +517,6 @@ pop(BaseItem* boundary)
 			//only check the block if it is an ActiveBlock
 			if (!block->is_dead()) {
 				//get the top element
-				check_linked_list();
 				VAIt top_it = block->top();
 				pheet_assert(!block->is_dead());
 
@@ -579,7 +534,6 @@ pop(BaseItem* boundary)
 				}
 			}
 		}
-		check_blocks();
 
 		//if the boundary item was taken in the meantime, pop has to return null...
 		if (boundary_item->is_taken() || !best_it.validItem()) {
@@ -590,17 +544,15 @@ pop(BaseItem* boundary)
 		pheet_assert(best_it.validItem());
 		T pop = best_block->take(best_it);
 
-		//check if we can shrink best_block
-		best_block->try_shrink();
-
-		//TODOMK: not nice to get last block here
-		last = drop_dead_blocks(get_last(best_block));
-		check_linked_list();
+		if (best_block->try_shrink()) {
+			//TODOMK: not nice to get last block here
+			last = drop_dead_blocks(get_last(best_block));
+		}
 
 		//merge if necessary
 		ActiveBlock* block = get_active_successor(best_block);
 		pheet_assert(!last->is_dead());
-		check_linked_list();
+
 
 		if (block == last) {
 			merge_from_last();

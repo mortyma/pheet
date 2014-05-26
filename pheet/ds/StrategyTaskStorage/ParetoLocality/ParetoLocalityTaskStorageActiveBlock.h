@@ -290,17 +290,6 @@ public:
 		if (m_lvl == 0) {
 			return false;
 		}
-		/* If prev exists and it (i) is not dead, its level has to be larger
-		 * than the level of this block; if (ii) it is dead, its level has to be
-		 * >= the level of this block. */
-		pheet_assert(!prev() ||
-		             (!prev()->is_dead() && prev()->lvl() > this->lvl()) ||
-		             prev()->lvl() >= this->lvl());
-		/* same for next block, but with flipped comparison operators */
-		pheet_assert(!next() ||
-		             (!next()->is_dead() && next()->lvl() < this->lvl()) ||
-		             next()->lvl() <= this->lvl());
-
 		//check if we can reduce the level of this block
 		if (m_partitions->dead_partition().index(m_offset) <= m_capacity / 2) {
 			//reduce lvl and capacity
@@ -319,17 +308,6 @@ public:
 			}
 			dead_block->prev(this);
 			this->next(dead_block);
-
-			ActiveBlock* suc = dead_block->next();
-			if (suc) {
-				/* if we split away a dead block (dead_block), its successor
-				 * (suc = dead_block->next) has to be
-				 * (i) dead block >= suc if suc is an active block
-				 * (ii) dead_block < suc if suc is a dead block
-				 */
-				pheet_assert(suc->is_dead() || dead_block->lvl() >= suc->lvl());
-				pheet_assert(!suc->is_dead() || dead_block->lvl() <= suc->lvl());
-			}
 			return true;
 		}
 		return false;
