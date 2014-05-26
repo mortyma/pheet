@@ -4,8 +4,8 @@
  * (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#ifndef PARETOLOCALITYTASKSTORAGEACTIVEBLOCK_H
-#define PARETOLOCALITYTASKSTORAGEACTIVEBLOCK_H
+#ifndef PARETOLOCALITYTASKSTORAGEBLOCK_H
+#define PARETOLOCALITYTASKSTORAGEBLOCK_H
 
 #include "ItemComparator.h"
 #include "PartitionPointers.h"
@@ -36,16 +36,16 @@ namespace pheet
 {
 
 template<class Item, size_t MAX_PARTITION_SIZE>
-class ParetoLocalityTaskStorageActiveBlock
+class ParetoLocalityTaskStorageBlock
 {
 public:
 	typedef typename Item::T T;
 	typedef VirtualArray<Item*> VA;
 	typedef typename VA::VirtualArrayIterator VAIt;
-	typedef ParetoLocalityTaskStorageActiveBlock<Item, MAX_PARTITION_SIZE> ActiveBlock;
+	typedef ParetoLocalityTaskStorageBlock<Item, MAX_PARTITION_SIZE> Block;
 
-	ParetoLocalityTaskStorageActiveBlock(VA& array, size_t offset,
-	                                     PivotQueue* pivots, size_t lvl = 0)
+	ParetoLocalityTaskStorageBlock(VA& array, size_t offset,
+	                               PivotQueue* pivots, size_t lvl = 0)
 		: m_lvl(lvl), m_data(array), m_offset(offset), m_is_dead(false),
 		  m_next(nullptr), m_pivots(pivots), m_failed_attempts(0)
 	{
@@ -57,7 +57,7 @@ public:
 		create_partition_pointers(0, m_capacity, end);
 	}
 
-	~ParetoLocalityTaskStorageActiveBlock()
+	~ParetoLocalityTaskStorageBlock()
 	{
 		delete m_partitions;
 	}
@@ -137,7 +137,7 @@ public:
 		return best_it;
 	}
 
-	ActiveBlock* merge_next()
+	Block* merge_next()
 	{
 		pheet_assert(next() != nullptr);
 		pheet_assert(next()->lvl() == m_lvl);
@@ -153,7 +153,7 @@ public:
 		increase_level();
 
 		//splice out next
-		ActiveBlock* tmp  = m_next.load(/*TODOMK: std::memory_order_acquire*/);
+		Block* tmp  = m_next.load(/*TODOMK: std::memory_order_acquire*/);
 		if (tmp->next()) {
 			tmp->next()->prev(this);
 		}
@@ -220,22 +220,22 @@ public:
 	}
 
 
-	ParetoLocalityTaskStorageActiveBlock* prev() const
+	ParetoLocalityTaskStorageBlock* prev() const
 	{
 		return m_prev;
 	}
 
-	void prev(ParetoLocalityTaskStorageActiveBlock* b)
+	void prev(ParetoLocalityTaskStorageBlock* b)
 	{
 		m_prev = b;
 	}
 
-	ParetoLocalityTaskStorageActiveBlock* next() const
+	ParetoLocalityTaskStorageBlock* next() const
 	{
 		return m_next.load(std::memory_order_acquire);
 	}
 
-	void next(ParetoLocalityTaskStorageActiveBlock* b)
+	void next(ParetoLocalityTaskStorageBlock* b)
 	{
 		m_next.store(b, std::memory_order_release);
 	}
@@ -299,8 +299,8 @@ public:
 			             - m_partitions->first().index());
 
 			//the second half of the block is handled via a dead block
-			ActiveBlock* dead_block = new ActiveBlock(m_data,
-			        m_offset + m_capacity, m_pivots, m_lvl);
+			Block* dead_block = new Block(m_data,
+			                              m_offset + m_capacity, m_pivots, m_lvl);
 			dead_block->set_dead(true);
 			dead_block->next(this->next());
 			if (this->next()) {
@@ -696,8 +696,8 @@ private:
 	size_t m_offset;
 	bool m_is_dead;
 
-	std::atomic<ParetoLocalityTaskStorageActiveBlock*> m_next;
-	ParetoLocalityTaskStorageActiveBlock* m_prev = nullptr;
+	std::atomic<ParetoLocalityTaskStorageBlock*> m_next;
+	ParetoLocalityTaskStorageBlock* m_prev = nullptr;
 	PartitionPointers<Item>* m_partitions;
 	PivotQueue* m_pivots;
 	size_t m_failed_attempts;
@@ -705,4 +705,4 @@ private:
 
 } //namespace pheet
 
-#endif // PARETOLOCALITYTASKSTORAGEACTIVEBLOCK_H
+#endif // PARETOLOCALITYTASKSTORAGEBLOCK_H

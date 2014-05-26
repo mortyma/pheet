@@ -7,7 +7,7 @@
 #ifndef PARETOLOCALITYTASKSTORAGEPLACE_H_
 #define PARETOLOCALITYTASKSTORAGEPLACE_H_
 
-#include "ParetoLocalityTaskStorageActiveBlock.h"
+#include "ParetoLocalityTaskStorageBlock.h"
 #include "ParetoLocalityTaskStorageItem.h"
 #include "ParetoLocalityTaskStorageItemReuseCheck.h"
 
@@ -31,7 +31,7 @@ public:
 	typedef ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy> Self;
 	typedef typename ParentTaskStoragePlace::BaseItem BaseItem;
 	typedef ParetoLocalityTaskStorageItem<Pheet, Self, BaseItem, Strategy> Item;
-	typedef ParetoLocalityTaskStorageActiveBlock<Item, MAX_PARTITION_SIZE> ActiveBlock;
+	typedef ParetoLocalityTaskStorageBlock<Item, MAX_PARTITION_SIZE> Block;
 	typedef typename BaseItem::T T;
 	typedef BlockItemReuseMemoryManager<Pheet, Item, ParetoLocalityTaskStorageItemReuseCheck<Item>>
 	        ItemMemoryManager;
@@ -65,10 +65,10 @@ private:
 	 *
 	 * non-dead-pred-lvl() <= d_j.lvl() <= ... <= d_i.lvl <= block.lvl()
 	 */
-	ActiveBlock* handle_dead(ActiveBlock* block)
+	Block* handle_dead(Block* block)
 	{
 		pheet_assert(block->is_dead());
-		ActiveBlock* predecessor = block->prev();
+		Block* predecessor = block->prev();
 		//block must have a predecessor
 		pheet_assert(predecessor);
 
@@ -82,7 +82,7 @@ private:
 	/**
 	 * Swap two dead blocks, where "predecessor" is the immediate predecessor of "block".
 	 */
-	ActiveBlock* swap_dead(ActiveBlock* predecessor, ActiveBlock* block)
+	Block* swap_dead(Block* predecessor, Block* block)
 	{
 		pheet_assert(predecessor->next() == block);
 		pheet_assert(block->prev() == predecessor);
@@ -93,13 +93,13 @@ private:
 		//create the blocks
 		size_t offset = predecessor->offset();
 		size_t lvl = block->lvl();
-		ActiveBlock* new_predecessor = new ActiveBlock(m_array, offset, &m_pivots, lvl);
+		Block* new_predecessor = new Block(m_array, offset, &m_pivots, lvl);
 		new_predecessor->set_dead(true);
 
 		pheet_assert(block->offset() >= (predecessor->capacity() - block->capacity()));
 		offset = block->offset() - (predecessor->capacity() - block->capacity());
 		lvl = predecessor->lvl();
-		ActiveBlock* new_block = new ActiveBlock(m_array, offset, &m_pivots, lvl);
+		Block* new_block = new Block(m_array, offset, &m_pivots, lvl);
 		new_block->set_dead(true);
 
 		//put them into the linked list
@@ -150,7 +150,7 @@ private:
 	 * Starting from block, merge preceeding blocks as long as necessary. If block
 	 * was merged, partition it and maintain pointers to block and last
 	 */
-	void merge_from(ActiveBlock*& block)
+	void merge_from(Block*& block)
 	{
 		pheet_assert(block != last);
 		if (merge_recursively(block, false)) {
@@ -169,7 +169,7 @@ private:
 	 * re-partitioning the resulting last block and cleaning up dead blocks
 	 * at the end of the linked list, if necessary.
 	 */
-	bool merge_recursively(ActiveBlock*& block, bool merge_last)
+	bool merge_recursively(Block*& block, bool merge_last)
 	{
 		pheet_assert(!block->is_dead());
 		bool merged = false;
@@ -185,7 +185,7 @@ private:
 	 * Returns true if a merge was performed; block will point to the
 	 * resulting block. Pointer to last is maintained.
 	 */
-	bool merge(ActiveBlock*& block, bool merge_last = false)
+	bool merge(Block*& block, bool merge_last = false)
 	{
 		pheet_assert(!block->is_dead());
 
@@ -201,7 +201,7 @@ private:
 
 		//Else, find active_pred, the closest non-dead predecessor of block. Such a
 		//block has to exist.
-		ActiveBlock* predecessor = block->prev();
+		Block* predecessor = block->prev();
 		while (predecessor->is_dead()) {
 			predecessor = predecessor->prev();
 		}
@@ -222,7 +222,7 @@ private:
 		}
 
 		//there is at least one dead block between block and predecessor.
-		ActiveBlock* destination = predecessor->next();
+		Block* destination = predecessor->next();
 		//predecessor->next has to be dead...
 		pheet_assert(destination->is_dead());
 		//and will take the items from block if it is of same size
@@ -263,7 +263,7 @@ private:
 	 *
 	 * On return, source will be a dead and destination will be and active block.
 	 */
-	void move(ActiveBlock* source, ActiveBlock* destination)
+	void move(Block* source, Block* destination)
 	{
 		pheet_assert(destination->is_dead());
 		pheet_assert(source->lvl() == destination->lvl());
@@ -293,7 +293,7 @@ private:
 	/**
 	 * Get the last block of the linked list of blocks starting at block.
 	 */
-	ActiveBlock* get_last(ActiveBlock* block)
+	Block* get_last(Block* block)
 	{
 		while (block->next()) {
 			block = block->next();
@@ -305,7 +305,7 @@ private:
 	 * Drop all dead blocks at the end of the linked list (until a non-dead
 	 * block is encountered)
 	 */
-	ActiveBlock* drop_dead_blocks(ActiveBlock* last)
+	Block* drop_dead_blocks(Block* last)
 	{
 		while (last->is_dead()) {
 			pheet_assert(last->prev());
@@ -317,9 +317,9 @@ private:
 		return last;
 	}
 
-	ActiveBlock* get_active_successor(ActiveBlock* block)
+	Block* get_active_successor(Block* block)
 	{
-		ActiveBlock* succ = block;
+		Block* succ = block;
 		do {
 			succ = succ->next();
 		} while (succ && succ->is_dead());
@@ -334,7 +334,7 @@ private: //methods to check internal consistency
 	bool check_linked_list()
 	{
 		//iterate through all the blocks in the linked list, checking basic properties
-		ActiveBlock* it = first;
+		Block* it = first;
 		while (it) {
 			if (!it->prev()) {
 				pheet_assert(it == first);
@@ -358,9 +358,9 @@ private: //methods to check internal consistency
 		return check_blocks(last);
 	}
 
-	bool check_blocks(ActiveBlock* it)
+	bool check_blocks(Block* it)
 	{
-		ActiveBlock* prev;
+		Block* prev;
 		//iterate through all the blocks in the linked list, starting at the end
 		while (it) {
 			prev = it->prev();
@@ -421,8 +421,8 @@ private:
 	VirtualArray<Item*> m_array;
 	PivotQueue m_pivots;
 
-	ActiveBlock* first;
-	ActiveBlock* last;
+	Block* first;
+	Block* last;
 
 	PerformanceCounters pc;
 };
@@ -437,7 +437,7 @@ ParetoLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place)
 {
 	//increase capacity of virtual array
 	m_array.increase_capacity(MAX_PARTITION_SIZE);
-	last = new ActiveBlock(m_array, 0, &m_pivots);
+	last = new Block(m_array, 0, &m_pivots);
 	first = last;
 	task_storage = TaskStorage::get(this, parent_place->get_central_task_storage(),
 	                                created_task_storage);
@@ -453,7 +453,7 @@ ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strat
 	if (created_task_storage) {
 		delete task_storage;
 	}
-	ActiveBlock* block = last;
+	Block* block = last;
 	while (block->prev()) {
 		block = block->prev();
 		delete block->next();
@@ -501,7 +501,7 @@ put(Item& item)
 
 		//create new block
 		size_t nb_offset = last->offset() + last->capacity();
-		ActiveBlock* nb = new ActiveBlock(m_array, nb_offset, &m_pivots);
+		Block* nb = new Block(m_array, nb_offset, &m_pivots);
 		nb->prev(last);
 		pheet_assert(!last->next());
 		last->next(nb);
@@ -523,10 +523,10 @@ pop(BaseItem* boundary)
 {
 	Item* boundary_item = reinterpret_cast<Item*>(boundary);
 	while (!boundary_item->is_taken()) {
-		ActiveBlock* best_block = nullptr;
+		Block* best_block = nullptr;
 		VAIt best_it;
 		//iterate through all blocks
-		for (ActiveBlock* block = first; block != nullptr; block = block->next()) {
+		for (Block* block = first; block != nullptr; block = block->next()) {
 			//only check the block if it is an ActiveBlock
 			if (!block->is_dead()) {
 				//get the top element
@@ -563,7 +563,7 @@ pop(BaseItem* boundary)
 		}
 
 		//merge if necessary
-		ActiveBlock* block = get_active_successor(best_block);
+		Block* block = get_active_successor(best_block);
 		pheet_assert(!last->is_dead());
 
 		if (block == last) {
