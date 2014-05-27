@@ -56,6 +56,11 @@ public:
 private:
 
 	/**
+	 * Put the item in the topmost block.
+	 */
+	void put(Item& item);
+
+	/**
 	 * Ensure correct ordering of dead blocks, starting from block.
 	 *
 	 * After a call to this method, the sequence of dead blocks starting at "block"
@@ -93,13 +98,13 @@ private:
 		//create the blocks
 		size_t offset = predecessor->offset();
 		size_t lvl = block->lvl();
-		Block* new_predecessor = new Block(m_array, offset, &m_pivots, lvl);
+		Block* new_predecessor = new Block(m_array, &m_pivots, offset, lvl, true);
 		new_predecessor->set_dead(true);
 
 		pheet_assert(block->offset() >= (predecessor->capacity() - block->capacity()));
 		offset = block->offset() - (predecessor->capacity() - block->capacity());
 		lvl = predecessor->lvl();
-		Block* new_block = new Block(m_array, offset, &m_pivots, lvl);
+		Block* new_block = new Block(m_array, &m_pivots, offset, lvl, true);
 		new_block->set_dead(true);
 
 		//put them into the linked list
@@ -130,8 +135,9 @@ private:
 	 */
 	void merge_from_last()
 	{
+		//TODOMK: can we unify merge_from_last and merge_from?
 		//merge recursively, if previous block has same level, starting from last
-		if (merge_recursively(last, true)) {
+		if (merge_recursively(last)) {
 
 			//repartition block that resulted from merge
 			last->partition();
@@ -152,8 +158,11 @@ private:
 	 */
 	void merge_from(Block*& block)
 	{
-		pheet_assert(block != last);
-		if (merge_recursively(block, false)) {
+		if (block == last) {
+			merge_from_last();
+			return;
+		}
+		if (merge_recursively(block)) {
 			//repartition block that resulted from merge
 			//last does not change, since we never merge it in here
 			block->partition();
@@ -169,11 +178,11 @@ private:
 	 * re-partitioning the resulting last block and cleaning up dead blocks
 	 * at the end of the linked list, if necessary.
 	 */
-	bool merge_recursively(Block*& block, bool merge_last)
+	bool merge_recursively(Block*& block)
 	{
 		pheet_assert(!block->is_dead());
 		bool merged = false;
-		while (merge(block, merge_last)) {
+		while (merge(block)) {
 			merged = true;
 		}
 		return merged;
@@ -185,14 +194,10 @@ private:
 	 * Returns true if a merge was performed; block will point to the
 	 * resulting block. Pointer to last is maintained.
 	 */
-	bool merge(Block*& block, bool merge_last = false)
+	bool merge(Block*& block)
 	{
 		pheet_assert(!block->is_dead());
-
-		//if block is the last block and merge_last is not set, return
-		if (block == last && !merge_last) {
-			return false;
-		}
+		pheet_assert(block != insert);
 
 		//If block does not have a predecessor, no merge is required.
 		if (!block->prev()) {
@@ -251,11 +256,6 @@ private:
 	}
 
 	/**
-	 * Put the item in the topmost block.
-	 */
-	void put(Item& item);
-
-	/**
 	 * Move all item pointers from source to destination.
 	 *
 	 * Source and destination blocks must have the same level. Additionally,
@@ -263,7 +263,7 @@ private:
 	 *
 	 * On return, source will be a dead and destination will be and active block.
 	 */
-	void move(Block* source, Block* destination)
+	void move(Block* source, Block* destination, bool reorder_dead = true)
 	{
 		pheet_assert(destination->is_dead());
 		pheet_assert(source->lvl() == destination->lvl());
@@ -287,7 +287,9 @@ private:
 		source->set_dead(true);
 
 		//make sure that consecutive dead blocks increase in size
-		handle_dead(source);
+		if (reorder_dead) {
+			handle_dead(source);
+		}
 	}
 
 	/**
@@ -334,10 +336,10 @@ private: //methods to check internal consistency
 	bool check_linked_list()
 	{
 		//iterate through all the blocks in the linked list, checking basic properties
-		Block* it = first;
+		Block* it = insert;
 		while (it) {
 			if (!it->prev()) {
-				pheet_assert(it == first);
+				pheet_assert(it == insert || it == insert->next());
 			} else {
 				pheet_assert(it->prev()->next() == it);
 				pheet_assert(it->prev()->offset() + it->prev()->capacity() == it->offset());
@@ -345,7 +347,11 @@ private: //methods to check internal consistency
 			if (!it->next()) {
 				pheet_assert(it == last);
 			} else {
-				pheet_assert(it->next()->prev() == it);
+				if (it == insert) {
+					pheet_assert(it->next()->prev() == nullptr);
+				} else {
+					pheet_assert(it->next()->prev() == it);
+				}
 			}
 
 			it = it->next();
@@ -366,25 +372,20 @@ private: //methods to check internal consistency
 			prev = it->prev();
 			//find the closest active predecessor; check dead blocks on the way
 			while (prev && prev->is_dead()) {
-				if (it == last) {
-					//the predecessor (which is dead in this case) of the last block
-					//has to be >= the last block
-					pheet_assert(prev->lvl() >= last->lvl());
-				} else {
-					//a predecessing dead block has to be larger than the closest
-					//active successor
-					pheet_assert(prev->lvl() > it->lvl());
-				}
+				//a predecessing dead block has to be larger than the closest
+				//active successor
+				pheet_assert(prev->lvl() > it->lvl());
 				if (prev->next()->is_dead()) {
-					//if the successor is dead too, prev has to be of less or equal size
-					pheet_assert(prev->lvl() <= prev->next()->lvl());
+					//if the successor is dead too, prev has to be smaller than
+					//the successor
+					pheet_assert(prev->lvl() < prev->next()->lvl());
 				}
 				//a dead block has to have a predecessor
 				pheet_assert(prev->prev());
 				if (!prev->prev()->is_dead()) {
 					//if the predecessor is not dead, prev has to have the same
 					//size as the non-dead predecessor
-					//pheet_assert(prev->prev()->lvl() == prev->lvl());
+					pheet_assert(prev->prev()->lvl() >= prev->lvl());
 				}
 				prev = prev->prev();
 			}
@@ -395,16 +396,8 @@ private: //methods to check internal consistency
 			pheet_assert(!it->is_dead());
 
 			if (prev) {
-				if (it == last) {
-					//the active predecessor of the last block has to be >= the last
-					//block (the last block is not merged until it is full)
-					pheet_assert(prev->lvl() >= last->lvl());
-
-				} else {
-					//if it is not the last block, the active predecessor has to
-					//be larger
-					pheet_assert(prev->lvl() > it->lvl());
-				}
+				//the active predecessor of a block has to be larger than the block
+				pheet_assert(prev->lvl() > it->lvl());
 			}
 			it = prev;
 		}
@@ -421,7 +414,7 @@ private:
 	VirtualArray<Item*> m_array;
 	PivotQueue m_pivots;
 
-	Block* first;
+	Block* insert;
 	Block* last;
 
 	PerformanceCounters pc;
@@ -437,8 +430,8 @@ ParetoLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place)
 {
 	//increase capacity of virtual array
 	m_array.increase_capacity(MAX_PARTITION_SIZE);
-	last = new Block(m_array, 0, &m_pivots);
-	first = last;
+	last = new Block(m_array, &m_pivots, 0, 0, false);
+	insert = last;
 	task_storage = TaskStorage::get(this, parent_place->get_central_task_storage(),
 	                                created_task_storage);
 }
@@ -491,25 +484,40 @@ void
 ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strategy>::
 put(Item& item)
 {
-	pheet_assert(!last->next());
-	if (!last->try_put(&item)) {
-		//last is full. Merge it into previous block
-		merge_from_last();
+	pheet_assert(!insert->prev());
+	if (!insert->try_put(&item)) {
+		/*insert is full. Move data to new block at the end and merge with
+		  previous block, if necessary*/
 
 		//increase capacity of virtual array
 		m_array.increase_capacity(MAX_PARTITION_SIZE);
 
 		//create new block
 		size_t nb_offset = last->offset() + last->capacity();
-		Block* nb = new Block(m_array, nb_offset, &m_pivots);
-		nb->prev(last);
+		Block* nb = new Block(m_array, &m_pivots, nb_offset, 0, true);
+		nb->set_dead(true);
+		if (last != insert) {
+			nb->prev(last);
+		}
 		pheet_assert(!last->next());
 		last->next(nb);
 		last = nb;
 
-		//put the item in the new block
-		last->put(&item);
+		//move all data from insert to last
+		move(insert, last, false);
+		//partition last (it's unlikely that shrinking would possible; but we do
+		//not want to reduce the level of a lvl 0 block anyway
+		last->partition();
+		//merge blocks, if necessary
+		merge_from_last();
+
+		//re-initialize insert
+		insert->reinitialize();
+		insert->set_dead(false);
+		//put the item in the (now empty) insert block
+		insert->put(&item);
 	}
+
 }
 
 
@@ -526,7 +534,7 @@ pop(BaseItem* boundary)
 		Block* best_block = nullptr;
 		VAIt best_it;
 		//iterate through all blocks
-		for (Block* block = first; block != nullptr; block = block->next()) {
+		for (Block* block = insert; block != nullptr; block = block->next()) {
 			//only check the block if it is an ActiveBlock
 			if (!block->is_dead()) {
 				//get the top element
@@ -561,14 +569,11 @@ pop(BaseItem* boundary)
 			//TODOMK: not nice to get last block here
 			last = drop_dead_blocks(get_last(best_block));
 		}
-
 		//merge if necessary
 		Block* block = get_active_successor(best_block);
 		pheet_assert(!last->is_dead());
 
-		if (block == last) {
-			merge_from_last();
-		} else {
+		if (block != insert) {
 			merge_from(block);
 		}
 

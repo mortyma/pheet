@@ -44,14 +44,15 @@ public:
 	typedef typename VA::VirtualArrayIterator VAIt;
 	typedef ParetoLocalityTaskStorageBlock<Item, MAX_PARTITION_SIZE> Block;
 
-	ParetoLocalityTaskStorageBlock(VA& array, size_t offset,
-	                               PivotQueue* pivots, size_t lvl = 0)
+	ParetoLocalityTaskStorageBlock(VA& array, PivotQueue* pivots, size_t offset,
+	                               size_t lvl, bool full_block)
 		: m_lvl(lvl), m_data(array), m_offset(offset), m_is_dead(false),
 		  m_next(nullptr), m_pivots(pivots), m_failed_attempts(0)
 	{
+		pheet_assert(lvl == 0 || full_block);
 		m_capacity = MAX_PARTITION_SIZE * pow(2, m_lvl);
 		size_t end = 0;
-		if (this->lvl() != 0) {
+		if (full_block) {
 			end = this->capacity();
 		}
 		create_partition_pointers(0, m_capacity, end);
@@ -60,6 +61,13 @@ public:
 	~ParetoLocalityTaskStorageBlock()
 	{
 		delete m_partitions;
+	}
+
+	void reinitialize()
+	{
+		pheet_assert(m_lvl == 0);
+		delete m_partitions;
+		create_partition_pointers(0, m_capacity, 0);
 	}
 
 	bool try_put(Item* item)
@@ -299,8 +307,8 @@ public:
 			             - m_partitions->first().index());
 
 			//the second half of the block is handled via a dead block
-			Block* dead_block = new Block(m_data,
-			                              m_offset + m_capacity, m_pivots, m_lvl);
+			Block* dead_block = new Block(m_data, m_pivots,
+			                              m_offset + m_capacity, m_lvl, true);
 			dead_block->set_dead(true);
 			dead_block->next(this->next());
 			if (this->next()) {
