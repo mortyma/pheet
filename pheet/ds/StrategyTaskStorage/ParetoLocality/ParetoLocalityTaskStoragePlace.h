@@ -543,6 +543,12 @@ pop(BaseItem* boundary)
 
 				//is the block empty?
 				if (!top_it.validItem()) {
+					//TODOMK: set block dead
+					auto it = m_array.iterator_to(block->offset());
+					auto end = m_array.iterator_to(block->offset() + block->capacity());
+					for (; it != end; it++) {
+						pheet_assert(*it == nullptr);
+					}
 					/* it->top() returned non-valid iterator, thus no more active
 					* items are in block it. */
 					continue;
