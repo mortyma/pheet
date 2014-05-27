@@ -533,6 +533,8 @@ pop(BaseItem* boundary)
 	while (!boundary_item->is_taken()) {
 		Block* best_block = nullptr;
 		VAIt best_it;
+
+		Block* new_dead = nullptr;
 		//iterate through all blocks
 		for (Block* block = insert; block != nullptr; block = block->next()) {
 			//only check the block if it is an ActiveBlock
@@ -549,6 +551,9 @@ pop(BaseItem* boundary)
 					for (; it != end; it++) {
 						pheet_assert(*it == nullptr);
 					}
+					if (block != insert && block->prev()) {
+						new_dead = block;
+					}
 					/* it->top() returned non-valid iterator, thus no more active
 					* items are in block it. */
 					continue;
@@ -561,6 +566,13 @@ pop(BaseItem* boundary)
 				}
 			}
 		}
+		if (new_dead) {
+			new_dead->set_dead(true);
+			if (new_dead == last) {
+				last = drop_dead_blocks(last);
+			}
+		}
+		check_blocks();
 
 		//if the boundary item was taken in the meantime, pop has to return null...
 		if (boundary_item->is_taken() || !best_it.validItem()) {
