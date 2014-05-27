@@ -70,7 +70,7 @@ private:
 	 *
 	 * non-dead-pred-lvl() <= d_j.lvl() <= ... <= d_i.lvl <= block.lvl()
 	 */
-	Block* handle_dead(Block* block)
+	Block* reorder_dead_blocks(Block* block)
 	{
 		pheet_assert(block->is_dead());
 		Block* predecessor = block->prev();
@@ -79,7 +79,7 @@ private:
 
 		if (predecessor->is_dead() && predecessor->lvl() > block->lvl()) {
 			predecessor = swap_dead(predecessor, block);
-			predecessor = handle_dead(predecessor);
+			predecessor = reorder_dead_blocks(predecessor);
 		}
 		return predecessor;
 	}
@@ -288,7 +288,7 @@ private:
 
 		//make sure that consecutive dead blocks increase in size
 		if (reorder_dead) {
-			handle_dead(source);
+			reorder_dead_blocks(source);
 		}
 	}
 
