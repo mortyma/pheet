@@ -331,6 +331,31 @@ private:
 		return succ;
 	}
 
+	/**
+	 * Set block dead if possible.
+	 *
+	 * Returns true if block was set dead; otherwise false
+	 */
+	bool try_set_dead(Block* block)
+	{
+		//never set the insert block (==very first block) dead
+		if (block == insert) {
+			return false;
+		}
+		//never set the first block in the doubly linked list dead
+		if (!block->prev()) {
+			return false;
+		}
+		/* only set a block to dead if it does not have a dead successor
+		 (this would require reordering blocks that have not been traversed yet) */
+		if (block->next() && !block->next()->is_dead()) {
+			return false;
+		}
+
+		block->set_dead(true);
+		return true;
+	}
+
 private: //methods to check internal consistency
 
 	bool check_linked_list()
@@ -376,9 +401,8 @@ private: //methods to check internal consistency
 				//active successor
 				pheet_assert(prev->lvl() > it->lvl());
 				if (prev->next()->is_dead()) {
-					//if the successor is dead too, prev has to be smaller than
-					//the successor
-					pheet_assert(prev->lvl() < prev->next()->lvl());
+					//if the successor is dead too, prev has to be of less or equal size
+					pheet_assert(prev->lvl() <= prev->next()->lvl());
 				}
 				//a dead block has to have a predecessor
 				pheet_assert(prev->prev());
@@ -505,8 +529,8 @@ put(Item& item)
 
 		//move all data from insert to last
 		move(insert, last, false);
-		//partition last (it's unlikely that shrinking would possible; but we do
-		//not want to reduce the level of a lvl 0 block anyway
+		//partition last (it's unlikely that shrinking would be possible; but we do
+		//not want to reduce the level of a lvl 0 block anyway)
 		last->partition();
 		//merge blocks, if necessary
 		merge_from_last();
@@ -534,7 +558,6 @@ pop(BaseItem* boundary)
 		Block* best_block = nullptr;
 		VAIt best_it;
 
-		Block* new_dead = nullptr;
 		//iterate through all blocks
 		for (Block* block = insert; block != nullptr; block = block->next()) {
 			//only check the block if it is an ActiveBlock
@@ -545,17 +568,18 @@ pop(BaseItem* boundary)
 
 				//is the block empty?
 				if (!top_it.validItem()) {
-					//TODOMK: set block dead
-					auto it = m_array.iterator_to(block->offset());
-					auto end = m_array.iterator_to(block->offset() + block->capacity());
-					for (; it != end; it++) {
-						pheet_assert(*it == nullptr);
-					}
-					if (block != insert && block->prev()) {
-						new_dead = block;
-					}
 					/* it->top() returned non-valid iterator, thus no more active
-					* items are in block it. */
+					* items are in block it. Check if we can set the block dead.*/
+					if (try_set_dead(block)) {
+						//if the block has a dead predecessor (pred), pred will be
+						//larger than block. Reorder the sequence of dead blocks
+						//starting at block to maintain the list
+						if (block->prev()->is_dead()) {
+							block = reorder_dead_blocks(block);
+						}
+						//drop dead blocks at the end of the list
+						last = drop_dead_blocks(get_last(block));
+					}
 					continue;
 				}
 				//We found a new best item
@@ -566,13 +590,6 @@ pop(BaseItem* boundary)
 				}
 			}
 		}
-		if (new_dead) {
-			new_dead->set_dead(true);
-			if (new_dead == last) {
-				last = drop_dead_blocks(last);
-			}
-		}
-		check_blocks();
 
 		//if the boundary item was taken in the meantime, pop has to return null...
 		if (boundary_item->is_taken() || !best_it.validItem()) {
