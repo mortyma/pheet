@@ -161,11 +161,11 @@ public:
 		increase_level();
 
 		//splice out next
-		Block* tmp  = m_next.load(/*TODOMK: std::memory_order_acquire*/);
+		Block* tmp  = next();
 		if (tmp->next()) {
 			tmp->next()->prev(this);
 		}
-		m_next.store(tmp->next() /*TODOMK:, std::memory_order_release*/);
+		next(tmp->next());
 		delete tmp;
 
 		return this;
@@ -240,12 +240,12 @@ public:
 
 	ParetoLocalityTaskStorageBlock* next() const
 	{
-		return m_next.load(std::memory_order_acquire);
+		return m_next;
 	}
 
 	void next(ParetoLocalityTaskStorageBlock* b)
 	{
-		m_next.store(b, std::memory_order_release);
+		m_next = b;
 	}
 
 	/**
@@ -703,7 +703,7 @@ private:
 	size_t m_offset;
 	bool m_is_dead;
 
-	std::atomic<ParetoLocalityTaskStorageBlock*> m_next;
+	ParetoLocalityTaskStorageBlock* m_next;
 	ParetoLocalityTaskStorageBlock* m_prev = nullptr;
 	PartitionPointers<Item>* m_partitions;
 	PivotQueue* m_pivots;
