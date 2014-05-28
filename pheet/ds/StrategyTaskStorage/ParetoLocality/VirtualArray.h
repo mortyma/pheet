@@ -149,7 +149,7 @@ public:
 
 	~VirtualArray()
 	{
-		std::cerr << "Virtual array capacity: " << m_capacity << "\n";
+		//std::cerr << "Virtual array capacity: " << m_capacity << "\n";
 		while (m_first->next != nullptr) {
 			m_first = m_first->next;
 			delete m_first->prev;
