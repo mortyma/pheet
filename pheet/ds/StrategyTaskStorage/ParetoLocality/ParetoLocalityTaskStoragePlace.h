@@ -144,7 +144,6 @@ private:
 
 			//try to shrink the block
 			if (last->try_shrink()) {
-				//TODOMK: shrink may create a dead block at the very end only.
 				//reset last and drop dead blocks at the end of the list
 				last = drop_dead_blocks(get_last(last));
 			}
@@ -642,7 +641,7 @@ steal(BaseItem* boundary)
 		parent_place->push(item);
 
 		//steal only if place to steal from has a lot more items than this place
-		//TODOMK: choose got factor
+		//TODOMK: choose good factor
 		size_t other_cap = other_place->array().capacity();
 		size_t this_cap = this->array().capacity();
 		if (other_cap > 2 * this_cap) {

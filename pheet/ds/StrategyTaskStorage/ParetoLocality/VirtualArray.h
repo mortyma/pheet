@@ -189,7 +189,7 @@ public:
 
 	std::atomic<T>& operator[](size_t idx)
 	{
-		pheet_assert(idx < m_capacity); //TODOMK: could be a problem if we reduce capacity on the fly
+		pheet_assert(idx < m_capacity);
 
 		Block* block = find_block(idx);
 		return (*block)[idx % block_size()];

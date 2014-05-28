@@ -301,7 +301,6 @@ public:
 		//check if we can reduce the level of this block
 		if (m_partitions->dead_partition().index(m_offset) <= m_capacity / 2) {
 			//reduce lvl and capacity
-			//TODOMK: can we reduce by more than 1?
 			decrease_level();
 			pheet_assert(m_capacity == m_partitions->end().index()
 			             - m_partitions->first().index());

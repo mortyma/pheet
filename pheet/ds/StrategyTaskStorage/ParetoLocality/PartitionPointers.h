@@ -127,7 +127,7 @@ private:
 	PivotQueue* m_pivot_queue;
 	std::vector<std::pair<VAIt, PivotElement*>> m_partitions;
 	/* start of first partition and thus start of the block */
-	VAIt m_first; //TODOMK: rename to start
+	VAIt m_first;
 	/* start of last partition (excluding dead items) */
 	VAIt m_last;
 	/* Dead items are stored right of the right-most partition, i.e., at the
