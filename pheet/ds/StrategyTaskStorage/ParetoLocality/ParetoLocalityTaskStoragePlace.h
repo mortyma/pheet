@@ -572,8 +572,8 @@ pop(BaseItem* boundary)
 				//is the block empty?
 				//Note: the insert block may be empty - we never shrink it or set it dead!
 				if (block != insert && !top_it.validItem()) {
-					/* it->top() returned non-valid iterator, thus no more active
-					* items are in block it. Check if we can set the block dead.*/
+					/* block->top() returned non-valid iterator, thus no more active
+					 * items are in block. Check if we can set the block dead.*/
 					if (try_set_dead(block)) {
 						//if the block has a dead predecessor (pred), pred will be
 						//larger than block. Reorder the sequence of dead blocks
