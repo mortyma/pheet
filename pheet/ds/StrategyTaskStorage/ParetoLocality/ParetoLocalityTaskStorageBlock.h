@@ -289,10 +289,11 @@ public:
 	 * Try to reduce the level of this block by 1.
 	 *
 	 * If the dead partition of this block is >= half the block size, we can
-	 * reduce the level of the block by 1 (i.e., half its size). The second half
-	 * of the block is marked as a dead block.
+	 * reduce the level of the block by 1 (i.e., half its size).
+	 *
+	 * If markDead = true, the second half of the block is marked as a dead block.
 	 */
-	bool try_shrink()
+	bool try_shrink(bool markDead)
 	{
 		//can't shrink a block of lvl 0
 		if (m_lvl == 0) {
@@ -305,16 +306,18 @@ public:
 			pheet_assert(m_capacity == m_partitions->end().index()
 			             - m_partitions->first().index());
 
-			//the second half of the block is handled via a dead block
-			Block* dead_block = new Block(m_data, m_pivots,
-			                              m_offset + m_capacity, m_lvl, true);
-			dead_block->set_dead(true);
-			dead_block->next(this->next());
-			if (this->next()) {
-				this->next()->prev(dead_block);
+			if (markDead) {
+				//the second half of the block is handled via a dead block
+				Block* dead_block = new Block(m_data, m_pivots,
+				                              m_offset + m_capacity, m_lvl, true);
+				dead_block->set_dead(true);
+				dead_block->next(this->next());
+				if (this->next()) {
+					this->next()->prev(dead_block);
+				}
+				dead_block->prev(this);
+				this->next(dead_block);
 			}
-			dead_block->prev(this);
-			this->next(dead_block);
 			return true;
 		}
 		return false;

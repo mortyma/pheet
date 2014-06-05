@@ -147,11 +147,12 @@ private:
 			last->partition();
 
 			//try to shrink the block
-			if (last->try_shrink()) {
+			if (last->try_shrink(false)) {
 				//reset last and drop dead blocks at the end of the list
-				last = drop_dead_blocks(get_last(last));
+				m_array.decrease_capacity(last->capacity());
 			}
 		}
+		pheet_assert(!last->next());
 		pheet_assert(!last->is_dead());
 	}
 
@@ -612,11 +613,14 @@ pop(BaseItem* boundary)
 		T pop = best_block->take(best_it);
 
 		//shrink best_block if possible
-		if (best_block->try_shrink()) {
-			//TODOMK: not nice to get last block here
-			last = drop_dead_blocks(get_last(best_block));
+		if (best_block->try_shrink(best_block != last)) {
+			if (best_block == last) {
+				m_array.decrease_capacity(last->capacity());
+			} else {
+				last = drop_dead_blocks(get_last(best_block));
+			}
 			//merge if necessary
-			if (best_block != insert) {
+			if (best_block != insert && best_block != last) {
 				Block* block = get_active_successor(best_block);
 				merge_from(block);
 			}
