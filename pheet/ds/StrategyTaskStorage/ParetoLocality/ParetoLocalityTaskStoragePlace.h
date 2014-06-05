@@ -69,6 +69,10 @@ private:
 	 * than any suceeding dead block in the sequence, i.e.,
 	 *
 	 * non-dead-pred-lvl() <= d_j.lvl() <= ... <= d_i.lvl <= block.lvl()
+	 *
+	 * The returned block (rb) is a predecessor of block, s.t. rb is either not dead
+	 * or does not require reordering.
+	 *
 	 */
 	Block* reorder_dead_blocks(Block* block)
 	{
