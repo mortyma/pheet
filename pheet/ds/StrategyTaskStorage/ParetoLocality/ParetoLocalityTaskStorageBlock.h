@@ -522,13 +522,10 @@ private:
 	void swap_to_dead(VAIt& lhs, VAIt& rhs)
 	{
 		pheet_assert(lhs < rhs);
-		Item* right = *rhs;
-		Item* left = *lhs;
-		pheet_assert(left == nullptr || left->is_taken_or_dead());
-		//if item is dead but not taken by another place, drop it
+		Item* right = (*rhs).load(std::memory_order_relaxed);
 		drop_dead_item(lhs);
-		*lhs = right;
-		*rhs = nullptr;
+		(*lhs).store(right, std::memory_order_relaxed);
+		(*rhs).store(nullptr, std::memory_order_relaxed);
 	}
 
 	/**
@@ -537,10 +534,10 @@ private:
 	void swap(VAIt& lhs, VAIt& rhs)
 	{
 		pheet_assert(lhs < rhs);
-		Item* left = *lhs;
-		Item* right = *rhs;
-		*lhs = right;
-		*rhs = left;
+		Item* left = (*lhs).load(std::memory_order_relaxed);
+		Item* right = (*rhs).load(std::memory_order_relaxed);
+		(*lhs).store(right, std::memory_order_relaxed);
+		(*rhs).store(left, std::memory_order_relaxed);
 		//Note: the below does not work since std::atomic is not copy-assignable
 		//*lhs = *rhs;
 	}
