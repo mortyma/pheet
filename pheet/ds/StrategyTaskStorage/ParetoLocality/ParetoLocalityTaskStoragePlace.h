@@ -578,7 +578,13 @@ pop(BaseItem* boundary)
 						//larger than block. Reorder the sequence of dead blocks
 						//starting at block to maintain the list
 						if (block->prev()->is_dead()) {
+							//remember the block after block, which shall be the
+							//block for the next iteration of the for-loop
+							Block* next = block->next();
 							block = reorder_dead_blocks(block);
+							if (next != nullptr) {
+								block = next->prev();
+							}
 						}
 						//drop dead blocks at the end of the list
 						last = drop_dead_blocks(get_last(block));
