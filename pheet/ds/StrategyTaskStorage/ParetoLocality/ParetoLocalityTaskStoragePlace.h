@@ -342,10 +342,7 @@ private:
 	 */
 	bool try_set_dead(Block* block)
 	{
-		//never set the insert block (==very first block) dead
-		if (block == insert) {
-			return false;
-		}
+		pheet_assert(block != insert);
 		//never set the first block in the doubly linked list dead
 		if (!block->prev()) {
 			return false;
@@ -573,7 +570,8 @@ pop(BaseItem* boundary)
 				pheet_assert(!block->is_dead());
 
 				//is the block empty?
-				if (!top_it.validItem()) {
+				//Note: the insert block may be empty - we never shrink it or set it dead!
+				if (block != insert && !top_it.validItem()) {
 					/* it->top() returned non-valid iterator, thus no more active
 					* items are in block it. Check if we can set the block dead.*/
 					if (try_set_dead(block)) {
