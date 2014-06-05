@@ -573,8 +573,23 @@ pop(BaseItem* boundary)
 				//Note: the insert block may be empty - we never shrink it or set it dead!
 				if (block != insert && !top_it.validItem()) {
 					/* block->top() returned non-valid iterator, thus no more active
-					 * items are in block. Check if we can set the block dead.*/
-					if (try_set_dead(block)) {
+					 * items are in block.*/
+					if (block == insert->next()) {
+						/* if block is the first block in the doubly-linked list, it
+						 * requires special attention (because we can't just set it false) */
+						if (block == last) {
+							/* if block is the only block in the doubly-linked list,
+							 * we can simply drop it */
+							insert->next(nullptr);
+							last = insert;
+							m_array.decrease_capacity(block->capacity());
+							delete block;
+							block = insert;
+						} else {
+							//TODOMK: this might be tricky
+							//std::cerr << "the aweful case!\n";
+						}
+					} else if (try_set_dead(block)) {
 						//if the block has a dead predecessor (pred), pred will be
 						//larger than block. Reorder the sequence of dead blocks
 						//starting at block to maintain the list
