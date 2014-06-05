@@ -472,12 +472,15 @@ ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strat
 	if (created_task_storage) {
 		delete task_storage;
 	}
-	Block* block = last;
-	while (block->prev()) {
-		block = block->prev();
-		delete block->next();
+	if (last != insert) {
+		Block* block = last;
+		while (block->prev()) {
+			block = block->prev();
+			delete block->next();
+		}
+		delete block;
 	}
-	delete block;
+	delete insert;
 }
 
 template < class Pheet,
