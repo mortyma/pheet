@@ -611,17 +611,17 @@ pop(BaseItem* boundary)
 		pheet_assert(best_it.validItem());
 		T pop = best_block->take(best_it);
 
+		//shrink best_block if possible
 		if (best_block->try_shrink()) {
 			//TODOMK: not nice to get last block here
 			last = drop_dead_blocks(get_last(best_block));
+			//merge if necessary
+			if (best_block != insert) {
+				Block* block = get_active_successor(best_block);
+				merge_from(block);
+			}
 		}
-		//merge if necessary
-		Block* block = get_active_successor(best_block);
 		pheet_assert(!last->is_dead());
-
-		if (block != insert) {
-			merge_from(block);
-		}
 
 		//If take did not succeed, best_item was taken by another thread in the
 		//meantime. Try again.
