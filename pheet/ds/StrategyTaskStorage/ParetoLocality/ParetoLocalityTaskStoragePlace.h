@@ -351,10 +351,9 @@ private:
 		}
 		/* only set a block to dead if it does not have a dead successor
 		 (this would require reordering blocks that have not been traversed yet) */
-		if (block->next() && !block->next()->is_dead()) {
+		if (block->next() && block->next()->is_dead()) {
 			return false;
 		}
-
 		block->set_dead(true);
 		return true;
 	}
