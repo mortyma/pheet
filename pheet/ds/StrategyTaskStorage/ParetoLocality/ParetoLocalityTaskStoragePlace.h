@@ -237,7 +237,7 @@ private:
 		//and will take the items from block if it is of same size
 		if (block->lvl() == destination->lvl()) {
 			//move item pointers from source (block) to destination
-			move(block, destination);
+			move(block, destination, true);
 
 			//maintain pointer to last
 			bool was_last = block == last;
@@ -267,7 +267,7 @@ private:
 	 *
 	 * On return, source will be a dead and destination will be and active block.
 	 */
-	void move(Block* source, Block* destination, bool reorder_dead = true)
+	void move(Block* source, Block* destination, bool reorder_dead)
 	{
 		pheet_assert(destination->is_dead());
 		pheet_assert(source->lvl() == destination->lvl());
