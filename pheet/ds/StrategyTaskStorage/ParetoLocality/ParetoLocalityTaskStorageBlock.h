@@ -303,6 +303,16 @@ public:
 		return m_partitions->end().index(m_offset);
 	}
 
+	VAIt start() const
+	{
+		return m_partitions->first();
+	}
+
+	VAIt end() const
+	{
+		return m_partitions->end();
+	}
+
 private:
 	/**
 	 * Increase the level of the block and thus double its capacity.

@@ -282,9 +282,9 @@ private:
 		pheet_assert(source->lvl() == destination->lvl());
 
 		//move all items from block source to block destination
-		VAIt source_it = m_array.iterator_to(source->offset());
-		VAIt end_it = m_array.iterator_to(source->offset() + source->capacity());
-		VAIt destination_it = m_array.iterator_to(destination->offset());
+		VAIt source_it = source->start();
+		VAIt end_it = source->end();
+		VAIt destination_it = destination->start();
 		for (; source_it != end_it; source_it++) {
 			Item* source_item = *source_it;
 			pheet_assert(*destination_it == nullptr);
