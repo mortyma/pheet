@@ -386,17 +386,18 @@ private: //methods to check internal consistency
 
 	bool check_blocks()
 	{
-		return check_blocks(last);
+		return check_blocks(nullptr);
 	}
 
-	bool check_blocks(Block* it)
+	bool check_blocks(Block* stop_at)
 	{
 		Block* prev;
 		//iterate through all the blocks in the linked list, starting at the end
-		while (it) {
+		Block* it = last;
+		while (it != stop_at) {
 			prev = it->prev();
 			//find the closest active predecessor; check dead blocks on the way
-			while (prev && prev->is_dead()) {
+			while (prev && prev->is_dead() && prev != stop_at) {
 				//a predecessing dead block has to be larger than the closest
 				//active successor
 				pheet_assert(prev->lvl() > it->lvl());
@@ -414,14 +415,16 @@ private: //methods to check internal consistency
 				prev = prev->prev();
 			}
 
-			//if a predecessor was found, it has to be active
-			pheet_assert(!prev || !prev->is_dead());
-			//we only look at active blocks here
-			pheet_assert(!it->is_dead());
+			if (prev != stop_at) {
+				//if a predecessor was found, it has to be active
+				pheet_assert(!prev || !prev->is_dead());
+				//we only look at active blocks here
+				pheet_assert(!it->is_dead());
 
-			if (prev) {
-				//the active predecessor of a block has to be larger than the block
-				pheet_assert(prev->lvl() > it->lvl());
+				if (prev) {
+					//the active predecessor of a block has to be larger than the block
+					pheet_assert(prev->lvl() > it->lvl());
+				}
 			}
 			it = prev;
 		}
