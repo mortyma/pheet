@@ -50,19 +50,18 @@ public:
 		friend class VirtualArray<T>;
 
 	public:
-		VirtualArrayIterator() : m_block(nullptr), m_block_nr(0), m_idx_in_block(0)
+		VirtualArrayIterator() : m_block(nullptr), m_idx_in_block(0)
 		{
 		}
 
 		VirtualArrayIterator(const VirtualArrayIterator& that)
-			: m_block(that.m_block), m_block_nr(that.m_block_nr), m_idx_in_block(that.m_idx_in_block)
+			: m_block(that.m_block), m_idx_in_block(that.m_idx_in_block)
 		{
 		}
 
 		VirtualArrayIterator& operator=(const VirtualArrayIterator& that)
 		{
 			m_block = that.m_block;
-			m_block_nr = that.m_block_nr;
 			m_idx_in_block = that.m_idx_in_block;
 			return *this;
 		}
@@ -76,7 +75,6 @@ public:
 			m_idx_in_block++;
 			if (m_idx_in_block >= m_block->capacity()) {
 				m_block = m_block->next;
-				m_block_nr++;
 				m_idx_in_block = 0;
 			}
 			pheet_assert(m_block);
@@ -89,7 +87,6 @@ public:
 
 			if (m_idx_in_block == 0) {
 				m_block = m_block->prev;
-				m_block_nr--;
 				m_idx_in_block = (m_block == nullptr) ? 0 : m_block->capacity() - 1;
 			} else {
 				m_idx_in_block--;
@@ -127,7 +124,7 @@ public:
 		bool operator==(const VirtualArrayIterator& that)
 		{
 			pheet_assert(m_block);
-			return (m_block_nr == that.m_block_nr && m_idx_in_block == that.m_idx_in_block);
+			return (m_block == that.m_block && m_idx_in_block == that.m_idx_in_block);
 		}
 
 		bool operator!=(const VirtualArrayIterator& that)
@@ -139,10 +136,10 @@ public:
 		{
 
 			pheet_assert(m_block);
-			if (m_block_nr < that.m_block_nr) {
+			if (m_block->nr() < that.m_block->nr()) {
 				return true;
 			}
-			if (m_block_nr > that.m_block_nr) {
+			if (m_block->nr() > that.m_block->nr()) {
 				return false;
 			}
 			return (m_idx_in_block < that.m_idx_in_block);
@@ -151,21 +148,20 @@ public:
 		size_t index(size_t offset = 0) const
 		{
 			pheet_assert(m_block);
-			size_t idx = m_block_nr * DATA_BLOCK_SIZE + m_idx_in_block - offset;
+			size_t idx = m_block->nr() * DATA_BLOCK_SIZE + m_idx_in_block - offset;
 			pheet_assert(idx >= 0);
 			return idx;
 		}
 
 	private:
 		VirtualArray::Block* m_block;
-		ssize_t m_block_nr;	/**< The nr of the current block within the ordered sequence. */
 		size_t m_idx_in_block; /** Index within the block */
 	};
 
 	VirtualArray()
 		: m_start_idx(0), m_capacity(1)
 	{
-		m_last = m_start = m_first = new Block();
+		m_last = m_start = m_first = new Block(0);
 	}
 
 	~VirtualArray()
@@ -191,10 +187,6 @@ public:
 		VirtualArrayIterator it;
 		it.m_block = block;
 		it.m_idx_in_block = idx % block_size();
-		for (const Block* i = m_start; i != block; i = i->next) {
-			it.m_block_nr++;
-		}
-
 		return it;
 	}
 
@@ -275,7 +267,7 @@ public:
 		size_t freed = block_size() - (m_start_idx % block_size());
 		while (freed < value) {
 			//TODOMK:
-            //m_start.store(m_start.load()->next);
+			//m_start.store(m_start.load()->next);
 			freed += block_size();
 			/* We do not reduce/free the blocks since another thread might currently
 			 * access them. Just keep them for later reusage. They are eventually
@@ -300,16 +292,16 @@ private:
 
 	void add_block()
 	{
-		Block* tmp = new Block();
+		Block* tmp = new Block(m_last->nr() + 1);
 		tmp->prev = m_last;
 		m_last->next.store(tmp, std::memory_order_release);
 		m_last = tmp;
 	}
 
 private:
-    std::atomic<size_t> m_start_idx; /** index of the first accessible item in the virtual array */
+	std::atomic<size_t> m_start_idx; /** index of the first accessible item in the virtual array */
 	Block* m_first;
-    std::atomic<Block*> m_start;
+	std::atomic<Block*> m_start;
 	Block* m_last;
 	size_t m_capacity;
 };

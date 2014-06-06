@@ -22,9 +22,9 @@ private:
 	typedef VirtualArrayBlock<T, N> Self;
 
 public:
-	VirtualArrayBlock<T, N>()
-		: next(nullptr), prev(nullptr) {
-
+	VirtualArrayBlock<T, N>(size_t nr)
+		: next(nullptr), prev(nullptr), m_nr(nr)
+	{
 		for (auto& it : m_data) {
 			it = nullptr;
 		}
@@ -41,12 +41,18 @@ public:
 		return N;
 	}
 
+	constexpr size_t nr() const
+	{
+		return m_nr;
+	}
+
 public:
 	std::atomic<Self*> next;
 	Self* prev;
 
 private:
 	std::array<std::atomic<T>, N> m_data;
+	const size_t m_nr;
 };
 
 } /* namespace pheet */
