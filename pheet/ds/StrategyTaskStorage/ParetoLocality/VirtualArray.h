@@ -22,7 +22,7 @@ namespace pheet
  * A dynamic virtual array of (potentially) infinite size.
  *
  * The virtual array allows access to any element within the range
- * [begin, begin+capacity]. If the element was not yet set, nullptr will be returned.
+ * [start_idx(), start()+capacity]. If the element was not yet set, nullptr will be returned.
  *
  * Implemented as a linked list of VirtualArrayBlock. Only the owning thread may
  * change the structure or traverse the linked list backwards; other threads may
@@ -30,10 +30,13 @@ namespace pheet
  * atomic.
  *
  * VirtualArrayIterator should be used to iteratate over ranges of the virtual array.
- * Note: Contrary to the usual C++ convention, end() will return an iterator to
+ * Contrary to the usual C++ convention, end() will return an iterator to
  * the last accessible element of the virtual array. The actual capacity of the
  * virtual array is capacity()+1, so that the last element is a dummy so that
  * the iterator always references a valid block.
+ *
+ * Note that the virtual array may shrink from the left; that is, elements in
+ * the range [0  m_start_index[ may not be accessed!
  */
 template <class T>
 class VirtualArray
@@ -160,9 +163,9 @@ public:
 	};
 
 	VirtualArray()
-		: m_capacity(1)
+		: m_start_idx(0), m_capacity(1)
 	{
-		m_last = m_first = new Block();
+		m_last = m_start = m_first = new Block();
 	}
 
 	~VirtualArray()
@@ -177,16 +180,18 @@ public:
 
 	VirtualArrayIterator begin() const
 	{
-		return iterator_to(0);
+		return iterator_to(m_start_idx);
 	}
 
 	VirtualArrayIterator iterator_to(const size_t idx) const
 	{
+		pheet_assert(m_start_idx <= idx);
+		pheet_assert(idx < m_capacity);
 		Block* block = find_block(idx);
 		VirtualArrayIterator it;
 		it.m_block = block;
 		it.m_idx_in_block = idx % block_size();
-		for (const Block* i = m_first; i != block; i = i->next) {
+		for (const Block* i = m_start; i != block; i = i->next) {
 			it.m_block_nr++;
 		}
 
@@ -207,6 +212,7 @@ public:
 
 	std::atomic<T>& operator[](size_t idx)
 	{
+		pheet_assert(m_start_idx <= idx);
 		pheet_assert(idx < m_capacity);
 
 		Block* block = find_block(idx);
@@ -226,8 +232,8 @@ public:
 	/**
 	 * Increase the capacity of this VirtualArray by the given value.
 	 *
-	 * After calling this method, accessing this VirtualArray at any position
-	 * smaller than previous capacity + value is legal.
+	 * After calling this method, accessing this VirtualArray at any index in
+	 * [start_idx(), previous capacity + value[ is legal.
 	 */
 	void increase_capacity(size_t value)
 	{
@@ -243,22 +249,46 @@ public:
 	 * Decrease the capacity of this VirtualArray by the given value.
 	 *
 	 * After calling this method, accessing this VirtualArray at any position
-	 * greater or equal to previous capacity - value is illegal.
+	 * greater or equal to previous capacity - value is illegal, i.e., the legal
+	 * range is [start_idx(), previous capacity - value[
 	 */
 	void decrease_capacity(size_t value)
 	{
-		pheet_assert(value < m_capacity);
+		pheet_assert(value < (m_capacity - m_start_idx));
 		m_capacity -= value;
 		/* We do not reduce/free the blocks since another thread might currently
 		 * access them. Just keep them for later reusage. They are eventually
 		 * fred in the destructor. */
 	}
 
+	/**
+	 * Decrease the capacity of this VirtualArray by the given value by shrinking
+	 * from the start, i.e.:
+	 *
+	 * After calling this method, accessing this VirtualArray at any position
+	 * smaller than previous start + value is illegal, i.e., the legal
+	 * range is [previous start_idx() + value, capacity[
+	 */
+	void decrease_capacity_from_start(size_t value)
+	{
+		pheet_assert(m_start_idx + value < m_capacity);
+		size_t freed = block_size() - (m_start_idx % block_size());
+		while (freed < value) {
+			//TODOMK:
+            //m_start.store(m_start.load()->next);
+			freed += block_size();
+			/* We do not reduce/free the blocks since another thread might currently
+			 * access them. Just keep them for later reusage. They are eventually
+			 * fred in the destructor. */
+		}
+		m_start_idx += value;
+	}
+
 private:
 	Block* find_block(size_t idx) const
 	{
 		//find block that stores element at location idx
-		Block* tmp = m_first;
+		Block* tmp = m_start;
 		size_t cnt = block_size();
 		//TODOMK: reduce asymptotic complexity
 		while (cnt <= idx && tmp != nullptr) {
@@ -277,7 +307,9 @@ private:
 	}
 
 private:
+    std::atomic<size_t> m_start_idx; /** index of the first accessible item in the virtual array */
 	Block* m_first;
+    std::atomic<Block*> m_start;
 	Block* m_last;
 	size_t m_capacity;
 };
