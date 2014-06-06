@@ -572,35 +572,74 @@ pop(BaseItem* boundary)
 	while (!boundary_item->is_taken()) {
 		Block* best_block = nullptr;
 		VAIt best_it;
-
+		check_blocks();
 		//iterate through all blocks
 		for (Block* block = insert; block != nullptr; block = block->next()) {
+
 			//only check the block if it is an ActiveBlock
 			if (!block->is_dead()) {
 				//get the top element
 				VAIt top_it = block->top();
 				pheet_assert(!block->is_dead());
-
 				//is the block empty?
 				//Note: the insert block may be empty - we never shrink it or set it dead!
 				if (block != insert && !top_it.validItem()) {
 					/* block->top() returned non-valid iterator, thus no more active
 					 * items are in block.*/
 					if (block == insert->next()) {
-						/* if block is the first block in the doubly-linked list, it
-						 * requires special attention (because we can't just set it false) */
-						if (block == last) {
-							/* if block is the only block in the doubly-linked list,
-							 * we can simply drop it */
-							insert->next(nullptr);
+						/* If block is the first block in the doubly-linked list, it
+						 * requires special attention (because we can't just set it dead).
+						 * Thus, we drop blocks starting at insert->next() until a non-dead
+						 * block or the end of the linked list is reached */
+						size_t to_free = 0;
+						bool last_dropped = false;
+						do {
+							// splice out and delete dead blocks
+							Block* dead_block = block;
+							block = dead_block->next();
+							to_free += dead_block ->capacity();
+							//splice out dead_block
+							//TODOMK: can be done with less operations
+							pheet_assert(!dead_block ->prev());
+							pheet_assert(dead_block = insert->next());
+							insert->next(dead_block->next());
+							if (dead_block->next()) {
+								dead_block->next()->prev(nullptr);
+							}
+							// did we drop the last block?
+							if (dead_block == last) {
+								last_dropped = true;
+								pheet_assert(!block);
+							}
+							//delete the block
+							delete dead_block;
+						} while (block && block->is_dead());
+						//update last if neccessary
+						if (last_dropped) {
+							pheet_assert(!insert->next());
+							// There are no more blocks after insert.
+							// Update last and decrase virtual array capacity.
 							last = insert;
-							m_array.decrease_capacity(block->capacity());
-							delete block;
-							block = insert;
+							m_array.decrease_capacity(to_free);
 						} else {
-							//TODOMK: this might be tricky
-							//std::cerr << "the aweful case!\n";
+							// There is at least one non-dead block
+							pheet_assert(insert->next() == block);
+							pheet_assert(!block->is_dead());
+							pheet_assert(!block->prev());
+							//create a new level 0 block and splice it in
+							size_t offset = block->offset() - MAX_PARTITION_SIZE;
+							Block* new_insert = new Block(m_array, &m_pivots, offset, 0, insert->size());
+							new_insert->next(block);
+							new_insert->set_dead(true);
+							//move the elements of the insert block
+							move(insert, new_insert, false);
+							insert = new_insert;
+							//shrink virtual array from left
+							m_array.decrease_capacity_from_start(to_free);
 						}
+						pheet_assert((!block && !insert->next()) || (block && insert->next() == block));
+						//insert->next() is the next block we want to look at in the loop
+						block = insert;
 					} else if (try_set_dead(block)) {
 						//if the block has a dead predecessor (pred), pred will be
 						//larger than block. Reorder the sequence of dead blocks
