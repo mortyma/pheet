@@ -74,7 +74,7 @@ private:
 	 * or does not require reordering.
 	 *
 	 */
-	Block* reorder_dead_blocks(Block* block)
+	Block* reorder_dead_predecesors(Block* block)
 	{
 		pheet_assert(block->is_dead());
 		Block* predecessor = block->prev();
@@ -83,7 +83,7 @@ private:
 
 		if (predecessor->is_dead() && predecessor->lvl() > block->lvl()) {
 			predecessor = swap_dead(predecessor, block);
-			predecessor = reorder_dead_blocks(predecessor);
+			predecessor = reorder_dead_predecesors(predecessor);
 		}
 		return predecessor;
 	}
@@ -597,7 +597,7 @@ pop(BaseItem* boundary)
 							//remember the block after block, which shall be the
 							//block for the next iteration of the for-loop
 							Block* next = block->next();
-							block = reorder_dead_blocks(block);
+							block = reorder_dead_predecesors(block);
 							if (next != nullptr) {
 								block = next->prev();
 							}
