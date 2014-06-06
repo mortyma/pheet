@@ -88,6 +88,15 @@ private:
 		return predecessor;
 	}
 
+	void reorder_dead_blocks(Block* source)
+	{
+		while (source && source->is_dead()) {
+			Block* next = source->next();
+			reorder_dead_predecesors(source);
+			source = next;
+		}
+	}
+
 	/**
 	 * Swap two dead blocks, where "predecessor" is the immediate predecessor of "block".
 	 */
@@ -238,17 +247,16 @@ private:
 		if (block->lvl() == destination->lvl()) {
 			//move item pointers from source (block) to destination
 			move(block, destination, true);
-
 			//maintain pointer to last
 			bool was_last = block == last;
 			block = destination;
 			if (was_last) {
 				last = drop_dead_blocks_at_end(get_last(block));
 			}
-
 			//predecessor and predecessor->next have the same size, we can merge them
 			if (predecessor->lvl() == destination->lvl()) {
 				block = destination->prev()->merge_next();
+				reorder_dead_blocks(block->next());
 				return true;
 			}
 			//otherwise, no need to merge
@@ -256,6 +264,7 @@ private:
 			return true;
 		}
 		pheet_assert(block->lvl() < destination->lvl());
+		reorder_dead_blocks(destination);
 		return false;
 	}
 
