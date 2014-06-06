@@ -291,6 +291,16 @@ public:
 		return false;
 	}
 
+	/**
+	 * The number of items that were put into this block.
+	 *
+	 * Note: size() may differ from capacity() only for level 0 blocks.
+	 */
+	size_t size() const
+	{
+		return m_partitions->end().index(m_offset);
+	}
+
 private:
 	/**
 	 * Increase the level of the block and thus double its capacity.
