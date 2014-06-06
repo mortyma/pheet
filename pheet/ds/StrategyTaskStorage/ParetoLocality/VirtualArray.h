@@ -270,8 +270,7 @@ public:
 		pheet_assert(m_start_idx + value < m_capacity);
 		size_t freed = block_size() - (m_start_idx % block_size());
 		while (freed < value) {
-			//TODOMK:
-			//m_start.store(m_start.load()->next);
+			m_start.store(m_start.load()->next);
 			freed += block_size();
 			/* We do not reduce/free the blocks since another thread might currently
 			 * access them. Just keep them for later reusage. They are eventually
@@ -283,14 +282,18 @@ public:
 private:
 	Block* find_block(size_t idx) const
 	{
+		pheet_assert(m_start_idx <= idx);
+		pheet_assert(idx < m_capacity);
+
 		//find block that stores element at location idx
 		Block* tmp = m_start;
-		size_t cnt = block_size();
+		size_t cnt = (m_start.load()->nr() + 1) * block_size();
 		//TODOMK: reduce asymptotic complexity
 		while (cnt <= idx && tmp != nullptr) {
 			tmp = tmp->next;
 			cnt += block_size();
 		}
+		pheet_assert(tmp);
 		return tmp;
 	}
 
