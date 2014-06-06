@@ -254,43 +254,6 @@ public:
 	}
 
 	/**
-	 * Increase the level of the block and thus double its capacity.
-	 *
-	 * The block's offset will remain the same. Thus, if
-	 * before the call the block occupied the range [offset, offset + capacity[,
-	 * it will occupy the range [offset, offset + capacity * 2] after the call.
-	 * ("The block grows to the right").
-	 */
-	void increase_level()
-	{
-		m_lvl++;
-		m_capacity <<= 1;
-
-		//update end pointer
-		//TODOMK: more efficent way to get new end iterator
-		VAIt it = m_data.iterator_to(m_offset + m_capacity);
-		m_partitions->end(it);
-	}
-
-	/**
-	 * Decrease the level of the block and thus half its capacity.
-	 *
-	 * The block's offset will remain the same. Thus, if before the call the block
-	 * occupied the range [offset, offset + capacity[, it will occupy the range
-	 * [offset, offset + capacity / 2] after the call.
-	 */
-	void decrease_level()
-	{
-		pheet_assert(m_lvl > 0);
-		--m_lvl;
-		m_capacity >>= 1;
-		//update end pointer
-		//TODOMK: more efficent way to get new end iterator
-		VAIt it = m_data.iterator_to(m_offset + m_capacity);
-		m_partitions->end(it);
-	}
-
-	/**
 	 * Try to reduce the level of this block by 1.
 	 *
 	 * If the dead partition of this block is >= half the block size, we can
@@ -329,6 +292,43 @@ public:
 	}
 
 private:
+	/**
+	 * Increase the level of the block and thus double its capacity.
+	 *
+	 * The block's offset will remain the same. Thus, if
+	 * before the call the block occupied the range [offset, offset + capacity[,
+	 * it will occupy the range [offset, offset + capacity * 2] after the call.
+	 * ("The block grows to the right").
+	 */
+	void increase_level()
+	{
+		m_lvl++;
+		m_capacity <<= 1;
+
+		//update end pointer
+		//TODOMK: more efficent way to get new end iterator
+		VAIt it = m_data.iterator_to(m_offset + m_capacity);
+		m_partitions->end(it);
+	}
+
+	/**
+	 * Decrease the level of the block and thus half its capacity.
+	 *
+	 * The block's offset will remain the same. Thus, if before the call the block
+	 * occupied the range [offset, offset + capacity[, it will occupy the range
+	 * [offset, offset + capacity / 2] after the call.
+	 */
+	void decrease_level()
+	{
+		pheet_assert(m_lvl > 0);
+		--m_lvl;
+		m_capacity >>= 1;
+		//update end pointer
+		//TODOMK: more efficent way to get new end iterator
+		VAIt it = m_data.iterator_to(m_offset + m_capacity);
+		m_partitions->end(it);
+	}
+
 	void create_partition_pointers(size_t start, size_t dead, size_t end)
 	{
 		auto start_it = m_data.iterator_to(m_offset + start);
