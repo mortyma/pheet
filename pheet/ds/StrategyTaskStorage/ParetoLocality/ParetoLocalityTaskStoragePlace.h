@@ -243,7 +243,7 @@ private:
 			bool was_last = block == last;
 			block = destination;
 			if (was_last) {
-				last = drop_dead_blocks(get_last(block));
+				last = drop_dead_blocks_at_end(get_last(block));
 			}
 
 			//predecessor and predecessor->next have the same size, we can merge them
@@ -311,7 +311,7 @@ private:
 	 * Drop all dead blocks at the end of the linked list (until a non-dead
 	 * block is encountered)
 	 */
-	Block* drop_dead_blocks(Block* last)
+	Block* drop_dead_blocks_at_end(Block* last)
 	{
 		while (last->is_dead()) {
 			pheet_assert(last->prev());
@@ -603,7 +603,7 @@ pop(BaseItem* boundary)
 							}
 						}
 						//drop dead blocks at the end of the list
-						last = drop_dead_blocks(get_last(block));
+						last = drop_dead_blocks_at_end(get_last(block));
 					}
 					continue;
 				}
@@ -630,7 +630,7 @@ pop(BaseItem* boundary)
 			if (best_block == last) {
 				m_array.decrease_capacity(last->capacity());
 			} else {
-				last = drop_dead_blocks(get_last(best_block));
+				last = drop_dead_blocks_at_end(get_last(best_block));
 			}
 			//merge if necessary
 			if (best_block != insert && best_block != last) {
