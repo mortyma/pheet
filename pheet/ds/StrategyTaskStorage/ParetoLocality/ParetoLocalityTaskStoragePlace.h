@@ -638,16 +638,18 @@ pop(BaseItem* boundary)
 		T pop = best_block->take(best_it);
 
 		//shrink best_block if possible
+		last = drop_dead_blocks_at_end(get_last(best_block));
+
 		if (best_block->try_shrink(best_block != last)) {
 			if (best_block == last) {
 				m_array.decrease_capacity(last->capacity());
 			} else {
-				last = drop_dead_blocks_at_end(get_last(best_block));
-			}
-			//merge if necessary
-			if (best_block != insert && best_block != last) {
-				Block* block = get_active_successor(best_block);
-				merge_from(block);
+				pheet_assert(best_block != last);
+				//merge if necessary
+				if (best_block != insert && best_block != last) {
+					Block* block = get_active_successor(best_block);
+					merge_from(block);
+				}
 			}
 		}
 		pheet_assert(!last->is_dead());
