@@ -179,6 +179,9 @@ public:
 		return iterator_to(m_start_idx);
 	}
 
+	//TODOMK:
+	//VirtualArrayIterator iterator_to(VirtualArrayIterator start, const size_t idx) const
+
 	VirtualArrayIterator iterator_to(const size_t idx) const
 	{
 		pheet_assert(m_start_idx <= idx);
@@ -213,6 +216,7 @@ public:
 
 	size_t capacity() const
 	{
+		//TODOMK: fix
 		return m_capacity;
 	}
 
@@ -303,7 +307,8 @@ private:
 	Block* m_first;
 	std::atomic<Block*> m_start;
 	Block* m_last;
-	size_t m_capacity;
+	size_t m_capacity; //TODOMK: rename to end
+
 };
 
 } /* namespace pheet */

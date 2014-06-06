@@ -54,6 +54,8 @@ public:
 		: m_lvl(lvl), m_data(array), m_offset(offset), m_is_dead(false),
 		  m_next(nullptr), m_pivots(pivots), m_failed_attempts(0)
 	{
+		//TODOMK: constructor should allow to construct a dead block (then
+		//we don't need to create partition pointers)
 		pheet_assert(lvl == 0 || end == -1);
 		m_capacity = MAX_PARTITION_SIZE * pow(2, m_lvl);
 		pheet_assert(end <= (int)m_capacity);
