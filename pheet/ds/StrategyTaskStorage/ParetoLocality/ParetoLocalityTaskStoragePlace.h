@@ -102,13 +102,13 @@ private:
 		//create the blocks
 		size_t offset = predecessor->offset();
 		size_t lvl = block->lvl();
-		Block* new_predecessor = new Block(m_array, &m_pivots, offset, lvl, true);
+		Block* new_predecessor = new Block(m_array, &m_pivots, offset, lvl);
 		new_predecessor->set_dead(true);
 
 		pheet_assert(block->offset() >= (predecessor->capacity() - block->capacity()));
 		offset = block->offset() - (predecessor->capacity() - block->capacity());
 		lvl = predecessor->lvl();
-		Block* new_block = new Block(m_array, &m_pivots, offset, lvl, true);
+		Block* new_block = new Block(m_array, &m_pivots, offset, lvl);
 		new_block->set_dead(true);
 
 		//put them into the linked list
@@ -454,7 +454,7 @@ ParetoLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place)
 {
 	//increase capacity of virtual array
 	m_array.increase_capacity(MAX_PARTITION_SIZE);
-	last = new Block(m_array, &m_pivots, 0, 0, false);
+	last = new Block(m_array, &m_pivots, 0, 0, 0);
 	insert = last;
 	task_storage = TaskStorage::get(this, parent_place->get_central_task_storage(),
 	                                created_task_storage);
@@ -521,7 +521,7 @@ put(Item& item)
 
 		//create new block
 		size_t nb_offset = last->offset() + last->capacity();
-		Block* nb = new Block(m_array, &m_pivots, nb_offset, 0, true);
+		Block* nb = new Block(m_array, &m_pivots, nb_offset, 0);
 		nb->set_dead(true);
 		if (last != insert) {
 			nb->prev(last);
