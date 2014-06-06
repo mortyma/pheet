@@ -160,7 +160,7 @@ public:
 	};
 
 	VirtualArray()
-		: m_block_cnt(1), m_capacity(1)
+		: m_capacity(1)
 	{
 		m_last = m_first = new Block();
 	}
@@ -231,10 +231,12 @@ public:
 	 */
 	void increase_capacity(size_t value)
 	{
-		m_capacity += value;
-		while (m_block_cnt * block_size() < m_capacity) {
+		size_t free = block_size() - (m_capacity % block_size());
+		while (free < value) {
 			add_block();
+			free += block_size();
 		}
+		m_capacity += value;
 	}
 
 	/**
@@ -272,13 +274,11 @@ private:
 		tmp->prev = m_last;
 		m_last->next.store(tmp, std::memory_order_release);
 		m_last = tmp;
-		++m_block_cnt;
 	}
 
 private:
 	Block* m_first;
 	Block* m_last;
-	size_t m_block_cnt;
 	size_t m_capacity;
 };
 
