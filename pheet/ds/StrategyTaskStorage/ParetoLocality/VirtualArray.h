@@ -308,9 +308,10 @@ private:
 private:
 	std::atomic<size_t> m_start_idx; /** index of the first accessible item in the virtual array */
 	size_t m_end_idx; /** the last accessible item in the virtual array is at (m_end_idx - 1) */
-	Block* m_first;
-	std::atomic<Block*> m_start;
-	Block* m_last;
+	Block* m_first; /** the first block in the doubly-linked list of blocks */
+	std::atomic<Block*> m_start; /** the first block considered when iterating
+									 over/accessing the virtual array. Contains m_start_idx */
+	Block* m_last; /** the last block in the doubly-linked list of blocks */
 
 
 };
