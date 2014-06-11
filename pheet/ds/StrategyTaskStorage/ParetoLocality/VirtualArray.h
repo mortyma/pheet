@@ -179,19 +179,36 @@ public:
 		return iterator_to(m_start_idx);
 	}
 
-	//TODOMK:
-	//VirtualArrayIterator iterator_to(VirtualArrayIterator start, const size_t idx) const
-
+	/**
+	 * Get an iterator to the element at idx.
+	 */
 	VirtualArrayIterator iterator_to(const size_t idx) const
 	{
 		pheet_assert(m_start_idx <= idx);
 		pheet_assert(idx < m_end_idx);
-		Block* block = find_block(idx);
+		Block* block = find_block(idx, m_start);
 		VirtualArrayIterator it;
 		it.m_block = block;
 		it.m_idx_in_block = idx % block_size();
 		return it;
 	}
+
+	/**
+	 * Get an iterator to the element at idx. The search for this element is
+	 * started at the block containing the item start_it points to.
+	 */
+	VirtualArrayIterator iterator_to(VirtualArrayIterator start_it, const size_t idx) const
+	{
+		pheet_assert(m_start_idx <= start_it.index());
+		pheet_assert(start_it.index() <= idx);
+		pheet_assert(idx < m_end_idx);
+		Block* block = find_block(idx, start_it.m_block);
+		VirtualArrayIterator it;
+		it.m_block = block;
+		it.m_idx_in_block = idx % block_size();
+		return it;
+	}
+
 
 	/** The iterator returned by end() points to the last accessible element */
 	VirtualArrayIterator end() const
@@ -210,7 +227,7 @@ public:
 		pheet_assert(m_start_idx <= idx);
 		pheet_assert(idx < m_end_idx);
 
-		Block* block = find_block(idx);
+		Block* block = find_block(idx, m_start);
 		return (*block)[idx % block_size()];
 	}
 
@@ -280,14 +297,23 @@ public:
 	}
 
 private:
-	Block* find_block(size_t idx) const
+
+	/**
+	 * Get the block that contains the item at position idx.
+	 *
+	 * Start iterating through the list of blocks at start_block.
+	 * On calling the method, the following must hold:
+	 *     start_block->nr() * block_size() <= idx < m_end_idx
+	 */
+	Block* find_block(size_t idx, Block* start_block) const
 	{
 		pheet_assert(m_start_idx <= idx);
+		pheet_assert(start_block->nr() * block_size() <= idx);
 		pheet_assert(idx < m_end_idx);
 
 		//find block that stores element at location idx
-		Block* tmp = m_start;
-		size_t cnt = (m_start.load()->nr() + 1) * block_size();
+		Block* tmp = start_block;
+		size_t cnt = (start_block->nr() + 1) * block_size();
 		//TODOMK: reduce asymptotic complexity
 		while (cnt <= idx && tmp != nullptr) {
 			tmp = tmp->next;
@@ -312,8 +338,6 @@ private:
 	std::atomic<Block*> m_start; /** the first block considered when iterating
 									 over/accessing the virtual array. Contains m_start_idx */
 	Block* m_last; /** the last block in the doubly-linked list of blocks */
-
-
 };
 
 } /* namespace pheet */

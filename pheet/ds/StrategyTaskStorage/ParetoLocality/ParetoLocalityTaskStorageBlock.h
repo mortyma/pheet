@@ -185,8 +185,8 @@ public:
 		create_partition_pointers(0,  m_capacity, m_capacity);
 
 		//partition the whole block
-		auto left = m_data.iterator_to(m_offset);
-		auto right = m_data.iterator_to(m_offset + m_capacity - 1);
+		auto left = m_partitions->start();
+		auto right = --(m_partitions->end());
 		partition(0, left, right);
 	}
 
@@ -325,8 +325,7 @@ private:
 		m_capacity <<= 1;
 
 		//update end pointer
-		//TODOMK: more efficent way to get new end iterator
-		VAIt it = m_data.iterator_to(m_offset + m_capacity);
+		VAIt it = m_data.iterator_to(m_partitions->end(), m_offset + m_capacity);
 		m_partitions->end(it);
 	}
 
@@ -343,16 +342,17 @@ private:
 		--m_lvl;
 		m_capacity >>= 1;
 		//update end pointer
-		//TODOMK: more efficent way to get new end iterator
-		VAIt it = m_data.iterator_to(m_offset + m_capacity);
+		VAIt it = m_data.iterator_to(m_partitions->start(), m_offset + m_capacity);
 		m_partitions->end(it);
 	}
 
 	void create_partition_pointers(size_t start, size_t dead, size_t end)
 	{
+		pheet_assert(start <= dead);
+		pheet_assert(start <= end);
 		auto start_it = m_data.iterator_to(m_offset + start);
-		auto dead_it = m_data.iterator_to(m_offset + dead);
-		auto end_it = m_data.iterator_to(m_offset + end);
+		auto dead_it = m_data.iterator_to(start_it, m_offset + dead);
+		auto end_it = m_data.iterator_to(start_it, m_offset + end);
 		m_partitions = new PartitionPointers<Item>(m_pivots, start_it, dead_it, end_it);
 	}
 
