@@ -22,7 +22,7 @@ public:
 	typedef typename VirtualArray<Item*>::VirtualArrayIterator VAIt;
 
 	PartitionPointers(PivotQueue* pivot_queue, VAIt start, VAIt dead, VAIt end)
-		: m_pivot_queue(pivot_queue), m_first(start), m_last(start), m_dead(dead), m_end(end)
+		: m_pivot_queue(pivot_queue), m_start(start), m_last(start), m_dead(dead), m_end(end)
 	{
 		m_partitions.push_back(std::make_pair(start, nullptr));
 	}
@@ -65,14 +65,14 @@ public:
 		return m_partitions.size();
 	}
 
-	VAIt first() const
+	VAIt start() const
 	{
-		return m_first;
+		return m_start;
 	}
 
-	void first(VAIt first)
+	void start(VAIt start)
 	{
-		m_first = first;
+		m_start = start;
 	}
 
 	VAIt last() const
@@ -127,7 +127,7 @@ private:
 	PivotQueue* m_pivot_queue;
 	std::vector<std::pair<VAIt, PivotElement*>> m_partitions;
 	/* start of first partition and thus start of the block */
-	VAIt m_first;
+	VAIt m_start;
 	/* start of last partition (excluding dead items) */
 	VAIt m_last;
 	/* Dead items are stored right of the right-most partition, i.e., at the

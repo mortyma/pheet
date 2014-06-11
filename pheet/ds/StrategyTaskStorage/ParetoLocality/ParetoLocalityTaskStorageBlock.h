@@ -272,7 +272,7 @@ public:
 			//reduce lvl and capacity
 			decrease_level();
 			pheet_assert(m_capacity == m_partitions->end().index()
-			             - m_partitions->first().index());
+			             - m_partitions->start().index());
 
 			if (markDead) {
 				//the second half of the block is handled via a dead block
@@ -302,7 +302,7 @@ public:
 
 	VAIt start() const
 	{
-		return m_partitions->first();
+		return m_partitions->start();
 	}
 
 	VAIt end() const
