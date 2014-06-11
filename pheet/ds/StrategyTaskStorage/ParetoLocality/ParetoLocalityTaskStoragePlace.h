@@ -111,14 +111,12 @@ private:
 		//create the blocks
 		size_t offset = predecessor->offset();
 		size_t lvl = block->lvl();
-		Block* new_predecessor = new Block(m_array, &m_pivots, offset, lvl);
-		new_predecessor->set_dead(true);
+		Block* new_predecessor = new Block(m_array, &m_pivots, offset, lvl, true);
 
 		pheet_assert(block->offset() >= (predecessor->capacity() - block->capacity()));
 		offset = block->offset() - (predecessor->capacity() - block->capacity());
 		lvl = predecessor->lvl();
-		Block* new_block = new Block(m_array, &m_pivots, offset, lvl);
-		new_block->set_dead(true);
+		Block* new_block = new Block(m_array, &m_pivots, offset, lvl, true);
 
 		//put them into the linked list
 		new_predecessor->prev(predecessor->prev());
@@ -466,7 +464,7 @@ ParetoLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place)
 {
 	//increase capacity of virtual array
 	m_array.increase_capacity(MAX_PARTITION_SIZE);
-	last = new Block(m_array, &m_pivots, 0, 0, 0);
+	last = new Block(m_array, &m_pivots, 0, 0, false, 0);
 	insert = last;
 	task_storage = TaskStorage::get(this, parent_place->get_central_task_storage(),
 	                                created_task_storage);
@@ -533,8 +531,7 @@ put(Item& item)
 
 		//create new block
 		size_t nb_offset = last->offset() + last->capacity();
-		Block* nb = new Block(m_array, &m_pivots, nb_offset, 0);
-		nb->set_dead(true);
+		Block* nb = new Block(m_array, &m_pivots, nb_offset, 0, true);
 		if (last != insert) {
 			nb->prev(last);
 		}
@@ -628,9 +625,8 @@ pop(BaseItem* boundary)
 							pheet_assert(!block->prev());
 							//create a new level 0 block and splice it in
 							size_t offset = block->offset() - MAX_PARTITION_SIZE;
-							Block* new_insert = new Block(m_array, &m_pivots, offset, 0, insert->size());
+							Block* new_insert = new Block(m_array, &m_pivots, offset, 0, true, insert->size());
 							new_insert->next(block);
-							new_insert->set_dead(true);
 							//move the elements of the insert block
 							move(insert, new_insert, false);
 							insert = new_insert;

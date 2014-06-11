@@ -50,12 +50,10 @@ public:
 	 * otherwise, it is implicitly set to MAX_PARTITION_SIZE.
 	 */
 	ParetoLocalityTaskStorageBlock(VA& array, PivotQueue* pivots, size_t offset,
-	                               size_t lvl, int end = -1)
-		: m_lvl(lvl), m_data(array), m_offset(offset), m_is_dead(false),
+	                               size_t lvl, bool is_dead, int end = -1)
+		: m_lvl(lvl), m_data(array), m_offset(offset), m_is_dead(is_dead),
 		  m_next(nullptr), m_pivots(pivots), m_failed_attempts(0)
 	{
-		//TODOMK: constructor should allow to construct a dead block (then
-		//we don't need to create partition pointers)
 		pheet_assert(lvl == 0 || end == -1);
 		m_capacity = MAX_PARTITION_SIZE * pow(2, m_lvl);
 		pheet_assert(end <= (int)m_capacity);
@@ -279,8 +277,7 @@ public:
 			if (markDead) {
 				//the second half of the block is handled via a dead block
 				Block* dead_block = new Block(m_data, m_pivots,
-				                              m_offset + m_capacity, m_lvl);
-				dead_block->set_dead(true);
+				                              m_offset + m_capacity, m_lvl, true);
 				dead_block->next(this->next());
 				if (this->next()) {
 					this->next()->prev(dead_block);
