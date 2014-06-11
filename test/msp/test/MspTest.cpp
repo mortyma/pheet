@@ -125,7 +125,7 @@ private:
 	PathPtr const start;
 };
 
-typedef ::testing::Types<SequentialTest, StrategyTest, Strategy2Test> TestTypes;
+typedef ::testing::Types<Strategy2Test> TestTypes;
 TYPED_TEST_CASE(TESTCASE, TestTypes);
 
 template <typename T>
@@ -323,7 +323,7 @@ test_full(const Graph* graph,
 /**
  * Using a tree is input graph
  */
-TYPED_TEST(TESTCASE, SanityCheckTree)
+/*TYPED_TEST(TESTCASE, SanityCheckTree)
 {
 	this->init(51, 50, 3, 10, 42);
 }
@@ -331,7 +331,7 @@ TYPED_TEST(TESTCASE, SanityCheckTree)
 TYPED_TEST(TESTCASE, SanityCheckSparseGraph)
 {
 	this->init(10, 100, 3, 10, 42);
-}
+}*/
 
 #define DEGREE (3)
 #define WEIGHT_LIMIT (10000)
@@ -352,5 +352,9 @@ main(int argc,
      char** argv)
 {
 	::testing::InitGoogleTest(&argc, argv);
+
+	while (true) {
+		RUN_ALL_TESTS();
+	}
 	return RUN_ALL_TESTS();
 }
