@@ -216,8 +216,8 @@ public:
 
 	size_t capacity() const
 	{
-		//TODOMK: fix
-		return m_end;
+		pheet_assert(m_end_idx >= m_start_idx.load(std::memory_order_relaxed));
+		return m_end_idx - m_start_idx.load(std::memory_order_relaxed);
 	}
 
 	constexpr size_t block_size() const
