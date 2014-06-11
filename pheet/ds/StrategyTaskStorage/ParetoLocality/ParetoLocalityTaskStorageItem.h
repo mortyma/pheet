@@ -52,6 +52,10 @@ public:
 		}
 	}
 
+	/**
+	 * Note: make sure to call is_dead as little as possible
+	 * (may be expensive, since user implemented)
+	 */
 	bool is_dead()
 	{
 		return m_strategy.dead_task();

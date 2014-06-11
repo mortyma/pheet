@@ -376,19 +376,20 @@ private:
 		const size_t p_val = pivot->value();
 
 		do {
-			//TODOMK: try to call is_dead as little as possible (may be expensive, since user implemented)
-			while (left < right && *left && !left->is_taken_or_dead()
+			bool left_taken_or_dead, right_taken_or_dead;
+			//Note: make sure to call is_dead as little as possible (may be expensive, since user implemented)
+			while (left < right && *left && !(left_taken_or_dead = left->is_taken_or_dead())
 			        && left->strategy()->less_priority(p_dim, p_val)) {
 				left++;
 			}
 
-			while (left < right && *right && !right->is_taken_or_dead()
+			while (left < right && *right && !(right_taken_or_dead = right->is_taken_or_dead())
 			        && (right->strategy()->greater_priority(p_dim, p_val)
 			            || right->strategy()->equal_priority(p_dim, p_val))) {
 				--right;
 			}
 			if (left != right) {
-				if (!*right || right->is_taken_or_dead()) {
+				if (!*right || right_taken_or_dead) {
 					//right is dead
 					if (m_partitions->dead_partition().index() - right.index()  == 1) {
 						//element after right is dead too. Advance dead and right.
@@ -403,7 +404,7 @@ private:
 						VAIt dead = m_partitions->dead_partition();
 						swap_to_dead(right, dead);
 					}
-				} else if (!*left || left->is_taken_or_dead()) {
+				} else if (!*left || left_taken_or_dead) {
 					/* left is dead. Note that left+1==dead may never occur while
 					 * left < right, since right < dead holds. */
 					pheet_assert(left.index() + 1 < m_partitions->dead_partition().index());
