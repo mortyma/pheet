@@ -21,6 +21,9 @@ MAX_CPUS = 80
 
 if __name__ == '__main__':
 	
+	#make
+	subprocess.call(["make", "release"])
+	
 	#parse arguments
 	parser = argparse.ArgumentParser(
 	   description='Benchmarking multi-criteria shortest path with different pheet task storage implementations.')
