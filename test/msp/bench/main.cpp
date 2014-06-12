@@ -45,15 +45,16 @@ static void
 usage()
 {
 	std::cerr <<
-	          "\n msp-bench [-r] [-n...] [--seq] [--strategy] [--strategy2] [FILE...]\n\n"
+	          "\n msp-bench [-r] [-n...] [--seq] [--strategy] [--strategy2] file \n\n"
 	          << "Benchmark multi-objective shortest path algorithms\n"
-	          << "PARAMETERS:\n"
+	          << "Options and arguments:\n"
 	          << "-r\t\t number of repetitions to be used for each benchmark\n"
 	          << "-n\t\t number of processors to be used for benchmarking\n"
 	          << "--seq\t\t benchmark the sequential algorithm."
 	          << " Benchmark will be run for n=1.\n"
-	          << "--strategy\t benchmark the parallel algorithm.\n\n"
-	          << "--strategy2\t benchmark the parallel algorithm (Strategy2 scheduler variant).\n\n";
+	          << "--strategy\t benchmark the parallel algorithm.\n"
+	          << "--strategy2\t benchmark the parallel algorithm (Strategy2 scheduler variant).\n"
+	          << "file\t\t input file, containing a graph to run the benchmark on.\n\n";
 	exit(EXIT_FAILURE);
 }
 
@@ -118,11 +119,9 @@ main(int argc, char** argv)
 	}
 
 	if (optind < argc) {
-		do {
-			parse(argv[optind], opts.files);
-		} while (++optind < argc);
+		parse(argv[optind], opts.files);
 	} else {
-		std::cerr << "No input files given." << std::endl;
+		std::cerr << "No input file given." << std::endl;
 		usage();
 	}
 
