@@ -45,12 +45,12 @@ static void
 usage()
 {
 	std::cerr <<
-	          "\n msp-bench [-r] [-n...] [--seq] [--strategy] [--strategy2] file \n\n"
+	          "\n msp-bench [-r] [-n...] [--sequential] [--strategy] [--strategy2] file \n\n"
 	          << "Benchmark multi-objective shortest path algorithms\n"
 	          << "Options and arguments:\n"
 	          << "-r\t\t number of repetitions to be used for each benchmark\n"
 	          << "-n\t\t number of processors to be used for benchmarking\n"
-	          << "--seq\t\t benchmark the sequential algorithm."
+	          << "--sequential\t\t benchmark the sequential algorithm."
 	          << " Benchmark will be run for n=1.\n"
 	          << "--strategy\t benchmark the parallel algorithm.\n"
 	          << "--strategy2\t benchmark the parallel algorithm (Strategy2 scheduler variant).\n"
@@ -82,7 +82,7 @@ main(int argc, char** argv)
 
 	while (1) {
 		static struct option long_options[] = {
-			{"seq",      no_argument,       &sequential, 1},
+			{"sequential",      no_argument,       &sequential, 1},
 			{"strategy", no_argument,       &strategy,   1},
 			{"strategy2", no_argument,       &strategy2,   1},
 			{"ncpus",    required_argument, 0,           'n'},
