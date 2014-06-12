@@ -1,7 +1,10 @@
 #!/usr/bin/env python2
 
 #Note: one may directly execute ./msp-bench. This python script only provides a more convenient user interface.
+
 import argparse
+import subprocess
+import sys
 
 REPETITIONS = 10
 
@@ -22,7 +25,7 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(
 	   description='Benchmarking multi-criteria shortest path with different pheet task storage implementations.')
 	parser.add_argument('-i','--input', help = 'Input file name (reuqired)', type = argparse.FileType('r'), required = True)
-	parser.add_argument('-o','--output', help = 'Output file name (default: stdout)', type = argparse.FileType('w'), default = "stdout")
+	parser.add_argument('-o','--output', help = 'Output file name (default: stdout)', type = argparse.FileType('w'), default = sys.stdout)
 	parser.add_argument('-a', '--algorithm', help = "List of algorithms/variants to benchmark", nargs = "+", default = ALGORITHMS)
 	parser.add_argument('-r', '--repetitions', help = "Number of repetitions", type = int, default = REPETITIONS)
 	parser.add_argument('-n', '--nrcpus', help = "List of cpus counts", nargs = "+", type = int, default = CPUS)
@@ -39,3 +42,18 @@ if __name__ == '__main__':
 	for n in nrcpus:
 		if n < 1 or n > MAX_CPUS:
 			parser.error("Invalid number of cpus: " + str(n))
+	
+	#assemble the argument/option string for ./msp-bench
+	call = ["./build/test/msp/bench/msp-bench"]
+	call += [args.input.name]
+	call += ["-r " + str(args.repetitions)]
+	for a in algorithms:
+		call += ["--" + a]
+	for n in nrcpus:
+		call += ["-n " + str(n)]
+		
+	#run ./msp-bench  as a subprocess
+	f = args.output
+	f.write(str(call) + "\n")
+	ret = subprocess.check_output(call)
+	f.write(ret)
