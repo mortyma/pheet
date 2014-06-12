@@ -34,7 +34,7 @@ void
 MspBenchmarks::
 run_benchmarks(BenchOpts const& opts)
 {
-	for (auto & it : opts.files) {
+	for (auto& it : opts.files) {
 		graph::Graph* g = graph::Graph::read(fopen(it.c_str(), "r"));
 		graph::Node* src = g->nodes().front();
 
@@ -48,7 +48,7 @@ run_benchmarks(BenchOpts const& opts)
 		}
 
 		if (opts.strategy) {
-			for (auto & it : opts.ncpus) {
+			for (auto& it : opts.ncpus) {
 				for (int i = 0; i < opts.repetitions; i++) {
 					::run_algorithm < Pheet::WithScheduler<BStrategyScheduler>
 					::WithTaskStorage<DistKStrategyTaskStorage>,
@@ -58,7 +58,7 @@ run_benchmarks(BenchOpts const& opts)
 		}
 
 		if (opts.strategy2) {
-			for (auto & it : opts.ncpus) {
+			for (auto& it : opts.ncpus) {
 				for (int i = 0; i < opts.repetitions; i++) {
 					::run_algorithm < Pheet::WithScheduler<StrategyScheduler2>,
 					Strategy2Msp > (g, src, it);
@@ -69,8 +69,6 @@ run_benchmarks(BenchOpts const& opts)
 
 		delete g;
 	}
-
-
 }
 
 } /* namespace pheet */
