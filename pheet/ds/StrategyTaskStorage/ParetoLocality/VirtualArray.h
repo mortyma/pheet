@@ -166,7 +166,6 @@ public:
 
 	~VirtualArray()
 	{
-		std::cerr << "Virtual array capacity: " << m_end_idx - 65 - m_start_idx << "\n";
 		while (m_first->next != nullptr) {
 			m_first = m_first->next;
 			delete m_first->prev;
