@@ -30,26 +30,11 @@ parse(char const* name,
 	struct stat s;
 
 	if (stat(name, &s) == 0) {
-		if (s.st_mode & S_IFDIR) {
-			//it's a directory
-			DIR* dp;
-			struct dirent* dirp;
-			if ((dp  = opendir(name)) == NULL) {
-				std::cerr << "Error(" << errno << ") opening " << name << std::endl;
-				return;
-			}
-
-			while ((dirp = readdir(dp)) != NULL) {
-				if (is_file(dirp->d_name)) {
-					files.push_back(std::string(dirp->d_name));
-				}
-			}
-			closedir(dp);
-		} else if (s.st_mode & S_IFREG) {
+		if (s.st_mode & S_IFREG) {
 			//it's a file
 			files.push_back(name);
 		} else {
-			std::cerr << "\"" << name << "\" is not a file or a directory." << std::endl;
+			std::cerr << "\"" << name << "\" is not a file." << std::endl;
 		}
 	} else {
 		std::cerr << "Skipping file \"" << name << "\" because it does not exist." << std::endl;
@@ -60,7 +45,7 @@ static void
 usage()
 {
 	std::cerr <<
-	          "\n msp-bench [-r] [-n...] [--seq] [--strategy] [--strategy2] [DIRECTORY...] [FILE...]\n\n"
+	          "\n msp-bench [-r] [-n...] [--seq] [--strategy] [--strategy2] [FILE...]\n\n"
 	          << "Benchmark multi-objective shortest path algorithms\n"
 	          << "PARAMETERS:\n"
 	          << "-r\t\t number of repetitions to be used for each benchmark\n"
