@@ -52,11 +52,22 @@ if __name__ == '__main__':
 	   description='Benchmarking multi-criteria shortest path with different pheet task storage implementations.')
 	parser.add_argument('-i','--input', help = 'Input file name (reuqired)', type = argparse.FileType('r'), required = True)
 	parser.add_argument('-o','--output', help = 'Output file name (default: stdout)', type = argparse.FileType('w'), default = sys.stdout)
+	parser.add_argument('-l','--limit', help = 'Only benchmark sequential and strategy', action='store_true')
+	parser.add_argument('-s', '--small', help = 'Run for 1, 2 and 4 cpus only', action='store_true')
 	parser.add_argument('-a', '--algorithm', help = "List of algorithms/variants to benchmark", nargs = "+", default = ALGORITHMS)
 	parser.add_argument('-r', '--repetitions', help = "Number of repetitions", type = int, default = REPETITIONS)
 	parser.add_argument('-n', '--nrcpus', help = "List of cpus counts", nargs = "+", type = int, default = CPUS)
 	args = parser.parse_args()
 	
-	bench(args.algorithm, args.nrcpus, args.repetitions, args.input, args.output)
+	if args.limit:
+		algorithms = ["sequential", "strategy"]
+	else:
+		algorithms = args.algorithm
+	if args.small:
+		nrcpus = [1,2,3,4]
+	else:
+		nrcpus = args.nrcpus
+	
+	bench(algorithms, nrcpus, args.repetitions, args.input, args.output)
 
 	
