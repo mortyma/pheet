@@ -57,6 +57,5 @@ if __name__ == '__main__':
 		
 	#run ./msp-bench  as a subprocess
 	f = args.output
-	f.write(str(call) + "\n")
 	ret = subprocess.check_output(call)
 	f.write(ret)
