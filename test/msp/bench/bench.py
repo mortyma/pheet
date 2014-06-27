@@ -4,7 +4,8 @@
 
 import argparse
 import os
-import subprocess
+import subprocess 
+from  subprocess import Popen, PIPE, STDOUT
 import sys
 
 
@@ -43,9 +44,12 @@ def bench(algorithms, nrcpus, repetitions, inFile, outDir):
     #run ./msp-bench  as a subprocess
     for a in algorithms:
         ret = subprocess.check_output(call + ["--" + a])
+        # parse benchmark data to more regular csv format
+        p = Popen(['./csvheet'], stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        stdout_data = p.communicate(input=ret)[0]
         outFile = os.path.join(outDir, a + ".dat")
         f = open(outFile, 'w')
-        f.write(ret)
+        f.write(stdout_data)
 
 if __name__ == '__main__':
     #make
