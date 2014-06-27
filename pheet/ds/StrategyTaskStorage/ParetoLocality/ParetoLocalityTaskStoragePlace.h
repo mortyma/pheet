@@ -584,10 +584,15 @@ pop(BaseItem* boundary)
 					/* block->top() returned non-valid iterator, thus no more active
 					 * items are in block.*/
 					if (block == insert->next()) {
-						/* If block is the first block in the doubly-linked list, it
-						 * requires special attention (because we can't just set it dead).
-						 * Thus, we drop blocks starting at insert->next() until a non-dead
-						 * block or the end of the linked list is reached */
+
+						/* TODOMK: shrinking hte VirtualArray from the left is
+						 * not a good idea. Since the memory is never reused,
+						 * memory usage may increase infinitly
+
+						// If block is the first block in the doubly-linked list, it
+						// requires special attention (because we can't just set it dead).
+						// Thus, we drop blocks starting at insert->next() until a non-dead
+						// block or the end of the linked list is reached
 						size_t to_free = 0;
 						bool last_dropped = false;
 						do {
@@ -636,6 +641,7 @@ pop(BaseItem* boundary)
 						pheet_assert((!block && !insert->next()) || (block && insert->next() == block));
 						//insert->next() is the next block we want to look at in the loop
 						block = insert;
+						*/
 					} else if (try_set_dead(block)) {
 						//if the block has a dead predecessor (pred), pred will be
 						//larger than block. Reorder the sequence of dead blocks
