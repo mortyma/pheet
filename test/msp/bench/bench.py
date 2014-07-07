@@ -47,9 +47,12 @@ def bench(algorithms, nrcpus, repetitions, inFile, outDir):
         # parse benchmark data to more regular csv format
         p = Popen(['./csvheet'], stdout=PIPE, stdin=PIPE, stderr=PIPE)
         stdout_data = p.communicate(input=ret)[0]
-        outFile = os.path.join(outDir, a + ".dat")
-        f = open(outFile, 'w')
-        f.write(stdout_data)
+        if outDir:
+            outFile = os.path.join(outDir, a + ".dat")
+            f = open(outFile, 'w')
+            f.write(stdout_data)
+        else:
+            print stdout_data
 
 if __name__ == '__main__':
     #make
@@ -67,11 +70,11 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--nrcpus', help = "List of cpus counts", nargs = "+", type = int, default = CPUS)
     args = parser.parse_args()
     
-    if os.path.isfile(args.output):
-        raise ValueError("-o needs to specify a directory")
-    
-    if not os.path.exists(args.output):
-        os.makedirs(args.output)
+    if args.output:   
+        if os.path.isfile(args.output):
+            raise ValueError("-o needs to specify a directory")
+        if not os.path.exists(args.output):
+            os.makedirs(args.output)
     
     if args.limit:
         algorithms = ["sequential", "strategy"]
