@@ -259,7 +259,7 @@ public:
 	 * If the dead partition of this block is >= half the block size, we can
 	 * reduce the level of the block by 1 (i.e., half its size).
 	 */
-	bool can_shrink()
+	bool try_reduce_lvl()
 	{
 		//can't shrink a block of lvl 0
 		if (m_lvl == 0) {
@@ -288,7 +288,7 @@ public:
 	{
 		pheet_assert(next() == nullptr);
 		size_t shrunk_by = 0;
-		while (can_shrink()) {
+		while (try_reduce_lvl()) {
 			m_capacity >>= 1;
 			shrunk_by += m_capacity;
 			//update end pointer
