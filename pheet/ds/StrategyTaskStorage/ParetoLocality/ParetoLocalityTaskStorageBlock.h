@@ -163,7 +163,7 @@ public:
 		pheet_assert(!next()->is_dead());
 
 		//expand this block to cover this as well as next block
-		increase_level();
+		increase_level(next()->capacity());
 
 		//splice out next
 		Block* tmp  = next();
@@ -331,10 +331,7 @@ private:
 	{
 		m_lvl++;
 		pheet_assert(m_capacity == add_capacity);
-		//m_capacity += add_capacity;
-		m_capacity <<= 1;
-
-
+		m_capacity += add_capacity;
 		//update end pointer
 		VAIt it = m_data.iterator_to(m_partitions->end(), m_offset + m_capacity);
 		m_partitions->end(it);
