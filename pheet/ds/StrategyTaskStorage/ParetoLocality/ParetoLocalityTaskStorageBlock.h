@@ -298,16 +298,6 @@ public:
 		return shrunk_by;
 	}
 
-	/**
-	 * The number of items that were put into this block.
-	 *
-	 * Note: size() may differ from capacity() only for level 0 blocks.
-	 */
-	size_t size() const
-	{
-		return m_partitions->end().index(m_offset);
-	}
-
 	VAIt start() const
 	{
 		return m_partitions->start();
@@ -346,11 +336,6 @@ private:
 	{
 		pheet_assert(m_lvl > 0);
 		--m_lvl;
-		//TODOMK: remove dead code
-		//m_capacity >>= 1;
-		//update end pointer
-		//VAIt it = m_data.iterator_to(m_partitions->start(), m_offset + m_capacity);
-		//m_partitions->end(it);
 	}
 
 	void create_partition_pointers(size_t start, size_t dead, size_t end)
