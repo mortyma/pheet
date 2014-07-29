@@ -574,6 +574,7 @@ pop(BaseItem* boundary)
 			VAIt top_it = block->top();
 			pheet_assert(!block->is_dead());
 
+			//TODOMK: if top_it is not a valid item, block contains no more valid items
 			//We found a new best item
 			if (!best_it.validItem()  || (top_it.validItem() &&
 			                              top_it->strategy()->prioritize(*(best_it)->strategy()))) {
