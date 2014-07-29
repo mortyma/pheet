@@ -573,99 +573,15 @@ pop(BaseItem* boundary)
 		//iterate through all blocks
 		for (Block* block = insert; block != nullptr; block = block->next()) {
 
-			//only check the block if it is an ActiveBlock
-			if (!block->is_dead()) {
-				//get the top element
-				VAIt top_it = block->top();
-				pheet_assert(!block->is_dead());
-				//is the block empty?
-				//Note: the insert block may be empty - we never shrink it or set it dead!
-				if (block != insert && !top_it.validItem()) {
-					/* block->top() returned non-valid iterator, thus no more active
-					 * items are in block.*/
-					if (block == insert->next()) {
+			//get the top element
+			VAIt top_it = block->top();
+			pheet_assert(!block->is_dead());
 
-						/* TODOMK: shrinking hte VirtualArray from the left is
-						 * not a good idea. Since the memory is never reused,
-						 * memory usage may increase infinitly
-
-						// If block is the first block in the doubly-linked list, it
-						// requires special attention (because we can't just set it dead).
-						// Thus, we drop blocks starting at insert->next() until a non-dead
-						// block or the end of the linked list is reached
-						size_t to_free = 0;
-						bool last_dropped = false;
-						do {
-							// splice out and delete dead blocks
-							Block* dead_block = block;
-							block = dead_block->next();
-							to_free += dead_block ->capacity();
-							//splice out dead_block
-							//TODOMK: can be done with less operations
-							pheet_assert(!dead_block ->prev());
-							pheet_assert(dead_block = insert->next());
-							insert->next(dead_block->next());
-							if (dead_block->next()) {
-								dead_block->next()->prev(nullptr);
-							}
-							// did we drop the last block?
-							if (dead_block == last) {
-								last_dropped = true;
-								pheet_assert(!block);
-							}
-							//delete the block
-							delete dead_block;
-						} while (block && block->is_dead());
-						//update last if neccessary
-						if (last_dropped) {
-							pheet_assert(!insert->next());
-							// There are no more blocks after insert.
-							// Update last and decrase virtual array capacity.
-							last = insert;
-							m_array.decrease_capacity(to_free);
-						} else {
-							// There is at least one non-dead block
-							pheet_assert(insert->next() == block);
-							pheet_assert(!block->is_dead());
-							pheet_assert(!block->prev());
-							//create a new level 0 block and splice it in
-							size_t offset = block->offset() - MAX_PARTITION_SIZE;
-							Block* new_insert = new Block(m_array, &m_pivots, offset, 0, true, insert->size());
-							new_insert->next(block);
-							//move the elements of the insert block
-							move(insert, new_insert, false);
-							insert = new_insert;
-							//shrink virtual array from left
-							m_array.decrease_capacity_from_start(to_free);
-						}
-						pheet_assert((!block && !insert->next()) || (block && insert->next() == block));
-						//insert->next() is the next block we want to look at in the loop
-						block = insert;
-						*/
-					} else if (try_set_dead(block)) {
-						//if the block has a dead predecessor (pred), pred will be
-						//larger than block. Reorder the sequence of dead blocks
-						//starting at block to maintain the list
-						if (block->prev()->is_dead()) {
-							//remember the block after block, which shall be the
-							//block for the next iteration of the for-loop
-							Block* next = block->next();
-							block = reorder_dead_predecesors(block);
-							if (next != nullptr) {
-								block = next->prev();
-							}
-						}
-						//drop dead blocks at the end of the list
-						last = drop_dead_blocks_at_end(get_last(block));
-					}
-					continue;
-				}
-				//We found a new best item
-				if (!best_it.validItem() ||
-				        top_it->strategy()->prioritize(*(best_it)->strategy())) {
-					best_block = block;
-					best_it = top_it;
-				}
+			//We found a new best item
+			if (!best_it.validItem()  || (top_it.validItem() &&
+			                              top_it->strategy()->prioritize(*(best_it)->strategy()))) {
+				best_block = block;
+				best_it = top_it;
 			}
 		}
 
@@ -677,23 +593,6 @@ pop(BaseItem* boundary)
 		pheet_assert(best_block);
 		pheet_assert(best_it.validItem());
 		T pop = best_block->take(best_it);
-
-		//shrink best_block if possible
-		last = drop_dead_blocks_at_end(get_last(best_block));
-
-		if (best_block->try_shrink(best_block != last)) {
-			if (best_block == last) {
-				m_array.decrease_capacity(last->capacity());
-			} else {
-				pheet_assert(best_block != last);
-				//merge if necessary
-				if (best_block != insert && best_block != last) {
-					Block* block = get_active_successor(best_block);
-					merge_from(block);
-				}
-			}
-		}
-		pheet_assert(!last->is_dead());
 
 		//If take did not succeed, best_item was taken by another thread in the
 		//meantime. Try again.
