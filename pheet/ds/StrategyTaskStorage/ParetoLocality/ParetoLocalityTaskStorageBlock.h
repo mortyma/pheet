@@ -258,36 +258,44 @@ public:
 	 *
 	 * If the dead partition of this block is >= half the block size, we can
 	 * reduce the level of the block by 1 (i.e., half its size).
-	 *
-	 * If markDead = true, the second half of the block is marked as a dead block.
 	 */
-	bool try_shrink(bool markDead)
+	bool can_shrink()
 	{
 		//can't shrink a block of lvl 0
 		if (m_lvl == 0) {
 			return false;
 		}
-		//check if we can reduce the level of this block
+		//check if we can reduce the logical level of this block
 		if (m_partitions->dead_partition().index(m_offset) <= m_capacity / 2) {
 			//reduce lvl and capacity
 			decrease_level();
 			pheet_assert(m_capacity == m_partitions->end().index()
 			             - m_partitions->start().index());
 
-			if (markDead) {
-				//the second half of the block is handled via a dead block
-				Block* dead_block = new Block(m_data, m_pivots,
-				                              m_offset + m_capacity, m_lvl, true);
-				dead_block->next(this->next());
-				if (this->next()) {
-					this->next()->prev(dead_block);
-				}
-				dead_block->prev(this);
-				this->next(dead_block);
-			}
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * If this block does not have a successor, repeatately half the capacity of
+	 * this block, as long as possible (i.e., as long as
+	 * [offset, offset + dead] <= m_capacity).
+	 *
+	 * Returns the amount of items by which the block was shrunk.
+	 */
+	size_t shrink()
+	{
+		pheet_assert(next() == nullptr);
+		size_t shrunk_by = 0;
+		while (can_shrink()) {
+			m_capacity >>= 1;
+			shrunk_by += m_capacity;
+			//update end pointer
+			VAIt it = m_data.iterator_to(m_partitions->start(), m_offset + m_capacity);
+			m_partitions->end(it);
+		}
+		return shrunk_by;
 	}
 
 	/**
@@ -312,17 +320,20 @@ public:
 
 private:
 	/**
-	 * Increase the level of the block and thus double its capacity.
+	 * Increase the level of the block by one and the  capacity of the block by add_capacity.
 	 *
 	 * The block's offset will remain the same. Thus, if
 	 * before the call the block occupied the range [offset, offset + capacity[,
-	 * it will occupy the range [offset, offset + capacity * 2] after the call.
+	 * it will occupy the range [offset, offset + capacity + add_capacity] after the call.
 	 * ("The block grows to the right").
 	 */
-	void increase_level()
+	void increase_level(size_t add_capacity)
 	{
 		m_lvl++;
+		pheet_assert(m_capacity == add_capacity);
+		//m_capacity += add_capacity;
 		m_capacity <<= 1;
+
 
 		//update end pointer
 		VAIt it = m_data.iterator_to(m_partitions->end(), m_offset + m_capacity);
@@ -330,20 +341,19 @@ private:
 	}
 
 	/**
-	 * Decrease the level of the block and thus half its capacity.
+	 * Decrease the level of the block.
 	 *
-	 * The block's offset will remain the same. Thus, if before the call the block
-	 * occupied the range [offset, offset + capacity[, it will occupy the range
-	 * [offset, offset + capacity / 2] after the call.
+	 * Note that the block's capacity remains the same; Everything be
 	 */
 	void decrease_level()
 	{
 		pheet_assert(m_lvl > 0);
 		--m_lvl;
-		m_capacity >>= 1;
+		//TODOMK: remove dead code
+		//m_capacity >>= 1;
 		//update end pointer
-		VAIt it = m_data.iterator_to(m_partitions->start(), m_offset + m_capacity);
-		m_partitions->end(it);
+		//VAIt it = m_data.iterator_to(m_partitions->start(), m_offset + m_capacity);
+		//m_partitions->end(it);
 	}
 
 	void create_partition_pointers(size_t start, size_t dead, size_t end)

@@ -153,10 +153,12 @@ private:
 			//repartition block that resulted from merge
 			last->partition();
 
+			//TODMK: simplify
 			//try to shrink the block
-			if (last->try_shrink(false)) {
+			size_t shrunk_by = last->shrink();
+			if (shrunk_by) {
 				//reset last and drop dead blocks at the end of the list
-				m_array.decrease_capacity(last->capacity());
+				m_array.decrease_capacity(shrunk_by);
 			}
 		}
 		pheet_assert(!last->next());
