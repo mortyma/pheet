@@ -328,7 +328,7 @@ private:
 	void increase_level(size_t add_capacity)
 	{
 		m_lvl++;
-		pheet_assert(m_capacity == add_capacity);
+		//pheet_assert(m_capacity == add_capacity);
 		m_capacity += add_capacity;
 		//update end pointer
 		VAIt it = m_data.iterator_to(m_partitions->end(), m_offset + m_capacity);
