@@ -165,6 +165,9 @@ public:
 		//expand this block to cover this as well as next block
 		increase_level(next()->capacity());
 
+		//set the pointer to the dead partition
+		m_partitions->dead_partition(next()->dead());
+
 		//splice out next
 		Block* tmp  = next();
 		if (tmp->next()) {
@@ -306,6 +309,11 @@ public:
 	VAIt end() const
 	{
 		return m_partitions->end();
+	}
+
+	VAIt dead() const
+	{
+		return m_partitions->dead_partition();
 	}
 
 private:
