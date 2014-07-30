@@ -317,9 +317,12 @@ private:
 	 */
 	Block* drop_dead_blocks_at_end(Block* last)
 	{
-		while (last->is_dead()) {
-			pheet_assert(last->prev());
-			last = last->prev();
+		while (last->is_dead() && last != insert) {
+			if (!last->prev()) {
+				last = insert;
+			} else {
+				last = last->prev();
+			}
 			m_array.decrease_capacity(last->next()->capacity());
 			delete last->next();
 			last->next(nullptr);
@@ -533,6 +536,7 @@ put(Item& item)
 			nb->prev(last);
 		}
 		pheet_assert(!last->next());
+		pheet_assert(!last->is_dead());
 		last->next(nb);
 		last = nb;
 
