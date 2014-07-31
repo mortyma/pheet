@@ -94,16 +94,7 @@ public:
 		m_partitionpointers->increment_end();
 	}
 
-	/**
-	 * Return an iterator to an item that is not dominated by any other item in this block.
-	 *
-	 * Do not remove this item from the block. If such an item does not exist,
-	 * return an invalid iterator.
-	 *
-	 * Any dead items that are inspected are cleaned up. Thus, if an Iterator
-	 * to a non-valid Item is returned, the block can be destructed.
-	 */
-	VAIt top()
+	VAIt find_best()
 	{
 		VAIt best_it;
 		//iterate through items in right-most partition
@@ -111,7 +102,6 @@ public:
 		auto end_it = VA::min(m_partitionpointers->end(),
 		                      m_partitionpointers->dead_partition());
 		for (; it < end_it; it++) {
-			pheet_assert(it.index() < end_it.index());
 			if (!it.validItem()) {
 				continue;
 			}
@@ -131,7 +121,25 @@ public:
 			        || it->strategy()->prioritize(*(best_it)->strategy())) {
 				best_it = it;
 			}
+
 		}
+		return best_it;
+	}
+
+	/**
+	 * Return an iterator to an item that is not dominated by any other item in this block.
+	 *
+	 * Do not remove this item from the block. If such an item does not exist,
+	 * return an invalid iterator.
+	 *
+	 * Any dead items that are inspected are cleaned up. Thus, if an Iterator
+	 * to a non-valid Item is returned, the block can be destructed.
+	 */
+	VAIt top()
+	{
+		VAIt best_it = find_best();
+		auto end_it = VA::min(m_partitionpointers->end(),
+		                      m_partitionpointers->dead_partition());
 
 		//only happens if no more item that is not null is in current partition
 		//thus, fall back to previous partition, if possible
