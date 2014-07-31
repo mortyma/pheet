@@ -65,19 +65,19 @@ public:
 
 	~ParetoLocalityTaskStorageBlock()
 	{
-		delete m_partitions;
+		delete m_partitionpointers;
 	}
 
 	void reinitialize()
 	{
 		pheet_assert(m_lvl == 0);
-		delete m_partitions;
+		delete m_partitionpointers;
 		create_partition_pointers(0, m_capacity, 0);
 	}
 
 	bool try_put(Item* item)
 	{
-		if (m_partitions->end().index(m_offset) == m_capacity) {
+		if (m_partitionpointers->end().index(m_offset) == m_capacity) {
 			return false;
 		}
 		put(item);
@@ -86,12 +86,12 @@ public:
 
 	void put(Item* item)
 	{
-		pheet_assert(m_partitions->end().index(m_offset) < m_capacity);
+		pheet_assert(m_partitionpointers->end().index(m_offset) < m_capacity);
 		//we only put data in a lvl 0 block
 		pheet_assert(m_lvl == 0);
 		//no CAS needed, since only the owning thread writes to local VirtualArray
-		*(m_partitions->end()) = item;
-		m_partitions->increment_end();
+		*(m_partitionpointers->end()) = item;
+		m_partitionpointers->increment_end();
 	}
 
 	/**
@@ -107,9 +107,9 @@ public:
 	{
 		VAIt best_it;
 		//iterate through items in right-most partition
-		auto it = m_partitions->last();
-		auto end_it = VA::min(m_partitions->end(),
-		                      m_partitions->dead_partition());
+		auto it = m_partitionpointers->last();
+		auto end_it = VA::min(m_partitionpointers->end(),
+		                      m_partitionpointers->dead_partition());
 		for (; it < end_it; it++) {
 			pheet_assert(it.index() < end_it.index());
 			if (!it.validItem()) {
@@ -135,14 +135,14 @@ public:
 
 		//only happens if no more item that is not null is in current partition
 		//thus, fall back to previous partition, if possible
-		if (!best_it.validItem() && m_partitions->fall_back()) {
+		if (!best_it.validItem() && m_partitionpointers->fall_back()) {
 			//repartition the new right-most partition (if neccessary)
-			VAIt start_it = m_partitions->last();
-			end_it = VA::min(m_partitions->dead_partition(), m_partitions->end());
+			VAIt start_it = m_partitionpointers->last();
+			end_it = VA::min(m_partitionpointers->dead_partition(), m_partitionpointers->end());
 			pheet_assert(end_it.index() >= start_it.index());
 			if (end_it.index() - start_it.index() > MAX_PARTITION_SIZE) {
 				--end_it;
-				partition(m_partitions->size() - 1, start_it, end_it);
+				partition(m_partitionpointers->size() - 1, start_it, end_it);
 			}
 			//call top() again
 			best_it = top();
@@ -153,20 +153,28 @@ public:
 	Block* merge_next()
 	{
 		pheet_assert(next() != nullptr);
-		pheet_assert(next()->lvl() == m_lvl);
+		//this block must either be dead or of same lvl as the successor block
+		pheet_assert(m_is_dead || next()->lvl() == m_lvl);
 
 		//we only merge full blocks
-		pheet_assert(m_partitions->end().index(m_offset) == m_capacity);
+		pheet_assert(m_partitionpointers->end().index(m_offset) == m_capacity);
+		pheet_assert(next()->end().index(m_offset + m_capacity) == next()->capacity());
 
-		//we don't merge dead blocks
-		pheet_assert(!m_is_dead);
+		//the successor block must not be a dead block
 		pheet_assert(!next()->is_dead());
 
 		//expand this block to cover this as well as next block
-		increase_level(next()->capacity());
+		if (!m_is_dead) {
+			pheet_assert(next()->lvl() == m_lvl);
+			m_lvl++;
+		}
+		m_capacity += next()->capacity();
+		//update end pointer
+		VAIt it = m_data.iterator_to(m_partitionpointers->end(), m_offset + m_capacity);
+		m_partitionpointers->end(it);
 
 		//set the pointer to the dead partition
-		m_partitions->dead_partition(next()->dead());
+		m_partitionpointers->dead_partition(next()->dead());
 
 		//splice out next
 		Block* tmp  = next();
@@ -176,6 +184,9 @@ public:
 		next(tmp->next());
 		delete tmp;
 
+		//make sure block is not marked dead
+		m_is_dead = false;
+
 		return this;
 	}
 
@@ -184,12 +195,13 @@ public:
 		pheet_assert(!is_dead());
 
 		//drop the old partition pointers and create new ones
-		delete m_partitions;
+		//m_partitionpointers->check_partitions();
+		delete m_partitionpointers;
 		create_partition_pointers(0,  m_capacity, m_capacity);
 
 		//partition the whole block
-		auto left = m_partitions->start();
-		auto right = --(m_partitions->end());
+		auto left = m_partitionpointers->start();
+		auto right = --(m_partitionpointers->end());
 		partition(0, left, right);
 	}
 
@@ -259,8 +271,8 @@ public:
 	/**
 	 * Try to reduce the level of this block by 1.
 	 *
-	 * If the dead partition of this block is >= half the block size, we can
-	 * reduce the level of the block by 1 (i.e., half its size).
+	 * If the dead partition of this block is >= half the capacity of a block
+	 * of level lvl, we can reduce the level of the block by 1 (i.e., half its size).
 	 */
 	bool try_reduce_lvl()
 	{
@@ -269,12 +281,10 @@ public:
 			return false;
 		}
 		//check if we can reduce the logical level of this block
-		if (m_partitions->dead_partition().index(m_offset) <= m_capacity / 2) {
+		if (m_partitionpointers->dead_partition().index(m_offset) <=
+		        MAX_PARTITION_SIZE * pow(2, m_lvl) / 2) {
 			//reduce lvl and capacity
-			decrease_level();
-			pheet_assert(m_capacity == m_partitions->end().index()
-			             - m_partitions->start().index());
-
+			--m_lvl;
 			return true;
 		}
 		return false;
@@ -294,57 +304,34 @@ public:
 		while (try_reduce_lvl()) {
 			m_capacity >>= 1;
 			shrunk_by += m_capacity;
-			//update end pointer
-			VAIt it = m_data.iterator_to(m_partitions->start(), m_offset + m_capacity);
-			m_partitions->end(it);
 		}
+		//update end pointer if block was shrunk
+		if (shrunk_by) {
+
+			VAIt it = m_data.iterator_to(m_partitionpointers->start(), m_offset + m_capacity);
+			m_partitionpointers->end(it);
+		}
+		pheet_assert(m_capacity == m_partitionpointers->end().index()
+		             - m_partitionpointers->start().index());
 		return shrunk_by;
 	}
 
 	VAIt start() const
 	{
-		return m_partitions->start();
+		return m_partitionpointers->start();
 	}
 
 	VAIt end() const
 	{
-		return m_partitions->end();
+		return m_partitionpointers->end();
 	}
 
 	VAIt dead() const
 	{
-		return m_partitions->dead_partition();
+		return m_partitionpointers->dead_partition();
 	}
 
 private:
-	/**
-	 * Increase the level of the block by one and the  capacity of the block by add_capacity.
-	 *
-	 * The block's offset will remain the same. Thus, if
-	 * before the call the block occupied the range [offset, offset + capacity[,
-	 * it will occupy the range [offset, offset + capacity + add_capacity] after the call.
-	 * ("The block grows to the right").
-	 */
-	void increase_level(size_t add_capacity)
-	{
-		m_lvl++;
-		//pheet_assert(m_capacity == add_capacity);
-		m_capacity += add_capacity;
-		//update end pointer
-		VAIt it = m_data.iterator_to(m_partitions->end(), m_offset + m_capacity);
-		m_partitions->end(it);
-	}
-
-	/**
-	 * Decrease the level of the block.
-	 *
-	 * Note that the block's capacity remains the same; Everything be
-	 */
-	void decrease_level()
-	{
-		pheet_assert(m_lvl > 0);
-		--m_lvl;
-	}
 
 	void create_partition_pointers(size_t start, size_t dead, size_t end)
 	{
@@ -353,7 +340,7 @@ private:
 		auto start_it = m_data.iterator_to(m_offset + start);
 		auto dead_it = m_data.iterator_to(start_it, m_offset + dead);
 		auto end_it = m_data.iterator_to(start_it, m_offset + end);
-		m_partitions = new PartitionPointers<Item>(m_pivots, start_it, dead_it, end_it);
+		m_partitionpointers = new PartitionPointers<Item>(m_pivots, start_it, dead_it, end_it);
 	}
 
 	void partition(size_t depth, VAIt& left, VAIt& right)
@@ -388,32 +375,32 @@ private:
 			if (left != right) {
 				if (!*right || right_taken_or_dead) {
 					//right is dead
-					if (m_partitions->dead_partition().index() - right.index()  == 1) {
+					if (m_partitionpointers->dead_partition().index() - right.index()  == 1) {
 						//element after right is dead too. Advance dead and right.
 						//This is safe since left < right
 						drop_dead_item(right);
-						m_partitions->decrease_dead();
+						m_partitionpointers->decrease_dead();
 						pheet_assert(left < right);
 						--right;
 					} else {
 						//swap right with rightmost non-dead element
-						m_partitions->decrease_dead();
-						VAIt dead = m_partitions->dead_partition();
+						m_partitionpointers->decrease_dead();
+						VAIt dead = m_partitionpointers->dead_partition();
 						swap_to_dead(right, dead);
 					}
 				} else if (!*left || left_taken_or_dead) {
 					/* left is dead. Note that left+1==dead may never occur while
 					 * left < right, since right < dead holds. */
-					pheet_assert(left.index() + 1 < m_partitions->dead_partition().index());
+					pheet_assert(left.index() + 1 < m_partitionpointers->dead_partition().index());
 					/* swap left with rightmost non-dead element. This may swap
 					 * an element >=pivot to left, but we will not advance left.
 					 * Progress is made by putting one dead element into it'S final
 					 * place */
-					m_partitions->decrease_dead();
-					VAIt dead = m_partitions->dead_partition();
+					m_partitionpointers->decrease_dead();
+					VAIt dead = m_partitionpointers->dead_partition();
 					swap_to_dead(left, dead);
 					//if now right == dead, advance right
-					if (m_partitions->dead_partition() == right) {
+					if (m_partitionpointers->dead_partition() == right) {
 						--right;
 					}
 				} else {
@@ -433,7 +420,7 @@ private:
 		 * were not dead. */
 		pheet_assert(left == right || left.index() == right.index() + 1);
 
-		pheet_assert(left < m_partitions->dead_partition());
+		pheet_assert(left < m_partitionpointers->dead_partition());
 
 		//if the taken or dead status changes between *1 and *2, the item could
 		//be sorted incorrectly if left->is_taken_or_dead() would be called at each
@@ -445,21 +432,21 @@ private:
 		//*1: check if left points to dead item
 		if (!*left || was_taken_or_dead) {
 			//decrease the dead partition pointer
-			m_partitions->decrease_dead();
+			m_partitionpointers->decrease_dead();
 			//if left==dead_partition, just drop item at left
 			drop_dead_item(left);
 			//Otherwise, swap dead and left
-			if (left != m_partitions->dead_partition()) {
-				VAIt dead = m_partitions->dead_partition();
+			if (left != m_partitionpointers->dead_partition()) {
+				VAIt dead = m_partitionpointers->dead_partition();
 				swap_to_dead(left, dead);
 			}
 		}
-		pheet_assert(left.index() <= m_partitions->dead_partition().index());
+		pheet_assert(left.index() <= m_partitionpointers->dead_partition().index());
 
 		//*2: check if item at left belongs to left or right partition
 		if (*left && !was_taken_or_dead && left->strategy()->less_priority(p_dim, p_val)) {
 			left++;
-			pheet_assert(left.index() <= m_partitions->dead_partition().index());
+			pheet_assert(left.index() <= m_partitionpointers->dead_partition().index());
 		}
 
 		//check if the last partitioning step needs to be redone
@@ -479,14 +466,14 @@ private:
 			++m_failed_attempts;
 		}
 
-		if ((m_partitions->dead_partition().index() - left.index() > MAX_PARTITION_SIZE)
+		if ((m_partitionpointers->dead_partition().index() - left.index() > MAX_PARTITION_SIZE)
 		        && m_failed_attempts < MAX_ATTEMPTS_TO_PARTITION) {
 			/* If partitioning succeeded but the resulting right-most (excluding
 			 * dead) partition is >MAX_PARTITION_SIZE, partition recursively */
 			if (m_failed_attempts == 0) {
 				++depth;
 			}
-			auto new_right = m_partitions->dead_partition();
+			auto new_right = m_partitionpointers->dead_partition();
 			--new_right;
 			partition(depth, left, new_right);
 		}
@@ -514,10 +501,10 @@ private:
 	 */
 	bool partition_failed(PivotElement* pivot, VAIt& left)
 	{
-		if (left.index() != m_partitions->dead_partition().index()) {
+		if (left.index() != m_partitionpointers->dead_partition().index()) {
 			/* if rightmost partition contains at least 1 item, add a partition
 			   pointer */
-			m_partitions->add(left, pivot);
+			m_partitionpointers->add(left, pivot);
 			return false;
 		}
 		/* all items were partitioned into left or dead partition. Thus, our
@@ -668,11 +655,11 @@ private: //methods to test correctness of data structure
 	void check_correctness()
 	{
 #ifdef PHEET_DEBUG_MODE
-		for (size_t i = 1; i < m_partitions->size(); i++) {
-			auto start = m_partitions->get(i - 1).first;
-			PivotElement* pivot = m_partitions->get(i).second;
-			auto pp = m_partitions->get(i).first;
-			auto end = m_partitions->dead_partition();
+		for (size_t i = 1; i < m_partitionpointers->size(); i++) {
+			auto start = m_partitionpointers->get(i - 1).first;
+			PivotElement* pivot = m_partitionpointers->get(i).second;
+			auto pp = m_partitionpointers->get(i).first;
+			auto end = m_partitionpointers->dead_partition();
 			check_partition(pivot, start, pp, end);
 		}
 		check_dead();
@@ -708,8 +695,8 @@ private: //methods to test correctness of data structure
 	 */
 	void check_dead()
 	{
-		auto it = m_partitions->dead_partition();
-		const auto end_it = m_partitions->end();
+		auto it = m_partitionpointers->dead_partition();
+		const auto end_it = m_partitionpointers->end();
 		for (; it != end_it; it++) {
 			if (*it == nullptr) {
 				continue;
@@ -730,7 +717,7 @@ private:
 
 	ParetoLocalityTaskStorageBlock* m_next;
 	ParetoLocalityTaskStorageBlock* m_prev = nullptr;
-	PartitionPointers<Item>* m_partitions;
+	PartitionPointers<Item>* m_partitionpointers;
 	PivotQueue* m_pivots;
 	size_t m_failed_attempts;
 };
