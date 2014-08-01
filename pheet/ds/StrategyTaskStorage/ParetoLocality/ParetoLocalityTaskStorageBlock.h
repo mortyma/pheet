@@ -150,15 +150,12 @@ public:
 	VAIt top()
 	{
 		VAIt best_it = find_best();
-		auto end_it = VA::min(m_partitionpointers->end(),
-		                      m_partitionpointers->dead_partition());
-
 		//only happens if no more item that is not null is in current partition
 		//thus, fall back to previous partition, if possible
 		if (!best_it.validItem() && m_partitionpointers->fall_back()) {
 			//repartition the new right-most partition (if neccessary)
 			VAIt start_it = m_partitionpointers->last();
-			end_it = VA::min(m_partitionpointers->dead_partition(), m_partitionpointers->end());
+			VAIt end_it = VA::min(m_partitionpointers->dead_partition(), m_partitionpointers->end());
 			pheet_assert(end_it.index() >= start_it.index());
 			if (end_it.index() - start_it.index() > MAX_PARTITION_SIZE) {
 				--end_it;
