@@ -71,6 +71,7 @@ public:
 	void reinitialize()
 	{
 		pheet_assert(m_lvl == 0);
+		m_best_it.invalidate();
 		delete m_partitionpointers;
 		create_partition_pointers(0, m_capacity, 0);
 	}
@@ -89,6 +90,7 @@ public:
 		pheet_assert(m_partitionpointers->end().index(m_offset) < m_capacity);
 		//we only put data in a lvl 0 block
 		pheet_assert(m_lvl == 0);
+		m_best_it.invalidate();
 		//no CAS needed, since only the owning thread writes to local VirtualArray
 		*(m_partitionpointers->end()) = item;
 		m_partitionpointers->increment_end();
@@ -96,6 +98,15 @@ public:
 
 	VAIt find_best()
 	{
+		// Two calls to find_best will return an iterator to the same item if,
+		// between the two calls:
+		// 1) no item was put into the block; and
+		// 2) no item was taken from the block;
+		// 3) no merging/partitioning of the block took place; and
+		// 4) partition pointers were not changed/reinitialized.
+		if (m_best_it.validItem()) {
+			return m_best_it;
+		}
 		VAIt best_it;
 		//iterate through items in right-most partition
 		auto it = m_partitionpointers->last();
@@ -123,6 +134,7 @@ public:
 			}
 
 		}
+		m_best_it = best_it;
 		return best_it;
 	}
 
@@ -201,6 +213,7 @@ public:
 	void partition()
 	{
 		pheet_assert(!is_dead());
+		m_best_it.invalidate();
 
 		//drop the old partition pointers and create new ones
 		//m_partitionpointers->check_partitions();
@@ -222,6 +235,7 @@ public:
 	T take(VAIt item)
 	{
 		pheet_assert(*item);
+		m_best_it.invalidate();
 		T data = item->take();
 		/* Set the Item to nullptr in the VirtualArray so other threads
 		   and operations don't see it any more. Memory manager will take care of
@@ -728,6 +742,8 @@ private:
 	PartitionPointers<Item>* m_partitionpointers;
 	PivotQueue* m_pivots;
 	size_t m_failed_attempts;
+
+	VAIt m_best_it;
 };
 
 } //namespace pheet

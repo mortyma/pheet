@@ -96,6 +96,20 @@ public:
 			return *this;
 		}
 
+		/**
+		 * Invalidate the iterator.
+		 *
+		 * After this method is called, valid() will return false.
+		 */
+		void invalidate()
+		{
+			m_block = nullptr;
+		}
+
+		/**
+		 * Returns true iff the iterator points to some item (the item may be a
+		 * nullptr).
+		 */
 		bool valid() const
 		{
 			return m_block;
@@ -104,6 +118,8 @@ public:
 		/**
 		 * Returns true iff the iterator points to a valid, i.e., accessible and
 		 * non-null Item.
+		 *
+		 * Note that validItem() implies valid().
 		 */
 		bool validItem() const
 		{
