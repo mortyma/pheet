@@ -198,7 +198,7 @@ public:
 	 */
 	VirtualArrayIterator iterator_to(const size_t idx) const
 	{
-		pheet_assert(idx < m_end_idx);
+		pheet_assert(idx < end_idx());
 		Block* block = find_block(idx, m_first);
 		VirtualArrayIterator it;
 		it.m_block = block;
@@ -213,7 +213,7 @@ public:
 	VirtualArrayIterator iterator_to(VirtualArrayIterator start_it, const size_t idx) const
 	{
 		pheet_assert(start_it.index() <= idx);
-		pheet_assert(idx < m_end_idx);
+		pheet_assert(idx < end_idx());
 		Block* block = find_block(idx, start_it.m_block);
 		VirtualArrayIterator it;
 		it.m_block = block;
@@ -225,7 +225,7 @@ public:
 	/** The iterator returned by end() points to the last accessible element */
 	VirtualArrayIterator end() const
 	{
-		return iterator_to(m_end_idx - 1);
+		return iterator_to(end_idx() - 1);
 	}
 
 	static const VirtualArrayIterator& min(const VirtualArrayIterator& it1,
@@ -236,7 +236,7 @@ public:
 
 	Ref operator[](size_t idx)
 	{
-		pheet_assert(idx < m_end_idx);
+		pheet_assert(idx < end_idx());
 
 		Block* block = find_block(idx, m_first);
 		return (*block)[idx % block_size()];
@@ -244,7 +244,7 @@ public:
 
 	size_t capacity() const
 	{
-		return m_end_idx;
+		return end_idx();
 	}
 
 	constexpr size_t block_size() const
@@ -260,12 +260,12 @@ public:
 	 */
 	void increase_capacity(size_t value)
 	{
-		size_t free = block_size() - (m_end_idx % block_size());
+		size_t free = block_size() - (end_idx() % block_size());
 		while (free < value) {
 			add_block();
 			free += block_size();
 		}
-		m_end_idx += value;
+		end_idx(end_idx() + value);
 	}
 
 	/**
@@ -277,8 +277,8 @@ public:
 	 */
 	void decrease_capacity(size_t value)
 	{
-		pheet_assert(value < m_end_idx);
-		m_end_idx -= value;
+		pheet_assert(value < end_idx());
+		end_idx(end_idx() - value);
 		/* We do not reduce/free the blocks since another thread might currently
 		 * access them. Just keep them for later reusage. They are eventually
 		 * fred in the destructor. */
@@ -296,7 +296,7 @@ private:
 	Block* find_block(size_t idx, Block* start_block) const
 	{
 		pheet_assert(start_block->nr() * block_size() <= idx);
-		pheet_assert(idx < m_end_idx);
+		pheet_assert(idx < end_idx());
 
 		//find block that stores element at location idx
 		Block* tmp = start_block;
@@ -318,8 +318,19 @@ private:
 		m_last = tmp;
 	}
 
+	size_t end_idx() const
+	{
+		return m_end_idx.load(std::memory_order_relaxed);
+	}
+
+	void  end_idx(size_t idx)
+	{
+		m_end_idx.store(idx, std::memory_order_relaxed);
+	}
+
 private:
-	size_t m_end_idx; /** the last accessible item in the virtual array is at (m_end_idx - 1) */
+	/** the last accessible item in the virtual array is at (m_end_idx - 1) */
+	std::atomic<size_t> m_end_idx;
 	Block* m_first; /** the first block in the doubly-linked list of blocks */
 	Block* m_last; /** the last block in the doubly-linked list of blocks */
 };
