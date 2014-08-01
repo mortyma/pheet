@@ -35,8 +35,6 @@ namespace pheet
  * virtual array is capacity()+1, so that the last element is a dummy so that
  * the iterator always references a valid block.
  *
- * Note that the virtual array may shrink from the left; that is, elements in
- * the range [0  m_start_index[ may not be accessed!
  */
 template <class T>
 class VirtualArray
@@ -176,9 +174,9 @@ public:
 	};
 
 	VirtualArray()
-		: m_start_idx(0), m_end_idx(1)
+		: m_end_idx(1)
 	{
-		m_last = m_start = m_first = new Block(0);
+		m_last = m_first = new Block(0);
 	}
 
 	~VirtualArray()
@@ -192,7 +190,7 @@ public:
 
 	VirtualArrayIterator begin() const
 	{
-		return iterator_to(m_start_idx);
+		return iterator_to(0);
 	}
 
 	/**
@@ -200,9 +198,8 @@ public:
 	 */
 	VirtualArrayIterator iterator_to(const size_t idx) const
 	{
-		pheet_assert(m_start_idx <= idx);
 		pheet_assert(idx < m_end_idx);
-		Block* block = find_block(idx, m_start);
+		Block* block = find_block(idx, m_first);
 		VirtualArrayIterator it;
 		it.m_block = block;
 		it.m_idx_in_block = idx % block_size();
@@ -215,7 +212,6 @@ public:
 	 */
 	VirtualArrayIterator iterator_to(VirtualArrayIterator start_it, const size_t idx) const
 	{
-		pheet_assert(m_start_idx <= start_it.index());
 		pheet_assert(start_it.index() <= idx);
 		pheet_assert(idx < m_end_idx);
 		Block* block = find_block(idx, start_it.m_block);
@@ -240,17 +236,15 @@ public:
 
 	Ref operator[](size_t idx)
 	{
-		pheet_assert(m_start_idx <= idx);
 		pheet_assert(idx < m_end_idx);
 
-		Block* block = find_block(idx, m_start);
+		Block* block = find_block(idx, m_first);
 		return (*block)[idx % block_size()];
 	}
 
 	size_t capacity() const
 	{
-		pheet_assert(m_end_idx >= m_start_idx.load(std::memory_order_relaxed));
-		return m_end_idx - m_start_idx.load(std::memory_order_relaxed);
+		return m_end_idx;
 	}
 
 	constexpr size_t block_size() const
@@ -283,7 +277,7 @@ public:
 	 */
 	void decrease_capacity(size_t value)
 	{
-		pheet_assert(value < (m_end_idx - m_start_idx));
+		pheet_assert(value < m_end_idx);
 		m_end_idx -= value;
 		/* We do not reduce/free the blocks since another thread might currently
 		 * access them. Just keep them for later reusage. They are eventually
@@ -301,7 +295,6 @@ private:
 	 */
 	Block* find_block(size_t idx, Block* start_block) const
 	{
-		pheet_assert(m_start_idx <= idx);
 		pheet_assert(start_block->nr() * block_size() <= idx);
 		pheet_assert(idx < m_end_idx);
 
@@ -326,11 +319,8 @@ private:
 	}
 
 private:
-	std::atomic<size_t> m_start_idx; /** index of the first accessible item in the virtual array */
 	size_t m_end_idx; /** the last accessible item in the virtual array is at (m_end_idx - 1) */
 	Block* m_first; /** the first block in the doubly-linked list of blocks */
-	std::atomic<Block*> m_start; /** the first block considered when iterating
-									 over/accessing the virtual array. Contains m_start_idx */
 	Block* m_last; /** the last block in the doubly-linked list of blocks */
 };
 
