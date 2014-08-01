@@ -44,6 +44,7 @@ class VirtualArray
 
 public:
 	typedef VirtualArrayBlock<T, DATA_BLOCK_SIZE> Block;
+	typedef typename VirtualArrayBlock<T, DATA_BLOCK_SIZE>::Ref Ref;
 
 	class VirtualArrayIterator : public std::iterator<std::random_access_iterator_tag, T>
 	{
@@ -109,7 +110,7 @@ public:
 			return m_block && m_block->operator [](m_idx_in_block);
 		}
 
-		std::atomic<T>& operator*() const
+		Ref operator*() const
 		{
 			pheet_assert(m_block);
 			return m_block->operator [](m_idx_in_block);
@@ -221,7 +222,7 @@ public:
 		return it1.index() < it2.index() ? it1 : it2;
 	}
 
-	std::atomic<T>& operator[](size_t idx)
+	Ref operator[](size_t idx)
 	{
 		pheet_assert(m_start_idx <= idx);
 		pheet_assert(idx < m_end_idx);
