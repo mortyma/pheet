@@ -273,28 +273,6 @@ public:
 		 * fred in the destructor. */
 	}
 
-	/**
-	 * Decrease the capacity of this VirtualArray by the given value by shrinking
-	 * from the start, i.e.:
-	 *
-	 * After calling this method, accessing this VirtualArray at any position
-	 * smaller than previous start + value is illegal, i.e., the legal
-	 * range is [previous start_idx() + value, capacity[
-	 */
-	void decrease_capacity_from_start(size_t value)
-	{
-		pheet_assert(m_start_idx + value < m_end_idx);
-		size_t freed = block_size() - (m_start_idx % block_size());
-		while (freed < value) {
-			m_start.store(m_start.load()->next);
-			freed += block_size();
-			/* We do not reduce/free the blocks since another thread might currently
-			 * access them. Just keep them for later reusage. They are eventually
-			 * fred in the destructor. */
-		}
-		m_start_idx += value;
-	}
-
 private:
 
 	/**
