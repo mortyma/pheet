@@ -7,8 +7,6 @@
 #ifndef PARETOLOCALITYTASKSTORAGEITEM_H_
 #define PARETOLOCALITYTASKSTORAGEITEM_H_
 
-#include <atomic>
-
 #include <pheet/misc/type_traits.h>
 
 namespace pheet
