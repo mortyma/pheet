@@ -36,7 +36,7 @@ public:
 		{
 			return ref_.load(std::memory_order_relaxed);
 		}
-		T operator = (T val) const
+		T operator= (T val) const
 		{
 			ref_.store(val, std::memory_order_relaxed);
 			return ref_;
