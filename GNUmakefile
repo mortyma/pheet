@@ -7,9 +7,9 @@ MARS = mars
 REMOTEDIR = ~/pheet
 SOURCE = .
 
-all: build
+all: debug
 
-build:
+debug:
 	mkdir -p build
 	cd build; cmake -DCMAKE_BUILD_TYPE="Debug" ..; make -j6
 
@@ -21,7 +21,7 @@ profile:
 	mkdir -p build
 	cd build; cmake -DCMAKE_BUILD_TYPE="Profile" ..; make -j6
 	
-test: build
+test: debug
 	cd build;  ./test/msp/test/msp-test 
 	
 saturn:
@@ -34,4 +34,4 @@ mars:
 clean:
 	rm -rf build
 
-.PHONY: build
+.PHONY: clean debug release profile test saturn mars
