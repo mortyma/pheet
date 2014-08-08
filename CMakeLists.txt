@@ -15,7 +15,11 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(-DPHEET_DEBUG_MODE)
+    add_definitions(-DPHEET_DEBUG_MODE, "-g")
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Profile")
+    add_definitions("-g -O3")
 endif()
 
 enable_testing()
