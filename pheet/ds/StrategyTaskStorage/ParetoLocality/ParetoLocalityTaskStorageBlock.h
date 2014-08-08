@@ -98,15 +98,6 @@ public:
 
 	VAIt find_best()
 	{
-		// Two calls to find_best will return an iterator to the same item if,
-		// between the two calls:
-		// 1) no item was put into the block; and
-		// 2) no item was taken from the block;
-		// 3) no merging/partitioning of the block took place; and
-		// 4) partition pointers were not changed/reinitialized.
-		if (m_best_it.validItem()) {
-			return m_best_it;
-		}
 		VAIt best_it;
 		//iterate through items in right-most partition
 		auto it = m_partitionpointers->last();
@@ -134,7 +125,7 @@ public:
 			}
 
 		}
-		m_best_it = best_it;
+
 		return best_it;
 	}
 
@@ -149,10 +140,20 @@ public:
 	 */
 	VAIt top()
 	{
-		VAIt best_it = find_best();
+		// Two calls to find_best will return an iterator to the same item if,
+		// between the two calls:
+		// 1) no item was put into the block; and
+		// 2) no item was taken from the block;
+		// 3) no merging/partitioning of the block took place; and
+		// 4) partition pointers were not changed/reinitialized.
+		if (m_best_it.validItem()) {
+			return m_best_it;
+		}
+
+		m_best_it = find_best();
 		//only happens if no more item that is not null is in current partition
 		//thus, fall back to previous partition, if possible
-		if (!best_it.validItem() && m_partitionpointers->fall_back()) {
+		if (!m_best_it.validItem() && m_partitionpointers->fall_back()) {
 			//repartition the new right-most partition (if neccessary)
 			VAIt start_it = m_partitionpointers->last();
 			VAIt end_it = VA::min(m_partitionpointers->dead_partition(), m_partitionpointers->end());
@@ -162,9 +163,9 @@ public:
 				partition(m_partitionpointers->size() - 1, start_it, end_it);
 			}
 			//call top() again
-			best_it = top();
+			m_best_it = top();
 		}
-		return best_it;
+		return m_best_it;
 	}
 
 	Block* merge_next()
