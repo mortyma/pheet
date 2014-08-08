@@ -48,13 +48,14 @@ usage()
 	          "\n msp-bench [-r] [-n...] [--sequential] [--strategy] [--strategy2] file \n\n"
 	          << "Benchmark multi-objective shortest path algorithms\n"
 	          << "Options and arguments:\n"
-	          << "-r\t\t number of repetitions to be used for each benchmark\n"
-	          << "-n\t\t number of processors to be used for benchmarking\n"
-	          << "--sequential\t\t benchmark the sequential algorithm."
+	          << "-r\t\t Number of repetitions to be used for each benchmark\n"
+	          << "-n\t\t Number of processors to be used for benchmarking\n"
+	          << "-c\t\t A comment describing the benchmark run.\n"
+	          << "--sequential\t\t Nenchmark the sequential algorithm."
 	          << " Benchmark will be run for n=1.\n"
-	          << "--strategy\t benchmark the parallel algorithm.\n"
-	          << "--strategy2\t benchmark the parallel algorithm (Strategy2 scheduler variant).\n"
-	          << "file\t\t input file, containing a graph to run the benchmark on.\n\n";
+	          << "--strategy\t Nenchmark the parallel algorithm.\n"
+	          << "--strategy2\t Nenchmark the parallel algorithm (Strategy2 scheduler variant).\n"
+	          << "file\t\t Input file, containing a graph to run the benchmark on.\n\n";
 	exit(EXIT_FAILURE);
 }
 
@@ -79,6 +80,7 @@ main(int argc, char** argv)
 	int sequential = 0;
 	int strategy = 0;
 	int strategy2 = 0;
+	int comment = 0;
 
 	while (1) {
 		static struct option long_options[] = {
@@ -87,11 +89,12 @@ main(int argc, char** argv)
 			{"strategy2", no_argument,       &strategy2,   1},
 			{"ncpus",    required_argument, 0,           'n'},
 			{"reps",     required_argument, 0,           'r'},
+			{"comment", required_argument, &comment, 'c'},
 			{0, 0, 0, 0}
 		};
 
 		int option_index = 0;
-		c = getopt_long(argc, argv, "n:r:", long_options, &option_index);
+		c = getopt_long(argc, argv, "n:r:c:", long_options, &option_index);
 
 		if (c == -1) {
 			break;
@@ -108,6 +111,10 @@ main(int argc, char** argv)
 
 		case 'r':
 			opts.repetitions = parse_int(optarg);
+			break;
+
+		case 'c':
+			opts.comment = std::string(optarg);
 			break;
 
 		case '?':

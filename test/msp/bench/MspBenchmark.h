@@ -25,7 +25,9 @@ public:
 	 */
 	MspBenchmark(const procs_t cpus,
 	             const graph::Graph* g,
-	             const graph::Node* src);
+	             const graph::Node* src,
+	             const std::string comment
+	            );
 	virtual ~MspBenchmark();
 
 	void run_test();
@@ -34,6 +36,7 @@ private:
 	procs_t cpus;
 	graph::Graph const* g;
 	graph::Node const* src;
+	std::string comment;
 
 	static char const* const types[];
 };
@@ -45,8 +48,10 @@ template <class Pheet, template <class P> class Algorithm>
 MspBenchmark<Pheet, Algorithm>::
 MspBenchmark(const procs_t cpus,
              const graph::Graph* g,
-             const graph::Node* src)
-	: cpus(cpus), g(g), src(src)
+             const graph::Node* src,
+             const std::string comment
+            )
+	: cpus(cpus), g(g), src(src), comment(comment)
 {
 }
 
@@ -83,7 +88,7 @@ run_test()
 	const double seconds = calculate_seconds(start, end);
 
 	int npaths = 0;
-	for (auto const & pair : sp->paths) {
+	for (auto const& pair : sp->paths) {
 		npaths += pair.second.size();
 	}
 
@@ -98,6 +103,7 @@ run_test()
 	          << "cpus\t"
 	          << "total_time\t";
 	ppc.print_headers();
+	std::cout << "comment\t";
 	std::cout << std::endl;
 
 	/* Values. */
@@ -113,6 +119,7 @@ run_test()
 	          << cpus << "\t"
 	          << seconds << "\t";
 	ppc.print_values();
+	std::cout << comment << "\t";
 	std::cout << std::endl;
 }
 

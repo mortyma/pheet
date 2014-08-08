@@ -19,9 +19,9 @@ namespace
 
 template <class Pheet, template <class P> class Partitioner>
 void
-run_algorithm(graph::Graph* g, graph::Node* src, int n)
+run_algorithm(graph::Graph* g, graph::Node* src, int n, std::string comment)
 {
-	pheet::MspBenchmark<Pheet, Partitioner> gbt(n, g, src);
+	pheet::MspBenchmark<Pheet, Partitioner> gbt(n, g, src, comment);
 	gbt.run_test();
 }
 
@@ -43,7 +43,7 @@ run_benchmarks(BenchOpts const& opts)
 		if (opts.sequential) {
 			for (int i = 0; i < opts.repetitions; i++) {
 				::run_algorithm < Pheet::WithScheduler<SynchroneousScheduler>,
-				SequentialMsp > (g, src, 1);
+				SequentialMsp > (g, src, 1, opts.comment);
 			}
 		}
 
@@ -52,7 +52,7 @@ run_benchmarks(BenchOpts const& opts)
 				for (int i = 0; i < opts.repetitions; i++) {
 					::run_algorithm < Pheet::WithScheduler<BStrategyScheduler>
 					::WithTaskStorage<DistKStrategyTaskStorage>,
-					StrategyMspTask > (g, src, it);
+					StrategyMspTask > (g, src, it, opts.comment);
 				}
 			}
 		}
@@ -61,7 +61,7 @@ run_benchmarks(BenchOpts const& opts)
 			for (auto& it : opts.ncpus) {
 				for (int i = 0; i < opts.repetitions; i++) {
 					::run_algorithm < Pheet::WithScheduler<StrategyScheduler2>,
-					Strategy2Msp > (g, src, it);
+					Strategy2Msp > (g, src, it, opts.comment);
 
 				}
 			}

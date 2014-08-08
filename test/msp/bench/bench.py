@@ -22,7 +22,7 @@ CPUS = [ 1, 2, 3, 4, 5, 6, 7, 8, 10, 15, 16, 20, 25, 30, 32, 35, 40, 45, 50, 55,
 
 MAX_CPUS = 80
 
-def bench(algorithms, nrcpus, repetitions, inFile, outDir):
+def bench(algorithms, nrcpus, repetitions, inFile, outDir, comment):
     #make sure only correct algorithms/variants are given
     for a in algorithms:
         if a not in ALGORITHMS:
@@ -37,6 +37,8 @@ def bench(algorithms, nrcpus, repetitions, inFile, outDir):
     call = ["./build/test/msp/bench/msp-bench"]
     call += [inFile.name]
     call += ["-r " + str(repetitions)]
+    if comment:
+        call += ["-c "  + comment]
   
     for n in nrcpus:
         call += ["-n " + str(n)]
@@ -68,6 +70,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--algorithm', help = "List of algorithms/variants to benchmark. Available/default: {sequential, strategy, strategy2}", nargs = "+", default = ALGORITHMS)
     parser.add_argument('-r', '--repetitions', help = "Number of repetitions", type = int, default = REPETITIONS)
     parser.add_argument('-n', '--nrcpus', help = "List of cpus counts", nargs = "+", type = int, default = CPUS)
+    parser.add_argument('-c', '--comment', help = "A comment describing the benchmark run", action = 'store', default = '')
     args = parser.parse_args()
     
     if args.output:   
@@ -85,6 +88,6 @@ if __name__ == '__main__':
     else:
         nrcpus = args.nrcpus
     
-    bench(algorithms, nrcpus, args.repetitions, args.input, args.output)
+    bench(algorithms, nrcpus, args.repetitions, args.input, args.output, args.comment)
 
     

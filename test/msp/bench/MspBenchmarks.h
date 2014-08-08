@@ -21,6 +21,7 @@ struct BenchOpts {
 	bool strategy2;
 	std::vector<int> ncpus;
 	std::vector<std::string> files;
+	std::string comment = "";
 };
 
 /**
