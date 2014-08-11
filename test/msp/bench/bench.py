@@ -11,7 +11,7 @@ import sys
 
 REPETITIONS = 10
 
-ALGORITHMS = [ 'sequential', 'strategy', 'strategy2' ]
+ALGORITHMS = [ 'sequential', 'strategy', 's2klsm', 's2lsm', 's2pareto' ]
 
 # Number of cpus
 # In the range [1, 80], contains:
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     parser.add_argument('-o','--output', help = 'Output directory. If given, "directory/<algorithm>.dat" will be used to save results for each algorithm given by -a. Otherwise, output is written to stdout', action = 'store')
     parser.add_argument('-l','--limit', help = 'Benchmark sequential and strategy', action='store_true')
     parser.add_argument('-s', '--small', help = 'Run for 1, 2 and 4 cpus only', action='store_true')
-    parser.add_argument('-a', '--algorithm', help = "List of algorithms/variants to benchmark. Available/default: {sequential, strategy, strategy2}", nargs = "+", default = ALGORITHMS)
+    parser.add_argument('-a', '--algorithm', help = "List of algorithms/variants to benchmark. Available/default: {sequential, strategy, s2klsm, s2lsm, s2pareto}", nargs = "+", default = ALGORITHMS)
     parser.add_argument('-r', '--repetitions', help = "Number of repetitions", type = int, default = REPETITIONS)
     parser.add_argument('-n', '--nrcpus', help = "List of cpus counts", nargs = "+", type = int, default = CPUS)
     parser.add_argument('-c', '--comment', help = "A comment describing the benchmark run", action = 'store', default = '')

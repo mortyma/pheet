@@ -13,12 +13,15 @@ namespace pheet
 {
 
 struct BenchOpts {
-	BenchOpts() : repetitions(1), sequential(false), strategy(false), strategy2(false) { }
+	BenchOpts() : repetitions(1), sequential(false), strategy(false), s2klsm(false), s2lsm(false),
+		s2pareto(false)  { }
 
 	int repetitions;
 	bool sequential;
 	bool strategy;
-	bool strategy2;
+	bool s2klsm;
+	bool s2lsm;
+	bool s2pareto;
 	std::vector<int> ncpus;
 	std::vector<std::string> files;
 	std::string comment = "";

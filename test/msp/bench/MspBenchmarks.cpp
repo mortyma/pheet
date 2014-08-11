@@ -57,11 +57,31 @@ run_benchmarks(BenchOpts const& opts)
 			}
 		}
 
-		if (opts.strategy2) {
+		if (opts.s2klsm) {
 			for (auto& it : opts.ncpus) {
 				for (int i = 0; i < opts.repetitions; i++) {
 					::run_algorithm < Pheet::WithScheduler<StrategyScheduler2>,
-					Strategy2Msp > (g, src, it, opts.comment);
+					Strategy2MspKLSM > (g, src, it, opts.comment);
+
+				}
+			}
+		}
+
+		if (opts.s2lsm) {
+			for (auto& it : opts.ncpus) {
+				for (int i = 0; i < opts.repetitions; i++) {
+					::run_algorithm < Pheet::WithScheduler<StrategyScheduler2>,
+					Strategy2MspLSM > (g, src, it, opts.comment);
+
+				}
+			}
+		}
+
+		if (opts.s2pareto) {
+			for (auto& it : opts.ncpus) {
+				for (int i = 0; i < opts.repetitions; i++) {
+					::run_algorithm < Pheet::WithScheduler<StrategyScheduler2>,
+					Strategy2MspPareto > (g, src, it, opts.comment);
 
 				}
 			}

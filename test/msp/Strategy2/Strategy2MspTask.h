@@ -9,7 +9,11 @@
 
 #include "lib/Pareto/Sets.h"
 #include "MspPerformanceCounters.h"
+#include <pheet/misc/type_traits.h>
+#include <pheet/ds/StrategyTaskStorage/KLSMLocality/KLSMLocalityTaskStorage.h>
+#include <pheet/ds/StrategyTaskStorage/LSMLocality/LSMLocalityTaskStorage.h>
 #include "pheet/ds/StrategyTaskStorage/ParetoLocality/ParetoLocalityTaskStorage.h"
+
 #include "Strategy2MspStrategy.h"
 
 namespace pheet
@@ -86,7 +90,7 @@ operator()()
 	const graph::Node* head = path->head();
 
 	d.candidates.reserve(head->out_edges().size());
-	for (auto & e : head->out_edges()) {
+	for (auto& e : head->out_edges()) {
 		sp::PathPtr to(path->step(e));
 		d.candidates.push_back(to);
 	}
@@ -95,18 +99,24 @@ operator()()
 	 * newly added paths. */
 	sets->insert(d.candidates, d.added, d.removed);
 
-	for (sp::PathPtr & p : d.removed) {
+	for (sp::PathPtr& p : d.removed) {
 		p->set_dominated();
 		pc.num_dead_tasks.incr();
 	}
 
-	for (sp::PathPtr & p : d.added) {
+	for (sp::PathPtr& p : d.added) {
 		Pheet::template spawn_s<Self>(Strategy(p), graph, p, sets, pc);
 	}
 }
 
 template <class Pheet>
-using Strategy2Msp = Strategy2MspTask<Pheet, ParetoLocalityTaskStorage>;
+using Strategy2MspPareto = Strategy2MspTask<Pheet, ParetoLocalityTaskStorage>;
+
+template <class Pheet>
+using Strategy2MspLSM = Strategy2MspTask<Pheet, LSMLocalityTaskStorage>;
+
+template <class Pheet>
+using Strategy2MspKLSM = Strategy2MspTask<Pheet, KLSMLocalityTaskStorage>;
 
 } /* namespace pheet */
 

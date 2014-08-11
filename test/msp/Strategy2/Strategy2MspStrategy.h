@@ -36,6 +36,12 @@ public:
 	 */
 	inline bool prioritize(Self& other) const;
 
+	inline bool dead_task();
+	inline bool can_call(TaskStoragePlace*);
+
+	Self& operator=(Self && other);
+
+	//The following methods are required by the ParetoLocalityTaskStorage
 	/**
 	 * Returns true if at dimension dim this has less priority than
 	 * other_val
@@ -57,11 +63,9 @@ public:
 	inline size_t priority_at(size_t dimension) const;
 	inline size_t nr_dimensions() const;
 
-
-	inline bool dead_task();
-	inline bool can_call(TaskStoragePlace*);
-
-	Self& operator=(Self && other);
+	//The following method and static member are required by the KLSMLocalityTaskStorage
+	inline size_t get_k();
+	static size_t default_k;
 
 private:
 	sp::PathPtr path;
@@ -184,6 +188,17 @@ operator=(Strategy2MspStrategy<Pheet, TaskStorageT>::Self && other)
 	return *this;
 }
 
+template <class Pheet, template <class, class> class TaskStorageT>
+inline size_t
+Strategy2MspStrategy<Pheet, TaskStorageT>::
+get_k()
+{
+	return default_k;
+}
+
+//TODOMK: is this a good value?
+template <class Pheet, template <class, class> class TaskStorageT>
+size_t Strategy2MspStrategy<Pheet, TaskStorageT>::default_k = 1024;
 
 } /* namespace pheet */
 

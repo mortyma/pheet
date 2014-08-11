@@ -95,11 +95,11 @@ private:
 	PathPtr const start;
 };
 
+template<template <class, class> class TaskStorageT>
 class Strategy2Test
 {
 public:
-	typedef Pheet::WithScheduler<StrategyScheduler2>
-	Strategy2Pheet;
+	typedef Pheet::WithScheduler<StrategyScheduler2> Strategy2Pheet;
 
 	Strategy2Test(Graph const* graph,
 	              PathPtr const start)
@@ -114,7 +114,7 @@ public:
 		Sets q(graph, start->head());
 		{
 			typename Strategy2Pheet::Environment env;
-			Strategy2MspTask<Strategy2Pheet, ParetoLocalityTaskStorage> msp(graph, start, &q, pc);
+			Strategy2MspTask<Strategy2Pheet, TaskStorageT> msp(graph, start, &q, pc);
 			msp();
 		}
 		return q.shortest_paths();
@@ -125,7 +125,32 @@ private:
 	PathPtr const start;
 };
 
-typedef ::testing::Types<Strategy2Test> TestTypes;
+class Strategy2KLSMTest : public Strategy2Test<KLSMLocalityTaskStorage>
+{
+public:
+	Strategy2KLSMTest(Graph const* graph, PathPtr const start)
+		: Strategy2Test(graph, start)
+	{}
+};
+
+class Strategy2LSMTest : public Strategy2Test<LSMLocalityTaskStorage>
+{
+public:
+	Strategy2LSMTest(Graph const* graph, PathPtr const start)
+		: Strategy2Test(graph, start)
+	{}
+};
+
+class Strategy2ParetoTest : public Strategy2Test<ParetoLocalityTaskStorage>
+{
+public:
+	Strategy2ParetoTest(Graph const* graph, PathPtr const start)
+		: Strategy2Test(graph, start)
+	{}
+};
+
+
+typedef ::testing::Types<Strategy2ParetoTest, Strategy2LSMTest, Strategy2KLSMTest> TestTypes;
 TYPED_TEST_CASE(TESTCASE, TestTypes);
 
 template <typename T>
@@ -323,7 +348,7 @@ test_full(const Graph* graph,
 /**
  * Using a tree is input graph
  */
-/*TYPED_TEST(TESTCASE, SanityCheckTree)
+TYPED_TEST(TESTCASE, SanityCheckTree)
 {
 	this->init(51, 50, 3, 10, 42);
 }
@@ -331,7 +356,7 @@ test_full(const Graph* graph,
 TYPED_TEST(TESTCASE, SanityCheckSparseGraph)
 {
 	this->init(10, 100, 3, 10, 42);
-}*/
+}
 
 #define DEGREE (3)
 #define WEIGHT_LIMIT (10000)

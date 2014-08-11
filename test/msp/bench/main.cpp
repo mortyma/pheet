@@ -51,10 +51,12 @@ usage()
 	          << "-r\t\t Number of repetitions to be used for each benchmark\n"
 	          << "-n\t\t Number of processors to be used for benchmarking\n"
 	          << "-c\t\t A comment describing the benchmark run.\n"
-	          << "--sequential\t\t Nenchmark the sequential algorithm."
+	          << "--sequential\t\t Benchmark the sequential algorithm."
 	          << " Benchmark will be run for n=1.\n"
-	          << "--strategy\t Nenchmark the parallel algorithm.\n"
-	          << "--strategy2\t Nenchmark the parallel algorithm (Strategy2 scheduler variant).\n"
+	          << "--strategy\t Benchmark with BStrategyScheduler<DistKStrategyTaskStorage<128, Global>>.\n"
+	          << "--s2klsm\t Benchmark with StrategyScheduler2 plus KLSMLocalityTaskStorage.\n"
+	          << "--s2lsm\t Benchmark with StrategyScheduler2 plus LSMLocalityTaskStorage.\n"
+	          << "--s2pareto\t Benchmark with StrategyScheduler2 plus ParetoLocalityTaskStorage.\n"
 	          << "file\t\t Input file, containing a graph to run the benchmark on.\n\n";
 	exit(EXIT_FAILURE);
 }
@@ -79,14 +81,19 @@ main(int argc, char** argv)
 
 	int sequential = 0;
 	int strategy = 0;
-	int strategy2 = 0;
+	int s2klsm = 0;
+	int s2lsm = 0;
+	int s2pareto = 0;
+
 	int comment = 0;
 
 	while (1) {
 		static struct option long_options[] = {
 			{"sequential",      no_argument,       &sequential, 1},
 			{"strategy", no_argument,       &strategy,   1},
-			{"strategy2", no_argument,       &strategy2,   1},
+			{"s2klsm", no_argument,       &s2klsm,   1},
+			{"s2lsm", no_argument,       &s2lsm,   1},
+			{"s2pareto", no_argument,       &s2pareto,   1},
 			{"ncpus",    required_argument, 0,           'n'},
 			{"reps",     required_argument, 0,           'r'},
 			{"comment", required_argument, &comment, 'c'},
@@ -134,11 +141,13 @@ main(int argc, char** argv)
 
 	opts.sequential = (sequential != 0);
 	opts.strategy   = (strategy != 0);
-	opts.strategy2   = (strategy2 != 0);
+	opts.s2klsm  = (s2klsm != 0);
+	opts.s2lsm   = (s2lsm != 0);
+	opts.s2pareto   = (s2pareto != 0);
 
-	if ((opts.strategy || opts.strategy2) && opts.ncpus.size() == 0) {
+	if ((opts.strategy || opts.s2klsm || opts.s2lsm || opts.s2pareto) && opts.ncpus.size() == 0) {
 		std::cerr <<
-		          "Number of processors needs to be specified when --strategy or --strategy2 is given.\n";
+		          "Number of processors needs to be specified when --strategy, --s2klsm, --s2lsm or --s2pareto is given.\n";
 		usage();
 	}
 
