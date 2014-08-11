@@ -90,9 +90,12 @@ public:
 		pheet_assert(m_partitionpointers->end().index(m_offset) < m_capacity);
 		//we only put data in a lvl 0 block
 		pheet_assert(m_lvl == 0);
-		m_best_it.invalidate();
 		//no CAS needed, since only the owning thread writes to local VirtualArray
 		*(m_partitionpointers->end()) = item;
+		//update m_best_it if neccessary
+		if (!m_best_it.validItem() || item->strategy()->prioritize(*m_best_it->strategy())) {
+			m_best_it = m_partitionpointers->end();
+		}
 		m_partitionpointers->increment_end();
 	}
 
@@ -142,10 +145,9 @@ public:
 	{
 		// Two calls to find_best will return an iterator to the same item if,
 		// between the two calls:
-		// 1) no item was put into the block; and
-		// 2) no item was taken from the block;
-		// 3) no merging/partitioning of the block took place; and
-		// 4) partition pointers were not changed/reinitialized.
+		// 1) no item was taken from the block;
+		// 2) no merging/partitioning of the block took place; and
+		// 3) partition pointers were not changed/reinitialized.
 		if (m_best_it.validItem()) {
 			return m_best_it;
 		}
@@ -741,6 +743,10 @@ private:
 	PivotQueue* m_pivots;
 	size_t m_failed_attempts;
 
+	/* The best item (i.e., not dominated by any other item in the block) in
+	 * this block. Requires update whenever a new item is put into the block,
+	 * the block is merged or partitioned or the item was invalidated.
+	 */
 	VAIt m_best_it;
 };
 
