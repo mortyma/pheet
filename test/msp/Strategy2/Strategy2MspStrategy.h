@@ -123,7 +123,7 @@ const //TODOMK: rename to something like dominates, dominated by...
 {
 	assert(dim < w->dimensions());
 	//TODOMK: < should be specified somewhere
-	return w->at(dim) > other_val;
+	return other_val < w->at(dim);
 }
 template <class Pheet, template <class, class> class TaskStorageT>
 inline bool
@@ -131,7 +131,7 @@ Strategy2MspStrategy<Pheet, TaskStorageT>::
 greater_priority(size_t dim, size_t other_val) const
 {
 	assert(dim < w->dimensions());
-	return w->at(dim) < other_val;
+	return other_val > w->at(dim);
 }
 
 template <class Pheet, template <class, class> class TaskStorageT>
