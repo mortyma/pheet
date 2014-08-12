@@ -417,9 +417,10 @@ pop(BaseItem* boundary)
 						//Merge with previous blocks if neccessary,
 						//i.e., if a sequence of previous blocks is all dead blocks or
 						//of the same lvl as block.
-						//TODOMK: set a flag if merge might be required? so to not call
-						//this if a merge is definitely not required
-						merge_from(block);
+						if (block->prev() && (block->prev()->is_dead()
+						                      || block->prev()->lvl() == block->lvl())) {
+							merge_from(block);
+						}
 					}
 				}
 
