@@ -32,7 +32,8 @@ public:
 	Strategy2MspStrategy(Self&& other);
 
 	/**
-	 * Returns true if other has higher priority than this and false otherwise.
+	 * Returns true if this has higher or equal priority than other (i.e., return
+	 * false iff other has strictly lower priority than this)
 	 */
 	inline bool prioritize(Self& other) const;
 
@@ -115,8 +116,10 @@ prioritize(Self& other) const
 	 * This would not be possible for a more general weight vector with different
 	 * domains and priority function for each dimension.
 	 */
-	//return true if other has (strictly) higher priority than this
+	//return true if this has higher or equal priority than other (i.e., return
+	//false iff other has strictly lower priority than this)
 	return this->path->weight_sum() <= other.path->weight_sum() ;
+
 }
 
 template <class Pheet, template <class, class> class TaskStorageT>
