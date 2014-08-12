@@ -8,6 +8,7 @@
 #define STRATEGY2MSPSTRATEGY_H_
 
 #include "lib/ShortestPath/Path.h"
+#include "Less.h"
 #include "pheet/ds/StrategyTaskStorage/ParetoLocality/PriorityVector.h"
 
 #define NR_DIMENSIONS (3)
@@ -70,6 +71,7 @@ public:
 
 private:
 	sp::PathPtr path;
+	less<NR_DIMENSIONS> pareto_less;
 	PriorityVector<NR_DIMENSIONS>* w;
 };
 
