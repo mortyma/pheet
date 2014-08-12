@@ -389,8 +389,7 @@ pop(BaseItem* boundary)
 			if (!block->is_dead()) {
 				//get the top element
 				VAIt top_it = block->top();
-
-				if (block != insert) {
+				if (block != insert) { //the insert block is never changed
 					//If top_it is not a valid item, block contains no more valid items.
 					//We set the block dead.
 					if (!top_it.validItem()) {
@@ -403,14 +402,15 @@ pop(BaseItem* boundary)
 						}
 					} else {
 						//block is not dead.
-						//Reduce the lvl of block if possible. Note that before this operation,
-						//we know that block->prev()->lvl() > block->lvl() > block->next()->lvl.
-						//If block == last, we can simply shrink it. Otherwise, we reduce
-						//its level; afterwards, we may have block->lvl() == block->next()->lvl.
-						//In that case we have to merge block and block->prev().
 						if (block == last) {
+							//shrink block as far as possible
 							block->shrink();
 						} else {
+							//Reduce the lvl of block if possible. Note that before this operation,
+							//we know that block->prev()->lvl() > block->lvl() > block->next()->lvl.
+							//If block == last, we can simply shrink it. Otherwise, we reduce
+							//its level; afterwards, we may have block->lvl() == block->next()->lvl.
+							//In that case we have to merge block and block->prev().
 							block->try_reduce_lvl();
 							pheet_assert(block->capacity() == block->end().index() - block->start().index());
 						}
@@ -423,7 +423,6 @@ pop(BaseItem* boundary)
 						}
 					}
 				}
-
 				//We found a new best item
 				if (!best_it.validItem()  || (top_it.validItem() &&
 				                              top_it->strategy()->prioritize(*(best_it)->strategy()))) {

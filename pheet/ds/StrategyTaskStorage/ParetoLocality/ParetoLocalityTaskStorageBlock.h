@@ -329,7 +329,6 @@ public:
 		}
 		//update end pointer if block was shrunk
 		if (shrunk_by) {
-
 			VAIt it = m_data.iterator_to(m_partitionpointers->start(), m_offset + m_capacity);
 			m_partitionpointers->end(it);
 		}
