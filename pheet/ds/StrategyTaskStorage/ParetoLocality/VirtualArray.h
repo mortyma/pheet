@@ -260,7 +260,7 @@ public:
 	 */
 	void increase_capacity(size_t value)
 	{
-		size_t free = block_size() - (end_idx() % block_size());
+		size_t free = block_size() - (end_idx() % block_size() + 1);
 		while (free < value) {
 			add_block();
 			free += block_size();
