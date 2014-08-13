@@ -394,6 +394,7 @@ private:
 	 * Executed in the context of the stealer, should only do thread-safe things
 	 */
 	T steal_from() {
+		//TODOMK: use performance counters
 		size_t p = phase.load(std::memory_order_acquire);
 
 		// The only dangerous case is that we might see b > t although

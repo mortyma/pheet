@@ -50,6 +50,7 @@ public:
 		num_allocated_items.print("%d\t");
 	}
 
+	//TODOMK: add performance counters
 	BasicPerformanceCounter<Pheet, task_storage_count_blocks_created> num_blocks_created;
 	BasicPerformanceCounter<Pheet, task_storage_count_global_blocks> num_global_blocks;
 	BasicPerformanceCounter<Pheet, task_storage_count_inspected_global_items> num_inspected_global_items;
