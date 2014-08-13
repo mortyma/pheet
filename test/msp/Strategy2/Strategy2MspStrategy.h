@@ -71,7 +71,7 @@ public:
 
 private:
 	sp::PathPtr path;
-	less<NR_DIMENSIONS> pareto_less;
+	less<NR_DIMENSIONS> dominates;
 	PriorityVector<NR_DIMENSIONS>* w;
 };
 
@@ -118,9 +118,11 @@ prioritize(Self& other) const
 	 * This would not be possible for a more general weight vector with different
 	 * domains and priority function for each dimension.
 	 */
+	//return this->path->weight_sum() <= other.path->weight_sum();
+
 	//return true if this has higher or equal priority than other (i.e., return
 	//false iff other has strictly lower priority than this)
-	return this->path->weight_sum() <= other.path->weight_sum() ;
+	return dominates(this->w, other.w);
 
 }
 
