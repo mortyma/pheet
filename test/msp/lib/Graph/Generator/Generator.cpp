@@ -33,6 +33,7 @@ directed(std::string const name,
 		assert(m == 0);
 	}
 
+	//if we don't allow parallel edges, m <= n(n-1)
 	if (!allow_parallel_edges) {
 		assert(m <= n * (n - 1));
 	}
@@ -50,14 +51,11 @@ directed(std::string const name,
 
 	/*  Next generate a random spanning tree.
 	    The algorithm is:
-
 	      Assume that vertices tree[ 0 ],...,tree[ i - 1 ] are in
-	      the tree.  Add an edge incident on tree[ i ]
+		  the tree. Add an edge incident on tree[ i ]
 	      and a random vertex in the set {tree[ 0 ],...,tree[ i - 1 ]}.
 	 */
-
 	size_t tail, head;
-
 	for (head = 1; head < n; head++) {
 		tail = random() % head;
 		g->add_edge(tree[tail], tree[head], generate_weight_vector(random, degree, weight_limit));
