@@ -353,9 +353,9 @@ TYPED_TEST(TESTCASE, SanityCheckTree)
 	this->init(51, 50, 3, 10, 42);
 }
 
-TYPED_TEST(TESTCASE, SanityCheckSparseGraph)
+TYPED_TEST(TESTCASE, SanityCheckDenseGraph)
 {
-	this->init(10, 100, 3, 10, 42);
+	this->init(10, 90, 3, 10, 42);
 }
 
 #define DEGREE (3)
