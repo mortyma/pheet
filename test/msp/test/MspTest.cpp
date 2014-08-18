@@ -163,7 +163,7 @@ protected:
 	                  size_t const weight_limit,
 	                  const int seed)
 	{
-		g = Generator::directed("g", nodes, edges, true,
+		g = Generator::directed("g", nodes, edges, false,
 		                        degree, weight_limit, seed);
 		ASSERT_NE(g, nullptr);
 
