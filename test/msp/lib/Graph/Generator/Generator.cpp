@@ -63,8 +63,8 @@ directed(std::string const name,
 
 	/* Add additional random edges until achieving desired number */
 	for (size_t i = n - 1; i < m; i++) {
-		tail = random() % n;
 		do {
+			tail = random() % n;
 			head = random() % n;
 		} while (head == tail || (!allow_parallel_edges && g->contains_edge(tree[tail], tree[head])));
 
