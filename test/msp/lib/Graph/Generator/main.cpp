@@ -40,9 +40,10 @@ main(int argc,
 	int s = 42;
 	int w = 10000;
 	int d = 3;
+	bool p = false;
 
 	int opt;
-	while ((opt = getopt(argc, argv, "n:m:s:w:d:")) != -1) {
+	while ((opt = getopt(argc, argv, "n:m:s:w:d:p")) != -1) {
 		switch (opt) {
 		case 'm':
 			m = parse_int(optarg);
@@ -59,12 +60,14 @@ main(int argc,
 		case 'w':
 			w = parse_int(optarg);
 			break;
+		case 'p':
+			p = true;
 		default:
 			usage();
 		}
 	}
 
-	Graph* g = Generator::directed("test graph", n, m, true, d, w, s);
+	Graph* g = Generator::directed("test graph", n, m, p, d, w, s);
 
 	g->write(stdout);
 
