@@ -28,7 +28,7 @@ public:
 	                       size_t const m,                    /**< Number of edges (n-1 <= m).
                                                                     If !allow_parallel_edges: m <= n*(n-1)  */
 	                       bool const allow_parallel_edges,   /**< If true, graph may contain parallel edges */
-	                       size_t const degree,
+	                       size_t const d,
 	                       size_t const
 	                       weight_limit,            /**< Upper limit for the elements of a weight vector of an edge.
 																	For all elements e of a weight vector hold: 0 <=  e <= weight_limit   */

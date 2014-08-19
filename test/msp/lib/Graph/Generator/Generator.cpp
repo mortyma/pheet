@@ -21,7 +21,7 @@ directed(std::string const name,
          size_t const n,
          size_t const m,
          bool const allow_parallel_edges,
-         size_t const degree,
+         size_t const d,
          size_t const weight_limit,
          unsigned short const seed)
 {
@@ -40,7 +40,7 @@ directed(std::string const name,
 
 
 	std::default_random_engine random(seed);
-	Graph* g = new Graph(name, degree);
+	Graph* g = new Graph(name, d);
 	std::vector<Node*> tree;
 
 	/*  Generate a random permutation in the array tree. */
@@ -58,7 +58,7 @@ directed(std::string const name,
 	size_t tail, head;
 	for (head = 1; head < n; head++) {
 		tail = random() % head;
-		g->add_edge(tree[tail], tree[head], generate_weight_vector(random, degree, weight_limit));
+		g->add_edge(tree[tail], tree[head], generate_weight_vector(random, d, weight_limit));
 	}
 
 	/* Add additional random edges until achieving desired number */
@@ -68,7 +68,7 @@ directed(std::string const name,
 			head = random() % n;
 		} while (head == tail || (!allow_parallel_edges && g->contains_edge(tree[tail], tree[head])));
 
-		g->add_edge(tree[tail], tree[head], generate_weight_vector(random, degree, weight_limit));
+		g->add_edge(tree[tail], tree[head], generate_weight_vector(random, d, weight_limit));
 	}
 	return g;
 }
@@ -83,11 +83,11 @@ basic(unsigned short const seed)
 std::vector<int>
 Generator::
 generate_weight_vector(std::default_random_engine& random,
-                       int const degree,
+                       int const d,
                        int const weight_limit)
 {
 	std::vector<int> weights;
-	for (int i = 0; i < degree; i++) {
+	for (int i = 0; i < d; i++) {
 		int w = random() % weight_limit;
 		weights.push_back(w);
 	}
