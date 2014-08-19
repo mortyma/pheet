@@ -7,7 +7,7 @@ include(FindPkgConfig)
 pkg_search_module(HWLOC REQUIRED hwloc)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_definitions("-Wall -Wextra -pedantic -std=c++11 -fmessage-length=0 -fno-omit-frame-pointer")
+    add_definitions("-Wall -Wextra -pedantic -std=c++11 -fmessage-length=0")
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -15,11 +15,11 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(-DPHEET_DEBUG_MODE, "-g")
+    add_definitions(-DPHEET_DEBUG_MODE, "-g -fno-omit-frame-pointer")
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Profile")
-    add_definitions("-g -O3")
+    add_definitions("-g -O3 -fno-omit-frame-pointer")
 endif()
 
 enable_testing()
