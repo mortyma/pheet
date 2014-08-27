@@ -182,6 +182,7 @@ inline bool
 Strategy2MspStrategy<Pheet, TaskStorageT>::
 can_call(TaskStoragePlace*)
 {
+	//TODOMK: allowing call conversion leads to strange errors
 	return false;
 }
 
