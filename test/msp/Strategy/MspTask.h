@@ -206,13 +206,13 @@ public:
 };
 
 template <class Pheet>
-using Strategy2MspPareto = Strategy2MspTask<Pheet, ParetoLocalityTaskStorage>;
+using Strategy2MspParetoTask = Strategy2MspTask<Pheet, ParetoLocalityTaskStorage>;
 
 template <class Pheet>
-using Strategy2MspLSM = Strategy2MspTask<Pheet, LSMLocalityTaskStorage>;
+using Strategy2MspLSMTask = Strategy2MspTask<Pheet, LSMLocalityTaskStorage>;
 
 template <class Pheet>
-using Strategy2MspKLSM = Strategy2MspTask<Pheet, KLSMLocalityTaskStorage>;
+using Strategy2MspKLSMTask = Strategy2MspTask<Pheet, KLSMLocalityTaskStorage>;
 
 } /* namespace pheet */
 

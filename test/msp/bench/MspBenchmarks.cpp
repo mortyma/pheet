@@ -11,7 +11,7 @@
 #include "pheet/sched/Strategy2/StrategyScheduler2.h"
 #include "pheet/sched/Synchroneous/SynchroneousScheduler.h"
 #include "Sequential/SequentialMsp.h"
-#include "Strategy/StrategyMspTask.h"
+#include "Strategy/MspTask.h"
 
 namespace
 {
@@ -60,7 +60,7 @@ run_benchmarks(BenchOpts const& opts)
 			for (auto& it : opts.ncpus) {
 				for (int i = 0; i < opts.repetitions; i++) {
 					::run_algorithm < Pheet::WithScheduler<StrategyScheduler2>,
-					Strategy2MspKLSM > (g, src, it, opts.comment);
+					Strategy2MspKLSMTask > (g, src, it, opts.comment);
 
 				}
 			}
@@ -70,7 +70,7 @@ run_benchmarks(BenchOpts const& opts)
 			for (auto& it : opts.ncpus) {
 				for (int i = 0; i < opts.repetitions; i++) {
 					::run_algorithm < Pheet::WithScheduler<StrategyScheduler2>,
-					Strategy2MspLSM > (g, src, it, opts.comment);
+					Strategy2MspLSMTask > (g, src, it, opts.comment);
 
 				}
 			}
@@ -80,7 +80,7 @@ run_benchmarks(BenchOpts const& opts)
 			for (auto& it : opts.ncpus) {
 				for (int i = 0; i < opts.repetitions; i++) {
 					::run_algorithm < Pheet::WithScheduler<StrategyScheduler2>,
-					Strategy2MspPareto > (g, src, it, opts.comment);
+					Strategy2MspParetoTask > (g, src, it, opts.comment);
 
 				}
 			}

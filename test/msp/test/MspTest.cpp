@@ -3,7 +3,7 @@
 #include <unordered_set>
 
 #include "Sequential/SequentialMsp.h"
-#include "Strategy/StrategyMspTask.h"
+#include "Strategy/MspTask.h"
 #include "lib/Graph/Generator/Generator.h"
 #include "lib/Pareto/Less.h"
 #include "pheet/pheet.h"
