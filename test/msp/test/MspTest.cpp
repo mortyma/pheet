@@ -4,7 +4,6 @@
 
 #include "Sequential/SequentialMsp.h"
 #include "Strategy/StrategyMspTask.h"
-#include "Strategy2/Strategy2MspTask.h"
 #include "lib/Graph/Generator/Generator.h"
 #include "lib/Pareto/Less.h"
 #include "pheet/pheet.h"

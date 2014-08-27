@@ -12,7 +12,6 @@
 #include "pheet/sched/Synchroneous/SynchroneousScheduler.h"
 #include "Sequential/SequentialMsp.h"
 #include "Strategy/StrategyMspTask.h"
-#include "Strategy2/Strategy2MspTask.h"
 
 namespace
 {
