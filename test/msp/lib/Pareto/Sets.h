@@ -34,9 +34,17 @@ public:
 	 *
 	 * After execution, the added vector contains all p <- paths which have been
 	 * added (= which were not dominated).
-	 * Likewise, the removed vector contains all p <- this which were removed from
-	 * the current Sets. Note that in the current implementation, the intersection
-	 * of removed and added paths may be non-empty.
+	 * Likewise, the removed vector contains all p <- paths which were removed from
+	 * the current Sets.
+	 *
+	 * Note that in the current implementation, the intersection
+	 * of removed and added paths may be non-empty, i.e., added may contain
+	 * dominated paths (to see this, assume that we
+	 * have an empty set and two paths p1 and p2, where p1 is dominated by p2,
+	 * are inserted (in that order). First, p1 is inserted into added, since it
+	 * is not dominated by any path in the set. Next, when p2 is inserted, p1
+	 * is inserted into removed since it is dominated by p2; p2 is then inserted
+	 * into added).
 	 */
 	void insert(sp::Paths& paths,
 	            sp::Paths& added,

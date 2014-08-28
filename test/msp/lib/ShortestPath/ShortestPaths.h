@@ -15,6 +15,9 @@
 namespace sp
 {
 
+/**
+ * Maps a set of shortest paths to each node of a graph g
+ */
 class ShortestPaths
 {
 public:

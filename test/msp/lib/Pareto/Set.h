@@ -23,12 +23,13 @@ public:
 	 * Attempts to inserts path into the set.
 	 *
 	 * If path has been added successfully, added contains path on return. Otherwise
-	 * added.empty() == true.
-	 * removed contains all paths found to be dominated by path. 1) If path was added,
-	 * these are all paths currently in the set dominated by path. 2) Otherwise,
-	 * removed will only contain paths found to be dominated by path until a path
-	 * that dominates path was found (i.e., a subset of case 1).
-	 *
+	 * added will not have changed.
+	 * removed contains all paths found to be dominated by path. If path was added,
+	 * these are all paths currently in the set dominated by path. Otherwise,
+	 * removed is not changed (to see this, assume p1 and p2 are in the set,
+	 * where p1 is dominated by path and p2 dominates path. Since the
+	 * dominates-relation is transitive, this is a contradiction: p1 would have
+	 * been removed as soon as p2 was added).
 	 */
 	virtual void insert(sp::PathPtr& path,
 	                    sp::Paths& added,
