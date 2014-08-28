@@ -122,11 +122,18 @@ public:
 				continue;
 			}
 
-			if (!best_it.validItem()
+			/* We found a suitable item  but don't yet know if it is not dominated
+			 * by another item in the partition. */
+			/* TODOMK: this could potentially be very bad if tasks take a long time
+			 to execute. Maybe just sort them? */
+			return it;  //simply return the first suitable item
+
+			/* scan the rest of the partition to make sure to only return non-
+			 * dominated items */
+			/*if (!best_it.validItem()
 			        || it->strategy()->prioritize(*(best_it)->strategy())) {
 				best_it = it;
-			}
-
+			}*/
 		}
 
 		return best_it;
