@@ -131,7 +131,11 @@ operator()()
 	}
 
 	for (sp::PathPtr& p : d.added) {
-		spawn(p);
+		/* Note that the intersection of d.added and d.removed is not necessarily
+		 * empty; thus, spawn a task only if p is not dominated */
+		if (!p->dominated()) {
+			spawn(p);
+		}
 	}
 }
 
