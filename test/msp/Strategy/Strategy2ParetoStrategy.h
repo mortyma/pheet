@@ -4,8 +4,8 @@
  * (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#ifndef STRATEGY2MSPSTRATEGY_H_
-#define STRATEGY2MSPSTRATEGY_H_
+#ifndef Strategy2ParetoStrategy_H_
+#define Strategy2ParetoStrategy_H_
 
 #include "lib/ShortestPath/Path.h"
 #include "Less.h"
@@ -17,20 +17,20 @@ namespace pheet
 {
 
 template <class Pheet, template <class, class> class TaskStorageT>
-class Strategy2MspStrategy
+class Strategy2ParetoStrategy
 	: public Pheet::Environment::BaseStrategy
 {
 public:
-	typedef Strategy2MspStrategy<Pheet, TaskStorageT> Self;
+	typedef Strategy2ParetoStrategy<Pheet, TaskStorageT> Self;
 	typedef typename Pheet::Environment::BaseStrategy BaseStrategy;
 	typedef TaskStorageT<Pheet, Self> TaskStorage;
 	typedef typename TaskStorage::Place TaskStoragePlace;
 	typedef typename Pheet::Place Place;
 
-	Strategy2MspStrategy();
-	Strategy2MspStrategy(sp::PathPtr path);
-	Strategy2MspStrategy(Self& other);
-	Strategy2MspStrategy(Self&& other);
+	Strategy2ParetoStrategy();
+	Strategy2ParetoStrategy(sp::PathPtr path);
+	Strategy2ParetoStrategy(Self& other);
+	Strategy2ParetoStrategy(Self&& other);
 
 	/**
 	 * Returns true if this has higher or equal priority than other (i.e., return
@@ -72,22 +72,22 @@ private:
 };
 
 template <class Pheet, template <class, class> class TaskStorageT>
-Strategy2MspStrategy<Pheet, TaskStorageT>::
-Strategy2MspStrategy()
+Strategy2ParetoStrategy<Pheet, TaskStorageT>::
+Strategy2ParetoStrategy()
 {
 }
 
 template <class Pheet, template <class, class> class TaskStorageT>
-Strategy2MspStrategy<Pheet, TaskStorageT>::
-Strategy2MspStrategy(sp::PathPtr path)
+Strategy2ParetoStrategy<Pheet, TaskStorageT>::
+Strategy2ParetoStrategy(sp::PathPtr path)
 	: path(path)
 {
 	w = new PriorityVector<NR_DIMENSIONS>(path);
 }
 
 template <class Pheet, template <class, class> class TaskStorageT>
-Strategy2MspStrategy<Pheet, TaskStorageT>::
-Strategy2MspStrategy(Self& other)
+Strategy2ParetoStrategy<Pheet, TaskStorageT>::
+Strategy2ParetoStrategy(Self& other)
 	: BaseStrategy(other),
 	  path(other.path)
 {
@@ -95,8 +95,8 @@ Strategy2MspStrategy(Self& other)
 }
 
 template <class Pheet, template <class, class> class TaskStorageT>
-Strategy2MspStrategy<Pheet, TaskStorageT>::
-Strategy2MspStrategy(Self&& other)
+Strategy2ParetoStrategy<Pheet, TaskStorageT>::
+Strategy2ParetoStrategy(Self&& other)
 	: BaseStrategy(other),
 	  path(other.path)
 {
@@ -105,7 +105,7 @@ Strategy2MspStrategy(Self&& other)
 
 template <class Pheet, template <class, class> class TaskStorageT>
 inline bool
-Strategy2MspStrategy<Pheet, TaskStorageT>::
+Strategy2ParetoStrategy<Pheet, TaskStorageT>::
 prioritize(Self& other) const
 {
 	/* TODOMK The linear comibination of weight vector values is only possible
@@ -124,7 +124,7 @@ prioritize(Self& other) const
 
 template <class Pheet, template <class, class> class TaskStorageT>
 inline bool
-Strategy2MspStrategy<Pheet, TaskStorageT>::
+Strategy2ParetoStrategy<Pheet, TaskStorageT>::
 less_priority(size_t dim, size_t other_val)
 const //TODOMK: rename to something like dominates, dominated by...
 {
@@ -134,7 +134,7 @@ const //TODOMK: rename to something like dominates, dominated by...
 }
 template <class Pheet, template <class, class> class TaskStorageT>
 inline bool
-Strategy2MspStrategy<Pheet, TaskStorageT>::
+Strategy2ParetoStrategy<Pheet, TaskStorageT>::
 greater_priority(size_t dim, size_t other_val) const
 {
 	assert(dim < w->dimensions());
@@ -143,7 +143,7 @@ greater_priority(size_t dim, size_t other_val) const
 
 template <class Pheet, template <class, class> class TaskStorageT>
 inline bool
-Strategy2MspStrategy<Pheet, TaskStorageT>::
+Strategy2ParetoStrategy<Pheet, TaskStorageT>::
 equal_priority(size_t dim, size_t other_val) const
 {
 	return !less_priority(dim, other_val) && !greater_priority(dim, other_val);
@@ -151,7 +151,7 @@ equal_priority(size_t dim, size_t other_val) const
 
 template <class Pheet, template <class, class> class TaskStorageT>
 inline size_t
-Strategy2MspStrategy<Pheet, TaskStorageT>::
+Strategy2ParetoStrategy<Pheet, TaskStorageT>::
 priority_at(size_t dimension) const
 {
 	assert(dimension < w->dimensions());
@@ -160,14 +160,14 @@ priority_at(size_t dimension) const
 
 template <class Pheet, template <class, class> class TaskStorageT>
 inline size_t
-Strategy2MspStrategy<Pheet, TaskStorageT>::nr_dimensions() const
+Strategy2ParetoStrategy<Pheet, TaskStorageT>::nr_dimensions() const
 {
 	return NR_DIMENSIONS;
 }
 
 template <class Pheet, template <class, class> class TaskStorageT>
 inline bool
-Strategy2MspStrategy<Pheet, TaskStorageT>::
+Strategy2ParetoStrategy<Pheet, TaskStorageT>::
 dead_task()
 {
 	return path->dominated();
@@ -175,7 +175,7 @@ dead_task()
 
 template <class Pheet, template <class, class> class TaskStorageT>
 inline bool
-Strategy2MspStrategy<Pheet, TaskStorageT>::
+Strategy2ParetoStrategy<Pheet, TaskStorageT>::
 can_call(TaskStoragePlace*)
 {
 	//TODOMK: allowing call conversion leads to strange errors
@@ -183,9 +183,9 @@ can_call(TaskStoragePlace*)
 }
 
 template <class Pheet, template <class, class> class TaskStorageT>
-typename Strategy2MspStrategy<Pheet, TaskStorageT>::Self&
-Strategy2MspStrategy<Pheet, TaskStorageT>::
-operator=(Strategy2MspStrategy<Pheet, TaskStorageT>::Self && other)
+typename Strategy2ParetoStrategy<Pheet, TaskStorageT>::Self&
+Strategy2ParetoStrategy<Pheet, TaskStorageT>::
+operator=(Strategy2ParetoStrategy<Pheet, TaskStorageT>::Self && other)
 {
 	path = other.path;
 	w = other.w;
@@ -194,5 +194,5 @@ operator=(Strategy2MspStrategy<Pheet, TaskStorageT>::Self && other)
 
 } /* namespace pheet */
 
-#endif /* STRATEGY2MSPSTRATEGY_H_ */
+#endif /* Strategy2ParetoStrategy_H_ */
 

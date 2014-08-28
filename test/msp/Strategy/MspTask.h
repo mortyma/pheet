@@ -9,7 +9,7 @@
 
 #include "StrategyMspData.h"
 #include "StrategyMspStrategy.h"
-#include "Strategy2MspStrategy.h"
+#include "Strategy2ParetoStrategy.h"
 #include "Strategy2LinCombStrategy.h"
 #include "lib/Graph/Edge.h"
 #include "lib/Graph/Graph.h"
@@ -221,7 +221,7 @@ class Strategy2MspParetoTask : public MspTask<Pheet>
 {
 public:
 	typedef Strategy2MspParetoTask<Pheet> Self;
-	typedef Strategy2MspStrategy<Pheet, ParetoLocalityTaskStorage> Strategy;
+	typedef Strategy2ParetoStrategy<Pheet, ParetoLocalityTaskStorage> Strategy;
 	typedef typename Strategy::TaskStorage TaskStorage;
 
 
