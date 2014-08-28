@@ -106,6 +106,8 @@ operator()()
 
 	pc.num_actual_tasks.incr();
 
+	// Using a place singleton we avoid instantiating and destructing the same
+	// data structure for each task
 	StrategyMspData& d = Pheet::template place_singleton<StrategyMspData>();
 	d.clear();
 
