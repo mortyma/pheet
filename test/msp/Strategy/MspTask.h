@@ -10,6 +10,7 @@
 #include "StrategyMspData.h"
 #include "StrategyMspStrategy.h"
 #include "Strategy2MspStrategy.h"
+#include "Strategy2LinCombStrategy.h"
 #include "lib/Graph/Edge.h"
 #include "lib/Graph/Graph.h"
 #include "lib/Pareto/Sets.h"
@@ -173,21 +174,21 @@ public:
 
 
 /**
- * Using Strategy2MspStrategy with different task storages.
+ * Using Strategy2MspLinCombStrategy with different task storages.
  */
 template <class Pheet, template <class, class> class TaskStorageT>
-class Strategy2MspTask : public MspTask<Pheet>
+class Strategy2MspTaskLinComb : public MspTask<Pheet>
 {
 public:
-	typedef Strategy2MspTask<Pheet, TaskStorageT> Self;
-	typedef Strategy2MspStrategy<Pheet, TaskStorageT> Strategy;
+	typedef Strategy2MspTaskLinComb<Pheet, TaskStorageT> Self;
+	typedef Strategy2LinCombStrategy<Pheet, TaskStorageT> Strategy;
 	typedef typename Strategy::TaskStorage TaskStorage;
 
 
-	Strategy2MspTask(const graph::Graph* graph,
-	                 const sp::PathPtr path,
-	                 pareto::Sets* sets,
-	                 MspPerformanceCounters<Pheet>& pc)
+	Strategy2MspTaskLinComb(const graph::Graph* graph,
+	                        const sp::PathPtr path,
+	                        pareto::Sets* sets,
+	                        MspPerformanceCounters<Pheet>& pc)
 		: MspTask<Pheet>(graph, path, sets, pc)
 	{}
 
@@ -205,14 +206,45 @@ public:
 	}
 };
 
-template <class Pheet>
-using Strategy2MspParetoTask = Strategy2MspTask<Pheet, ParetoLocalityTaskStorage>;
 
 template <class Pheet>
-using Strategy2MspLSMTask = Strategy2MspTask<Pheet, LSMLocalityTaskStorage>;
+using Strategy2MspLSMTask = Strategy2MspTaskLinComb<Pheet, LSMLocalityTaskStorage>;
 
 template <class Pheet>
-using Strategy2MspKLSMTask = Strategy2MspTask<Pheet, KLSMLocalityTaskStorage>;
+using Strategy2MspKLSMTask = Strategy2MspTaskLinComb<Pheet, KLSMLocalityTaskStorage>;
+
+/**
+ * Using Strategy2MspParetoStrategy with pareto task storage.
+ */
+template <class Pheet>
+class Strategy2MspParetoTask : public MspTask<Pheet>
+{
+public:
+	typedef Strategy2MspParetoTask<Pheet> Self;
+	typedef Strategy2MspStrategy<Pheet, ParetoLocalityTaskStorage> Strategy;
+	typedef typename Strategy::TaskStorage TaskStorage;
+
+
+	Strategy2MspParetoTask(const graph::Graph* graph,
+	                       const sp::PathPtr path,
+	                       pareto::Sets* sets,
+	                       MspPerformanceCounters<Pheet>& pc)
+		: MspTask<Pheet>(graph, path, sets, pc)
+	{}
+
+	static void print_name()
+	{
+		std::cout << "Strategy2Msp" << "<";
+		TaskStorage::print_name();
+		std::cout << ">";
+	}
+
+	virtual void spawn(sp::PathPtr& p)
+	{
+		Pheet::template spawn_s<Self>(Strategy(p), MspTask<Pheet>::graph, p,
+		                              MspTask<Pheet>::sets, MspTask<Pheet>::pc);
+	}
+};
 
 } /* namespace pheet */
 

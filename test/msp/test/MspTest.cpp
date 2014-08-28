@@ -113,7 +113,7 @@ public:
 		Sets q(graph, start->head());
 		{
 			typename Strategy2Pheet::Environment env;
-			Strategy2MspTask<Strategy2Pheet, TaskStorageT> msp(graph, start, &q, pc);
+			Strategy2MspTaskLinComb<Strategy2Pheet, TaskStorageT> msp(graph, start, &q, pc);
 			msp();
 		}
 		return q.shortest_paths();
@@ -140,16 +140,39 @@ public:
 	{}
 };
 
-class Strategy2ParetoTest : public Strategy2Test<ParetoLocalityTaskStorage>
+
+class Strategy2ParetoTest
 {
 public:
-	Strategy2ParetoTest(Graph const* graph, PathPtr const start)
-		: Strategy2Test(graph, start)
-	{}
+	typedef Pheet::WithScheduler<StrategyScheduler2> Strategy2Pheet;
+
+	Strategy2ParetoTest(Graph const* graph,
+	                    PathPtr const start)
+		: graph(graph), start(start)
+	{
+	}
+
+	ShortestPaths*
+	operator()()
+	{
+		MspPerformanceCounters<Strategy2Pheet> pc;
+		Sets q(graph, start->head());
+		{
+			typename Strategy2Pheet::Environment env;
+			Strategy2MspParetoTask<Strategy2Pheet> msp(graph, start, &q, pc);
+			msp();
+		}
+		return q.shortest_paths();
+	}
+
+private:
+	Graph const* graph;
+	PathPtr const start;
 };
 
 
-typedef ::testing::Types<Strategy2ParetoTest, Strategy2LSMTest, Strategy2KLSMTest> TestTypes;
+typedef ::testing::Types<SequentialTest, StrategyTest, Strategy2ParetoTest, Strategy2LSMTest, Strategy2KLSMTest>
+TestTypes;
 TYPED_TEST_CASE(TESTCASE, TestTypes);
 
 template <typename T>
