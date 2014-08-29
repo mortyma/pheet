@@ -34,8 +34,7 @@ public:
 	 * potential pruning candidates.
 	 * Best case: O(1). No potential pruning candidates.
 	 */
-	void prune(sp::PathPtr const& path,
-	           sp::Paths& pruned);
+	void prune(sp::PathPtr const& path);
 
 	/**
 	 * O(log n) in a fully balanced tree. For now, we won't do balancing
@@ -52,8 +51,7 @@ private:
 
 	void prune(tree_t* t,
 	           const size_t i,
-	           sp::PathPtr const& path,
-	           sp::Paths& pruned);
+	           sp::PathPtr const& path);
 
 	void insert(tree_t** t,
 	            const size_t i,

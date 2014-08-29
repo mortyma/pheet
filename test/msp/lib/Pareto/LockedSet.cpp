@@ -31,11 +31,10 @@ template<class T>
 void
 LockedSet<T>::
 insert(sp::PathPtr& path,
-       sp::Paths& added,
-       sp::Paths& removed)
+       sp::Paths& added)
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
-	m_set->insert(path, added, removed);
+	m_set->insert(path, added);
 
 }
 

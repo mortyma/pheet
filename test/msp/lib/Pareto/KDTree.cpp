@@ -50,11 +50,13 @@ tree_delete(tree_t* t)
 }
 
 struct Recycler {
-	Recycler(tree_t* root) {
+	Recycler(tree_t* root)
+	{
 		nodes.push(root);
 	}
 
-	~Recycler() {
+	~Recycler()
+	{
 		while (!nodes.empty()) {
 			tree_t* t = nodes.front();
 			nodes.pop();
@@ -63,7 +65,8 @@ struct Recycler {
 	}
 
 	tree_t*
-	get() {
+	get()
+	{
 		if (nodes.empty()) {
 			return new tree_t();
 		}
@@ -128,8 +131,7 @@ void
 KDTree::
 prune(tree_t* t,
       const size_t i,
-      PathPtr const& path,
-      Paths& pruned)
+      PathPtr const& path)
 {
 	if (!t) {
 		return;
@@ -137,25 +139,24 @@ prune(tree_t* t,
 
 	if (t->active && dominates(path.get(), t->p.get())) {
 		t->active = false;
-		pruned.push_back(t->p);
+		t->p->set_dominated();
 		size--;
 	}
 
 	const size_t j = (i + 1) % path->degree();
 
 	if (t->p->weight()[i] >= path->weight()[i]) {
-		prune(t->l, j, path, pruned);
+		prune(t->l, j, path);
 	}
 
-	prune(t->r, j, path, pruned);
+	prune(t->r, j, path);
 }
 
 void
 KDTree::
-prune(PathPtr const& path,
-      Paths& pruned)
+prune(PathPtr const& path)
 {
-	prune(t, 0, path, pruned);
+	prune(t, 0, path);
 }
 
 static int

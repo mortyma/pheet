@@ -24,16 +24,16 @@ public:
 	 *
 	 * If path has been added successfully, added contains path on return. Otherwise
 	 * added will not have changed.
-	 * removed contains all paths found to be dominated by path. If path was added,
-	 * these are all paths currently in the set dominated by path. Otherwise,
-	 * removed is not changed (to see this, assume p1 and p2 are in the set,
-	 * where p1 is dominated by path and p2 dominates path. Since the
+	 * If path was added, any path p already in the set that is dominated by path
+	 * is set to dominated and removed from the set. Otherwise, there exists a
+	 * path p1 aleady in the set that dominates path. No other path will be set
+	 * dominated by this operation (to see this, assume p1 and p2 are in the
+	 * set, where p1 is dominated by path and p2 dominates path. Since the
 	 * dominates-relation is transitive, this is a contradiction: p1 would have
 	 * been removed as soon as p2 was added).
 	 */
 	virtual void insert(sp::PathPtr& path,
-	                    sp::Paths& added,
-	                    sp::Paths& removed) = 0;
+	                    sp::Paths& added) = 0;
 
 	virtual sp::Paths paths() const = 0;
 

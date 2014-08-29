@@ -27,14 +27,13 @@ KDSet(sp::PathPtr& init)
 void
 KDSet::
 insert(PathPtr& path,
-       Paths& added,
-       Paths& removed)
+       Paths& added)
 {
 	if (t.dominated(path)) {
 		return;
 	}
 
-	t.prune(path, removed);
+	t.prune(path);
 	t.insert(path);
 
 	added.push_back(path);

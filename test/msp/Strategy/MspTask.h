@@ -30,8 +30,7 @@ namespace pheet
  * 1. Generate candidates.
  * 2. For each candidate c, insert it into the global Pareto set.
  *    If c is dominated, return.
- *    Otherwise, spawn a new task for c and mark all tasks as dead
- *    which have been pruned from the Pareto set by the insertion.
+ *    Otherwise, spawn a new task for c.
  *
  * Since there is no strictly defined sequence, this path is not necessarily
  * a Pareto optimum <-> this is a label correcting algorithm.
@@ -120,16 +119,10 @@ operator()()
 		d.candidates.push_back(to);
 	}
 
-	/* Insert into the Pareto set. Mark dominated paths and spawn tasks for
-	 * newly added paths. */
+	/* Insert into the Pareto set. */
+	sets->insert(d.candidates, d.added);
 
-	sets->insert(d.candidates, d.added, d.removed);
-
-	for (sp::PathPtr& p : d.removed) {
-		p->set_dominated();
-		pc.num_dead_tasks.incr();
-	}
-
+	/* Spawn tasks for newly added paths. */
 	for (sp::PathPtr& p : d.added) {
 		/* Note that the intersection of d.added and d.removed is not necessarily
 		 * empty; thus, spawn a task only if p is not dominated */

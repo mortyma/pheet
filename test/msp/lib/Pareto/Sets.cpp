@@ -38,12 +38,11 @@ Sets::
 void
 Sets::
 insert(sp::Paths& paths,
-       sp::Paths& added,
-       sp::Paths& removed)
+       sp::Paths& added)
 {
-	for (auto & p : paths) {
+	for (auto& p : paths) {
 		graph::Node const* node = p->head();
-		map[node]->insert(p, added, removed);
+		map[node]->insert(p, added);
 	}
 }
 
@@ -53,7 +52,7 @@ shortest_paths() const
 {
 	sp::ShortestPaths* sp = new sp::ShortestPaths;
 
-	for (const auto & p : map) {
+	for (const auto& p : map) {
 		sp->paths[p.first] = p.second->paths();
 	}
 

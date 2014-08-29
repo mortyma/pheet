@@ -20,10 +20,9 @@ public:
 	{
 		candidates.clear();
 		added.clear();
-		removed.clear();
 	}
 
-	sp::Paths candidates, added, removed;
+	sp::Paths candidates, added;
 };
 
 

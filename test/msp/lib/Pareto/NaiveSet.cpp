@@ -26,15 +26,14 @@ NaiveSet(PathPtr& init)
 void
 NaiveSet::
 insert(sp::PathPtr& path,
-       sp::Paths& added,
-       sp::Paths& removed)
+       sp::Paths& added)
 {
 	less dominates;
 
 	for (auto i = m_set.begin(); i != m_set.end();) {
 		PathPtr const& rhs = *i;
 		if (dominates(path.get(), rhs.get())) {
-			removed.push_back(rhs);
+			rhs.get()->set_dominated();
 			m_set.erase(i++);
 		} else if (dominates(rhs.get(), path.get())) {
 			return;

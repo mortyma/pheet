@@ -22,8 +22,7 @@ public:
 	KDSet(sp::PathPtr& init);
 
 	void insert(sp::PathPtr& path,
-	            sp::Paths& added,
-	            sp::Paths& removed) override;
+	            sp::Paths& added) override;
 
 	sp::Paths paths() const override;
 

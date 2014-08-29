@@ -34,8 +34,8 @@ public:
 	 *
 	 * After execution, the added vector contains all p <- paths which have been
 	 * added (= which were not dominated).
-	 * Likewise, the removed vector contains all p <- paths which were removed from
-	 * the current Sets.
+	 * Any path that is already in the set and dominated by a p <- paths will
+	 * be set dominated and removed from the set.
 	 *
 	 * Note that in the current implementation, the intersection
 	 * of removed and added paths may be non-empty, i.e., added may contain
@@ -47,8 +47,7 @@ public:
 	 * into added).
 	 */
 	void insert(sp::Paths& paths,
-	            sp::Paths& added,
-	            sp::Paths& removed);
+	            sp::Paths& added);
 
 	sp::ShortestPaths* shortest_paths() const;
 

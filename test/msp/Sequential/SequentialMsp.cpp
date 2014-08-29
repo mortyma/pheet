@@ -35,12 +35,11 @@ operator()()
 	PathPtr init = path;
 	m_queue.insert(init);
 
-	sp::Paths candidates, added, removed;
+	sp::Paths candidates, added;
 
 	while (!m_queue.empty()) {
 		candidates.clear();
 		added.clear();
-		removed.clear();
 
 		/* Retrieve our next optimal candidate path. */
 
@@ -52,23 +51,16 @@ operator()()
 		/* For all outgoing edges <- head, generate candidates. */
 
 		candidates.reserve(head->out_edges().size());
-		for (auto & e : head->out_edges()) {
+		for (auto& e : head->out_edges()) {
 			sp::PathPtr q(p->step(e));
 			candidates.push_back(q);
 		}
 
-		sets->insert(candidates, added, removed);
-
-		/* Mark removed candidates as dominated. */
-
-		for (auto & p : removed) {
-			p->set_dominated();
-			pc.num_dead_tasks.incr();
-		}
+		sets->insert(candidates, added);
 
 		/* Add newly inserted candidates to our queue. */
 
-		for (auto & p : added) {
+		for (auto& p : added) {
 			m_queue.insert(p);
 		}
 	}
@@ -86,9 +78,9 @@ print_name()
 }
 
 template class SequentialMsp < pheet::PheetEnv < pheet::SynchroneousScheduler,
-         pheet::SystemModel,
-         pheet::Primitives,
-         pheet::DataStructures,
-         pheet::ConcurrentDataStructures >>;
+                               pheet::SystemModel,
+                               pheet::Primitives,
+                               pheet::DataStructures,
+                               pheet::ConcurrentDataStructures >>;
 
 }
