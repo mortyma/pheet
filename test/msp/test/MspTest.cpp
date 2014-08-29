@@ -54,7 +54,7 @@ public:
 	{
 		MspPerformanceCounters<SyncPheet> pc;
 		Sets q(graph, start->head());
-		SequentialMsp<SyncPheet> msp(graph, start, &q, pc);
+		SequentialMsp<SyncPheet> msp(start, &q, pc);
 		msp();
 		return q.paths();
 	}
@@ -83,7 +83,7 @@ public:
 		Sets q(graph, start->head());
 		{
 			typename DistKPheet::Environment env;
-			StrategyMspTask<DistKPheet> msp(graph, start, &q, pc);
+			StrategyMspTask<DistKPheet> msp(start, &q, pc);
 			msp();
 		}
 		return q.paths();
@@ -113,7 +113,7 @@ public:
 		Sets q(graph, start->head());
 		{
 			typename Strategy2Pheet::Environment env;
-			Strategy2MspTaskLinComb<Strategy2Pheet, TaskStorageT> msp(graph, start, &q, pc);
+			Strategy2MspTaskLinComb<Strategy2Pheet, TaskStorageT> msp(start, &q, pc);
 			msp();
 		}
 		return q.paths();
@@ -159,7 +159,7 @@ public:
 		Sets q(graph, start->head());
 		{
 			typename Strategy2Pheet::Environment env;
-			Strategy2MspParetoTask<Strategy2Pheet> msp(graph, start, &q, pc);
+			Strategy2MspParetoTask<Strategy2Pheet> msp(start, &q, pc);
 			msp();
 		}
 		return q.paths();

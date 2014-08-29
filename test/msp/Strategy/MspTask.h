@@ -56,8 +56,7 @@ public:
 	typedef MspPerformanceCounters<Pheet> PerformanceCounters;
 	typedef typename Pheet::Environment::BaseStrategy BaseStrategy;
 
-	MspTask(const graph::Graph* graph,
-	        const sp::PathPtr path,
+	MspTask(const sp::PathPtr path,
 	        pareto::Sets* sets,
 	        PerformanceCounters& pc);
 
@@ -69,7 +68,6 @@ public:
 	static void print_name();
 
 protected:
-	const graph::Graph* graph;
 	const sp::PathPtr path;
 	pareto::Sets* sets;
 	PerformanceCounters& pc;
@@ -86,11 +84,10 @@ print_name()
 
 template <class Pheet>
 MspTask<Pheet>::
-MspTask(const graph::Graph* graph,
-        const sp::PathPtr path,
+MspTask(const sp::PathPtr path,
         pareto::Sets* sets,
         PerformanceCounters& pc)
-	: graph(graph), path(path), sets(sets), pc(pc)
+	: path(path), sets(sets), pc(pc)
 {
 }
 
@@ -147,11 +144,10 @@ template <class Pheet>
 class StrategyMspTask : public MspTask<Pheet>
 {
 public:
-	StrategyMspTask(const graph::Graph* graph,
-	                const sp::PathPtr path,
+	StrategyMspTask(const sp::PathPtr path,
 	                pareto::Sets* sets,
 	                MspPerformanceCounters<Pheet>& pc)
-		: MspTask<Pheet>(graph, path, sets, pc)
+		: MspTask<Pheet>(path, sets, pc)
 	{}
 
 	static void print_name()
@@ -165,7 +161,7 @@ public:
 		// the type of this class in the spawn.
 		typedef StrategyMspStrategy<Pheet> Strategy;
 		typedef StrategyMspTask<Pheet> Self;
-		Pheet::template spawn_s<Self>(Strategy(p), MspTask<Pheet>::graph, p,
+		Pheet::template spawn_s<Self>(Strategy(p), p,
 		                              MspTask<Pheet>::sets, MspTask<Pheet>::pc);
 	}
 
@@ -184,11 +180,10 @@ public:
 	typedef typename Strategy::TaskStorage TaskStorage;
 
 
-	Strategy2MspTaskLinComb(const graph::Graph* graph,
-	                        const sp::PathPtr path,
+	Strategy2MspTaskLinComb(const sp::PathPtr path,
 	                        pareto::Sets* sets,
 	                        MspPerformanceCounters<Pheet>& pc)
-		: MspTask<Pheet>(graph, path, sets, pc)
+		: MspTask<Pheet>(path, sets, pc)
 	{}
 
 	static void print_name()
@@ -200,7 +195,7 @@ public:
 
 	virtual void spawn(sp::PathPtr& p)
 	{
-		Pheet::template spawn_s<Self>(Strategy(p), MspTask<Pheet>::graph, p,
+		Pheet::template spawn_s<Self>(Strategy(p), p,
 		                              MspTask<Pheet>::sets, MspTask<Pheet>::pc);
 	}
 };
@@ -224,11 +219,10 @@ public:
 	typedef typename Strategy::TaskStorage TaskStorage;
 
 
-	Strategy2MspParetoTask(const graph::Graph* graph,
-	                       const sp::PathPtr path,
+	Strategy2MspParetoTask(const sp::PathPtr path,
 	                       pareto::Sets* sets,
 	                       MspPerformanceCounters<Pheet>& pc)
-		: MspTask<Pheet>(graph, path, sets, pc)
+		: MspTask<Pheet>(path, sets, pc)
 	{}
 
 	static void print_name()
@@ -240,7 +234,7 @@ public:
 
 	virtual void spawn(sp::PathPtr& p)
 	{
-		Pheet::template spawn_s<Self>(Strategy(p), MspTask<Pheet>::graph, p,
+		Pheet::template spawn_s<Self>(Strategy(p), p,
 		                              MspTask<Pheet>::sets, MspTask<Pheet>::pc);
 	}
 };

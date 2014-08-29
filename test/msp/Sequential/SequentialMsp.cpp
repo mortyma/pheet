@@ -19,11 +19,10 @@ namespace pheet
 
 template <class Pheet>
 SequentialMsp<Pheet>::
-SequentialMsp(Graph const* graph,
-              sp::PathPtr const path,
+SequentialMsp(sp::PathPtr const path,
               pareto::Sets* sets,
               PerformanceCounters& pc)
-	: graph(graph), path(path), sets(sets), pc(pc)
+	: path(path), sets(sets), pc(pc)
 {
 }
 

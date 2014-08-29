@@ -80,7 +80,7 @@ run_test()
 		sp::PathPtr init(new sp::Path(src));
 
 		check_time(start);
-		Pheet::template finish<Algorithm<Pheet>>(g, init, &q, ppc);
+		Pheet::template finish<Algorithm<Pheet>>(init, &q, ppc);
 		check_time(end);
 		sp.reset(q.paths());
 	}
