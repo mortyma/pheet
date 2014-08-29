@@ -49,11 +49,13 @@ public:
 	void insert(sp::Paths& paths,
 	            sp::Paths& added);
 
-	sp::ShortestPaths* shortest_paths() const;
+	/**
+	 * Return the set of paths stored for each node in the graph.
+	 */
+	sp::ShortestPaths* paths() const;
 
 private:
 	std::unordered_map<graph::Node const*, Set*> map;
-
 };
 
 }

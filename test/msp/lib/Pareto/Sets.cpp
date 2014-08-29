@@ -48,7 +48,7 @@ insert(sp::Paths& paths,
 
 sp::ShortestPaths*
 Sets::
-shortest_paths() const
+paths() const
 {
 	sp::ShortestPaths* sp = new sp::ShortestPaths;
 

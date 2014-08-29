@@ -56,7 +56,7 @@ public:
 		Sets q(graph, start->head());
 		SequentialMsp<SyncPheet> msp(graph, start, &q, pc);
 		msp();
-		return q.shortest_paths();
+		return q.paths();
 	}
 
 private:
@@ -86,7 +86,7 @@ public:
 			StrategyMspTask<DistKPheet> msp(graph, start, &q, pc);
 			msp();
 		}
-		return q.shortest_paths();
+		return q.paths();
 	}
 
 private:
@@ -116,7 +116,7 @@ public:
 			Strategy2MspTaskLinComb<Strategy2Pheet, TaskStorageT> msp(graph, start, &q, pc);
 			msp();
 		}
-		return q.shortest_paths();
+		return q.paths();
 	}
 
 private:
@@ -162,7 +162,7 @@ public:
 			Strategy2MspParetoTask<Strategy2Pheet> msp(graph, start, &q, pc);
 			msp();
 		}
-		return q.shortest_paths();
+		return q.paths();
 	}
 
 private:

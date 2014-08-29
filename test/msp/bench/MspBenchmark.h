@@ -82,7 +82,7 @@ run_test()
 		check_time(start);
 		Pheet::template finish<Algorithm<Pheet>>(g, init, &q, ppc);
 		check_time(end);
-		sp.reset(q.shortest_paths());
+		sp.reset(q.paths());
 	}
 
 	const double seconds = calculate_seconds(start, end);
