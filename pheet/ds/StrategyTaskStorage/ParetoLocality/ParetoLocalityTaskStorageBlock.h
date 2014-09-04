@@ -707,11 +707,11 @@ private: //methods to test correctness of data structure
 		Item* item;
 		for (; start != pp; start++) {
 			item = *start;
-			assert(!item || item->strategy()->priority_at(pivot->dimension()) > pivot->value());
+			assert(!item || item->strategy()->less_priority(pivot->dimension(), pivot->value()));
 		}
 		for (; pp != end; pp++) {
 			item = *pp;
-			assert(!item || item->strategy()->priority_at(pivot->dimension()) <= pivot->value());
+			assert(!item || !item->strategy()->less_priority(pivot->dimension(), pivot->value()));
 		}
 	}
 

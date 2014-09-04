@@ -17,7 +17,7 @@ public:
 	 */
 	bool operator()(Item* itemA, Item* itemB)
 	{
-		return itemA->strategy()->priority_at(m_d) < itemB->strategy()->priority_at(m_d);
+		return itemA->strategy()->greater_priority(m_d, itemB->strategy()->priority_at(m_d));
 	}
 
 private:
