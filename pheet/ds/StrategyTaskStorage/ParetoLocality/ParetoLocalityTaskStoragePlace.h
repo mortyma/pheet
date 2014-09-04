@@ -490,7 +490,7 @@ steal(BaseItem* boundary)
 			std::cerr << "no steal..other place: " << other_cap << " this place: " << this_cap << " \n";
 		}*/
 
-		//TODOMK: linearization; make sure boundary item is not taken
+		// Now that we have spied some items from the owner of the boundary, we can just pop an item
 		return pop(boundary);
 	}
 

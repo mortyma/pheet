@@ -126,10 +126,9 @@ template <class Pheet, template <class, class> class TaskStorageT>
 inline bool
 Strategy2ParetoStrategy<Pheet, TaskStorageT>::
 less_priority(size_t dim, size_t other_val)
-const //TODOMK: rename to something like dominates, dominated by...
+const
 {
 	assert(dim < w->dimensions());
-	//TODOMK: < should be specified somewhere
 	return other_val < w->at(dim);
 }
 template <class Pheet, template <class, class> class TaskStorageT>
