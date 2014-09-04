@@ -22,17 +22,17 @@ namespace pheet
  * A dynamic virtual array of (potentially) infinite size.
  *
  * The virtual array allows access to any element within the range
- * [start_idx(), start()+capacity]. If the element was not yet set, nullptr will be returned.
+ * [0, capacity]. If the element was not yet set, nullptr will be returned.
  *
  * Implemented as a linked list of VirtualArrayBlock. Only the owning thread may
  * change the structure or traverse the linked list backwards; other threads may
- * only traverse it forwards, i.e., by calling VirtualArrayBlock->next(), which is
- * atomic.
+ * only traverse it in forward direction, i.e., by calling
+ * VirtualArrayBlock->next(), which is atomic.
  *
  * VirtualArrayIterator should be used to iteratate over ranges of the virtual array.
  * Contrary to the usual C++ convention, end() will return an iterator to
  * the last accessible element of the virtual array. The actual capacity of the
- * virtual array is capacity()+1, so that the last element is a dummy so that
+ * virtual array is capacity()+1; the last element is a dummy so that
  * the iterator always references a valid block.
  *
  */
