@@ -69,15 +69,13 @@ public:
 		{
 			pheet_assert(m_block);
 
-			VirtualArrayIterator orig(*this);
-
 			m_idx_in_block++;
 			if (m_idx_in_block >= m_block->capacity()) {
 				m_block = m_block->next;
 				m_idx_in_block = 0;
 			}
 			pheet_assert(m_block);
-			return orig;
+			return *this;
 		}
 
 		VirtualArrayIterator& operator--()
