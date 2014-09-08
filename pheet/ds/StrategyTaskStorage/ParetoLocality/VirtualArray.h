@@ -130,7 +130,7 @@ public:
 			return m_block->operator [](m_idx_in_block);
 		}
 
-		T operator->() const
+		Ref operator->() const
 		{
 			pheet_assert(m_block);
 			return m_block->operator [](m_idx_in_block);

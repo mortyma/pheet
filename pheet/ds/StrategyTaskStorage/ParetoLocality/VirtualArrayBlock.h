@@ -41,6 +41,10 @@ public:
 			ref_.store(val, std::memory_order_relaxed);
 			return ref_;
 		}
+		T operator->() const
+		{
+			return ref_.load(std::memory_order_relaxed);
+		}
 	};
 
 	VirtualArrayBlock<T, N>(size_t nr)
