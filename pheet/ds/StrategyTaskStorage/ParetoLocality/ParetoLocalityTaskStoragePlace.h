@@ -192,16 +192,18 @@ private:
 	 */
 	Block* drop_dead_blocks_at_end(Block* last)
 	{
+		size_t shrink_by = 0;
 		while (last->is_dead() && last != insert) {
 			if (!last->prev()) {
 				last = insert;
 			} else {
 				last = last->prev();
 			}
-			m_array.decrease_capacity(last->next()->capacity());
+			shrink_by += last->next()->capacity();
 			delete last->next();
 			last->next(nullptr);
 		}
+		m_array.decrease_capacity(shrink_by);
 		return last;
 	}
 
