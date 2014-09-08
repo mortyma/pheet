@@ -104,8 +104,9 @@ public:
 		VAIt best_it;
 		//iterate through items in right-most partition
 		auto it = m_partitionpointers->last();
-		auto end_it = VA::min(m_partitionpointers->end(),
-		                      m_partitionpointers->dead_partition());
+		auto end_it = m_partitionpointers->end() < m_partitionpointers->dead_partition()
+		              ? m_partitionpointers->end() : m_partitionpointers->dead_partition();
+
 		for (; it < end_it; it++) {
 			if (!it.validItem()) {
 				continue;
@@ -165,7 +166,8 @@ public:
 		if (!m_best_it.validItem() && m_partitionpointers->fall_back()) {
 			//repartition the new right-most partition (if neccessary)
 			VAIt start_it = m_partitionpointers->last();
-			VAIt end_it = VA::min(m_partitionpointers->dead_partition(), m_partitionpointers->end());
+			VAIt end_it = m_partitionpointers->dead_partition() < m_partitionpointers->end()
+			              ? m_partitionpointers->dead_partition() : m_partitionpointers->end();
 			pheet_assert(end_it.index() >= start_it.index());
 			if (end_it.index() - start_it.index() > MAX_PARTITION_SIZE) {
 				--end_it;

@@ -228,12 +228,6 @@ public:
 		return iterator_to(end_idx() - 1);
 	}
 
-	static const VirtualArrayIterator& min(const VirtualArrayIterator& it1,
-	                                       const VirtualArrayIterator& it2)
-	{
-		return it1.index() < it2.index() ? it1 : it2;
-	}
-
 	Ref operator[](size_t idx)
 	{
 		pheet_assert(idx < end_idx());
