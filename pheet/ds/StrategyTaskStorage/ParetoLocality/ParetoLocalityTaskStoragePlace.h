@@ -480,8 +480,7 @@ steal(BaseItem* boundary)
 			auto end = other_place->array().end();
 
 			//TODOMK: this works, but may not be very efficient
-			for (; end.valid() && it != end; it++) {
-				pheet_assert(it.index() < end.index());
+			for (; it != end; it++) {
 				Item* item = *it;
 				if (item && !item->is_taken_or_dead()) {
 					put(*item);
