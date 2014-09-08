@@ -31,16 +31,20 @@ public:
 	 */
 	struct Ref {
 		std::atomic<T>& ref_;
+
 		Ref(std::atomic<T>& r) : ref_(r) {}
+
 		operator T() const
 		{
 			return ref_.load(std::memory_order_relaxed);
 		}
+
 		T operator= (T val) const
 		{
 			ref_.store(val, std::memory_order_relaxed);
 			return ref_;
 		}
+
 		T operator->() const
 		{
 			return ref_.load(std::memory_order_relaxed);
