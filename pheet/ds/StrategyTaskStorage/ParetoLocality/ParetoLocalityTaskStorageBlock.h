@@ -389,7 +389,7 @@ private:
 		const size_t p_dim = pivot->dimension();
 		const size_t p_val = pivot->value();
 
-		do {
+		while (left < right) {
 			bool left_taken_or_dead, right_taken_or_dead;
 			//Note: make sure to call is_dead as little as possible (may be expensive, since user implemented)
 			while (left < right && *left && !(left_taken_or_dead = left->is_taken_or_dead())
@@ -444,7 +444,7 @@ private:
 					--right;
 				}
 			}
-		} while (left < right);
+		}
 		/* Partitioning finished when left <= right. Left == right +1 is the case
 		 * if the last swap was on indices s.t. left + 1 == right and both items
 		 * were not dead. */
