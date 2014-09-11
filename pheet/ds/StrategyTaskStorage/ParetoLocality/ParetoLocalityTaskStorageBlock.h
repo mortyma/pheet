@@ -474,11 +474,8 @@ private:
 		//be sorted incorrectly if left->is_taken_or_dead() would be called at each
 		//place instead of using this variable.
 		bool was_taken_or_dead = false;
-		if (*left) {
-			was_taken_or_dead = left->is_taken_or_dead();
-		}
 		//*1: check if left points to dead item
-		if (!*left || was_taken_or_dead) {
+		if (!*left || (was_taken_or_dead = left->is_taken_or_dead())) {
 			//decrease the dead partition pointer
 			VAIt dead = m_partitionpointers->decrease_dead();
 			//drop item at left
