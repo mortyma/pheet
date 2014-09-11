@@ -90,9 +90,10 @@ public:
 		m_dead = val;
 	}
 
-	void decrease_dead()
+	VAIt decrease_dead()
 	{
 		--m_dead;
+		return m_dead;
 	}
 
 	VAIt end() const

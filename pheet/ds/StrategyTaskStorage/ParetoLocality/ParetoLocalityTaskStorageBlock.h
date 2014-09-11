@@ -411,8 +411,7 @@ private:
 					 * an element >=pivot to left, but we will not advance left.
 					 * Progress is made by putting one dead element into it'S final
 					 * place */
-					m_partitionpointers->decrease_dead();
-					VAIt dead = m_partitionpointers->dead_partition();
+					VAIt dead = m_partitionpointers->decrease_dead();
 					swap_to_dead(left, dead);
 					//if now right == dead, advance right
 					//TODOMK: do we really need this?
@@ -445,8 +444,7 @@ private:
 						--right;
 					} else {
 						//swap right with rightmost non-dead element
-						m_partitionpointers->decrease_dead();
-						VAIt dead = m_partitionpointers->dead_partition();
+						VAIt dead = m_partitionpointers->decrease_dead();
 						swap_to_dead(right, dead);
 					}
 				}
@@ -482,12 +480,11 @@ private:
 		//*1: check if left points to dead item
 		if (!*left || was_taken_or_dead) {
 			//decrease the dead partition pointer
-			m_partitionpointers->decrease_dead();
-			//if left==dead_partition, just drop item at left
+			VAIt dead = m_partitionpointers->decrease_dead();
+			//drop item at left
 			drop_dead_item(left);
-			//Otherwise, swap dead and left
-			if (left != m_partitionpointers->dead_partition()) {
-				VAIt dead = m_partitionpointers->dead_partition();
+			//If left!=dead, swap
+			if (left != dead) {
 				swap_to_dead(left, dead);
 			}
 		}
