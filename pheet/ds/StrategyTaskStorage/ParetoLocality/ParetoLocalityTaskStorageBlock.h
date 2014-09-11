@@ -435,16 +435,15 @@ private:
 						break;
 					}
 				} else {
-					if (m_partitionpointers->dead_partition().index() - right.index()  == 1) {
-						//element after right is dead too. Advance dead and right.
-						//This is safe since left < right
+					VAIt dead = m_partitionpointers->decrease_dead();
+					if (dead.index() - right.index()  == 0) {
+						//element after right is dead too. Dead was decremented above,
+						//right is decremented below. This is safe since left < right
 						drop_dead_item(right);
-						m_partitionpointers->decrease_dead();
 						pheet_assert(left < right);
 						--right;
 					} else {
 						//swap right with rightmost non-dead element
-						VAIt dead = m_partitionpointers->decrease_dead();
 						swap_to_dead(right, dead);
 					}
 				}
