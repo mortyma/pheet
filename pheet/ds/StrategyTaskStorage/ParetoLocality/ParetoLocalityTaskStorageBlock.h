@@ -405,8 +405,21 @@ private:
 						break;
 					}
 				} else {
-					// left is a dead item
-					break;
+					/* left is dead. Note that left+1==dead may never occur while
+					 * left < right, since right < dead holds. */
+					pheet_assert(left.index() + 1 < m_partitionpointers->dead_partition().index());
+					/* swap left with rightmost non-dead element. This may swap
+					 * an element >=pivot to left, but we will not advance left.
+					 * Progress is made by putting one dead element into it'S final
+					 * place */
+					m_partitionpointers->decrease_dead();
+					VAIt dead = m_partitionpointers->dead_partition();
+					swap_to_dead(left, dead);
+					//if now right == dead, advance right
+					//TODOMK: do we really need this?
+					if (m_partitionpointers->dead_partition() == right) {
+						--right;
+					}
 				}
 			}
 
@@ -424,14 +437,6 @@ private:
 						break;
 					}
 				} else {
-					// right is a dead item
-					break;
-				}
-			}
-
-			if (left != right) {
-				if (!*right || right_taken_or_dead) {
-					//right is dead
 					if (m_partitionpointers->dead_partition().index() - right.index()  == 1) {
 						//element after right is dead too. Advance dead and right.
 						//This is safe since left < right
@@ -445,31 +450,20 @@ private:
 						VAIt dead = m_partitionpointers->dead_partition();
 						swap_to_dead(right, dead);
 					}
-				} else if (!*left || left_taken_or_dead) {
-					/* left is dead. Note that left+1==dead may never occur while
-					 * left < right, since right < dead holds. */
-					pheet_assert(left.index() + 1 < m_partitionpointers->dead_partition().index());
-					/* swap left with rightmost non-dead element. This may swap
-					 * an element >=pivot to left, but we will not advance left.
-					 * Progress is made by putting one dead element into it'S final
-					 * place */
-					m_partitionpointers->decrease_dead();
-					VAIt dead = m_partitionpointers->dead_partition();
-					swap_to_dead(left, dead);
-					//if now right == dead, advance right
-					if (m_partitionpointers->dead_partition() == right) {
-						--right;
-					}
-				} else {
-					/* neither left nor right are dead. Swap left and right */
-					swap(left, right);
-					/* items at left and right are now at the correct position.
+				}
+			}
+
+			if (left != right) {
+				pheet_assert(*left && *right);
+				/* neither left nor right were dead. Swap left and right */
+				swap(left, right);
+				/* items at left and right are now at the correct position.
 					 * We thus may advance both indices. However, in case we
 					 * swapped when left + 1 == right, this will result in
 					 * left == right + 1. */
-					left++;
-					--right;
-				}
+				left++;
+				--right;
+
 			}
 		}
 		/* Partitioning finished when left <= right. Left == right +1 is the case
