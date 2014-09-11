@@ -390,10 +390,9 @@ private:
 		const size_t p_val = pivot->value();
 
 		while (left < right) {
-			bool left_taken_or_dead, right_taken_or_dead;
 			//Note: make sure to call is_dead as little as possible (may be expensive, since user implemented)
 			while (left < right) {
-				if (*left && !(left_taken_or_dead = left->is_taken_or_dead())) {
+				if (*left && !left->is_taken_or_dead()) {
 					// left is an active item
 					if (left->strategy()->less_priority(p_dim, p_val)) {
 						// left has less priority than pivot element and
@@ -424,7 +423,7 @@ private:
 			}
 
 			while (left < right) {
-				if (*right && !(right_taken_or_dead = right->is_taken_or_dead())) {
+				if (*right && !right->is_taken_or_dead()) {
 					// right is an active item
 					if (right->strategy()->greater_priority(p_dim, p_val)
 					        || right->strategy()->equal_priority(p_dim, p_val)) {
