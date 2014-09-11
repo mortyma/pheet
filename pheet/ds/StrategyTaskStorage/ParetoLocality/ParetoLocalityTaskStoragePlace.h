@@ -390,7 +390,7 @@ pop(BaseItem* boundary)
 		for (Block* block = insert; block != nullptr; block = block->next()) {
 			if (!block->is_dead()) {
 				//get the top element
-				VAIt top_it = block->top();
+				VAIt top_it = block->peek();
 				if (block != insert) { //the insert block is never changed
 					//If top_it is not a valid item, block contains no more valid items.
 					//We set the block dead.

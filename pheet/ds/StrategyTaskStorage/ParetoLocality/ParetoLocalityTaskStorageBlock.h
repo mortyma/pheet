@@ -149,7 +149,7 @@ public:
 	 * Any dead items that are inspected are cleaned up. Thus, if an Iterator
 	 * to a non-valid Item is returned, the block can be destructed.
 	 */
-	VAIt top()
+	VAIt peek()
 	{
 		// Two calls to find_best will return an iterator to the same item if,
 		// between the two calls:
@@ -173,8 +173,8 @@ public:
 				--end_it;
 				partition(m_partitionpointers->size() - 1, start_it, end_it);
 			}
-			//call top() again
-			m_best_it = top();
+			//call peek() again
+			m_best_it = peek();
 		}
 		return m_best_it;
 	}
@@ -239,7 +239,7 @@ public:
 	 * Take the given item and return its data.
 	 *
 	 * An item that is taken is marked for deletion/reuse and will not be returned
-	 * via a call to top() anymore.
+	 * via a call to peek() anymore.
 	 */
 	T take(VAIt item)
 	{
