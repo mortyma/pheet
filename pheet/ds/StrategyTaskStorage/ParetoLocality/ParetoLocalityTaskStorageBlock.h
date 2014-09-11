@@ -415,7 +415,7 @@ private:
 					swap_to_dead(left, dead);
 					//if now right == dead, advance right
 					//TODOMK: do we really need this?
-					if (m_partitionpointers->dead_partition() == right) {
+					if (dead == right) {
 						--right;
 					}
 				}
@@ -510,16 +510,16 @@ private:
 			++m_failed_attempts;
 		}
 
-		if ((m_partitionpointers->dead_partition().index() - left.index() > MAX_PARTITION_SIZE)
+		VAIt dead = m_partitionpointers->dead_partition();
+		if ((dead.index() - left.index() > MAX_PARTITION_SIZE)
 		        && m_failed_attempts < MAX_ATTEMPTS_TO_PARTITION) {
 			/* If partitioning succeeded but the resulting right-most (excluding
 			 * dead) partition is >MAX_PARTITION_SIZE, partition recursively */
 			if (m_failed_attempts == 0) {
 				++depth;
 			}
-			auto new_right = m_partitionpointers->dead_partition();
-			--new_right;
-			partition(depth, left, new_right);
+			--dead;
+			partition(depth, left, dead);
 		}
 		m_failed_attempts = 0;
 		check_correctness();
