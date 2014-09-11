@@ -394,28 +394,41 @@ private:
 			//Note: make sure to call is_dead as little as possible (may be expensive, since user implemented)
 			while (left < right) {
 				if (*left && !(left_taken_or_dead = left->is_taken_or_dead())) {
+					// left is an active item
 					if (left->strategy()->less_priority(p_dim, p_val)) {
+						// left has less priority than pivot element and
+						// is thus in the correct place.
 						left++;
 					} else {
+						// left has greater or equal priority as the pivot element. Thus
+						// needs to be swapped to the right partition.
 						break;
 					}
 				} else {
+					// left is a dead item
 					break;
 				}
 			}
 
 			while (left < right) {
 				if (*right && !(right_taken_or_dead = right->is_taken_or_dead())) {
+					// right is an active item
 					if (right->strategy()->greater_priority(p_dim, p_val)
 					        || right->strategy()->equal_priority(p_dim, p_val)) {
+						// right has greater or equal priority as pivot element and
+						// is thus in the correct place.
 						--right;
 					} else {
+						// right has less priority than the pivot element. Thus
+						// needs to be swapped to the left partition.
 						break;
 					}
 				} else {
+					// right is a dead item
 					break;
 				}
 			}
+
 			if (left != right) {
 				if (!*right || right_taken_or_dead) {
 					//right is dead
