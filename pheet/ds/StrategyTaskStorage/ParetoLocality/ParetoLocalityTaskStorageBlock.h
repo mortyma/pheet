@@ -392,15 +392,29 @@ private:
 		while (left < right) {
 			bool left_taken_or_dead, right_taken_or_dead;
 			//Note: make sure to call is_dead as little as possible (may be expensive, since user implemented)
-			while (left < right && *left && !(left_taken_or_dead = left->is_taken_or_dead())
-			        && left->strategy()->less_priority(p_dim, p_val)) {
-				left++;
+			while (left < right) {
+				if (*left && !(left_taken_or_dead = left->is_taken_or_dead())) {
+					if (left->strategy()->less_priority(p_dim, p_val)) {
+						left++;
+					} else {
+						break;
+					}
+				} else {
+					break;
+				}
 			}
 
-			while (left < right && *right && !(right_taken_or_dead = right->is_taken_or_dead())
-			        && (right->strategy()->greater_priority(p_dim, p_val)
-			            || right->strategy()->equal_priority(p_dim, p_val))) {
-				--right;
+			while (left < right) {
+				if (*right && !(right_taken_or_dead = right->is_taken_or_dead())) {
+					if (right->strategy()->greater_priority(p_dim, p_val)
+					        || right->strategy()->equal_priority(p_dim, p_val)) {
+						--right;
+					} else {
+						break;
+					}
+				} else {
+					break;
+				}
 			}
 			if (left != right) {
 				if (!*right || right_taken_or_dead) {
