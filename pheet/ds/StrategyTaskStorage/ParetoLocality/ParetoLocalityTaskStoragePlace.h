@@ -61,97 +61,45 @@ private:
 	void put(Item& item);
 
 	/**
-	 * Starting from last, merge preceeding blocks as long as necessary. If a block
-	 * was merged, partition it and maintain pointer to last.
-	 */
-	void merge_from_last()
-	{
-		//merge recursively, if previous block has same level, starting from last
-		if (merge_recursively(last)) {
-
-			//repartition block that resulted from merge
-			last->partition();
-
-			//shrink the last block, if possible
-			size_t shrunk_by = last->shrink();
-			if (shrunk_by > 0) {
-				m_array.decrease_capacity(shrunk_by);
-			}
-		}
-		pheet_assert(!last->next());
-		pheet_assert(!last->is_dead());
-	}
-
-	/**
-	 * Starting from block, merge preceeding blocks as long as necessary. If block
-	 * was merged, partition it and maintain pointers to block and last
-	 */
-	void merge_from(Block*& block)
-	{
-		if (block == last) {
-			merge_from_last();
-			block = last;
-			return;
-		}
-		if (merge_recursively(block)) {
-			//repartition block that resulted from merge
-			//last does not change, since we never merge it in here
-			block->partition();
-			//TODOMK: should we shrink if possible? It would make analysis even more complicated.
-		}
-		pheet_assert(!last->is_dead());
-	}
-
-	/**
 	 * Starting from block, merge with predecessing blocks as long as neccessary.
-	 *
-	 * Returns true, if blocks were merged. The caller is responsible for
-	 * re-partitioning the resulting block.
-	 */
-	bool merge_recursively(Block*& block)
-	{
-		pheet_assert(!block->is_dead());
-		bool merged = false;
-		while (merge(block)) {
-			merged = true;
-		}
-		return merged;
-	}
-
-	/**
-	 * Merge block with predecessor, if necessary.
 	 *
 	 * A merge with the predecessor is performed if the predecessor exists and
 	 *   (i)  the predecessing block has the same level as this block, or
 	 *   (ii) the predecessing block is dead (regardless of the level of the
 	 *        predecessing block).
 	 *
-	 * Returns true if a merge was performed; block will point to the
-	 * resulting block. Pointer to last is maintained.
+	 * On return, block will point to the
+	 * resulting block, which will be partitioned. Pointer to last is maintained.
 	 */
-	bool merge(Block*& block)
+	void merge_from(Block*& block)
 	{
 		pheet_assert(!block->is_dead());
-
-		//If block does not have a predecessor, no merge is required.
-		Block* predecessor = block->prev();
-		if (!predecessor) {
-			pheet_assert(insert->next() == block);
-			return false;
-		}
-
-		if (predecessor->is_dead() || predecessor->lvl() == block->lvl()) {
+		bool merged = false;
+		Block* pred;
+		while ((pred = block->prev()) && (pred->is_dead() || pred->lvl() == block->lvl())) {
 			// If block is the last block in the linked list and being merged with
 			//predecessor, the later will be the last block in the linked list after the merge.
 			if (block == last) {
-				last = predecessor;
+				last = pred;
 			}
 			//merge predecessor if it is a dead block, or a non-dead block of same lvl
-			block = predecessor->merge_next();
-			return true;
+			block = pred->merge_next();
+			merged = true;
 		}
-		// no merge required
-		return false;
+		if (merged) {
+			//repartition block that resulted from merge
+			block->partition();
+			if (last == block) {
+				//shrink the last block, if possible
+				size_t shrunk_by = last->shrink();
+				if (shrunk_by > 0) {
+					m_array.decrease_capacity(shrunk_by);
+				}
+			}
+			//Shrinking non-last blocks might result in another merge
+		}
+		pheet_assert(!last->next());
+		pheet_assert(!last->is_dead());
 	}
 
 	/**
@@ -360,7 +308,7 @@ put(Item& item)
 		//move all data from insert to last
 		move(insert, last);
 		//merge blocks, if necessary
-		merge_from_last();
+		merge_from(last);
 
 		//re-initialize insert
 		insert->reinitialize();
