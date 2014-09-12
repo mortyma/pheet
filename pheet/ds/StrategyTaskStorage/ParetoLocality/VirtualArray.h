@@ -65,7 +65,7 @@ public:
 			return *this;
 		}
 
-		VirtualArrayIterator operator++(int)
+		VirtualArrayIterator& operator++(int)
 		{
 			pheet_assert(m_block);
 
