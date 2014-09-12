@@ -359,15 +359,12 @@ put(Item& item)
 
 		//move all data from insert to last
 		move(insert, last);
-		//partition last (it's unlikely that shrinking would be possible; but we do
-		//not want to reduce the level of a lvl 0 block anyway)
-		last->partition();
 		//merge blocks, if necessary
 		merge_from_last();
 
 		//re-initialize insert
 		insert->reinitialize();
-		insert->set_dead(false);
+
 		//put the item in the (now empty) insert block
 		insert->put(&item);
 	}

@@ -74,6 +74,7 @@ public:
 		m_best_it.invalidate();
 		delete m_partitionpointers;
 		create_partition_pointers(0, m_capacity, 0);
+		m_is_dead = false;
 	}
 
 	bool try_put(Item* item)
