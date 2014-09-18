@@ -151,6 +151,9 @@ private:
 			delete last->next();
 			last->next(nullptr);
 		}
+		if (last != insert) {
+			shrink_by += last->shrink();
+		}
 		m_array.decrease_capacity(shrink_by);
 		return last;
 	}
@@ -328,72 +331,65 @@ ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strat
 pop(BaseItem* boundary)
 {
 	Item* boundary_item = reinterpret_cast<Item*>(boundary);
-	while (!boundary_item->is_taken()) {
-		Block* best_block = nullptr;
-		VAIt best_it;
-		//iterate through all blocks
-		for (Block* block = insert; block != nullptr; block = block->next()) {
-			if (!block->is_dead()) {
-				//get the top element
-				VAIt top_it = block->peek();
-				if (block != insert) { //the insert block is never changed
-					//If top_it is not a valid item, block contains no more valid items.
-					//We set the block dead.
-					if (!top_it.validItem()) {
-						block->set_dead(true);
-						if (block == last) {
-							//if we set the last block dead, drop all the dead blocks
-							//at the end of the list. Otherwise, we will have to merge
-							//block and block->next in the next iteration of the loop.
-							block = last = drop_dead_blocks_at_end(last);
-						}
-					} else {
-						//block is not dead.
-						if (block == last) {
-							//shrink block as far as possible
-							block->shrink();
-						} else {
-							//Reduce the lvl of block if possible. Note that before this operation,
-							//we know that block->prev()->lvl() > block->lvl() > block->next()->lvl.
-							//If block == last, we can simply shrink it. Otherwise, we reduce
-							//its level; afterwards, we may have block->lvl() == block->next()->lvl.
-							//In that case we have to merge block and block->prev().
-							block->try_reduce_lvl();
-							pheet_assert(block->capacity() == block->end().index() - block->start().index());
-						}
-						//Merge with previous blocks if neccessary,
-						//i.e., if a sequence of previous blocks is all dead blocks or
-						//of the same lvl as block.
-						if (block->prev() && (block->prev()->is_dead()
-						                      || block->prev()->lvl() == block->lvl())) {
-							merge_from(block);
-						}
-					}
-				}
-				//We found a new best item
-				if (!best_it.validItem()  || (top_it.validItem() &&
-				                              top_it->strategy()->prioritize(*(best_it)->strategy()))) {
-					best_block = block;
-					best_it = top_it;
-				}
+	VAIt best_it = insert->peek();
+	Block* best_block = insert;
+	//iterate through all blocks
+	Block* block = insert;
+	while (block = block->next()) {
+		if (block->is_dead()) {
+			continue;
+		}\
+		//get the top element
+		VAIt top_it = block->peek();
+		//If top_it is not a valid item, block contains no more valid items.
+		//We set the block dead.
+		if (!top_it.validItem()) {
+			block->set_dead(true);
+		} else {
+			//block is not dead.
+			if (block != last) {
+				//Reduce the lvl of block if possible. Note that before this operation,
+				//we know that block->prev()->lvl() > block->lvl() > block->next()->lvl.
+				//If block == last, we can simply shrink it. Otherwise, we reduce
+				//its level; afterwards, we may have block->lvl() == block->next()->lvl.
+				//In that case we have to merge block and block->prev().
+				block->try_reduce_lvl();
+				pheet_assert(block->capacity() == block->end().index() - block->start().index());
 			}
+			//Merge with previous blocks if neccessary,
+			//i.e., if a sequence of previous blocks is all dead blocks or
+			//of the same lvl as block.
+			merge_from(block);
 		}
-		//if the boundary item was taken in the meantime, pop has to return null...
-		if (boundary_item->is_taken() || !best_it.validItem()) {
-			return nullable_traits<T>::null_value;
-		}
-		//..otherwise a best item (and the block it is stored in) has to exist
-		pheet_assert(best_block);
-		pheet_assert(best_it.validItem());
-		T pop = best_block->take(best_it);
-
-		//If take did not succeed, best_item was taken by another thread in the
-		//meantime. Try again.
-		if (pop != nullable_traits<T>::null_value) {
-			return pop;
+		//We found a new best item
+		if (!best_it.validItem()  || (top_it.validItem() &&
+		                              top_it->strategy()->prioritize(*(best_it)->strategy()))) {
+			best_block = block;
+			best_it = top_it;
 		}
 	}
 
+	//drop dead blocks at the end of the list, if any
+	last = drop_dead_blocks_at_end(last);
+
+	//if the boundary item was taken in the meantime, pop has to return null...
+	if (boundary_item->is_taken() || !best_it.validItem()) {
+		return nullable_traits<T>::null_value;
+	}
+	//..otherwise a best item (and the block it is stored in) has to exist
+	pheet_assert(best_block);
+	pheet_assert(best_it.validItem());
+
+	// take the item and check if it cotains a task. If take did not succeed,
+	// best_item was taken by another thread in the meantime. Try popping again,
+	// but only if the boundary item is still active.
+	T pop_item = best_block->take(best_it);
+	if (pop_item != nullable_traits<T>::null_value) {
+		return pop_item;
+	}
+	if (!boundary_item->is_taken()) {
+		return pop(boundary);
+	}
 	// Linearized to check of boundary item
 	return nullable_traits<T>::null_value;
 }
