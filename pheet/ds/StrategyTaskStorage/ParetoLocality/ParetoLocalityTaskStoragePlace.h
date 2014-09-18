@@ -331,7 +331,12 @@ ParetoLocalityTaskStoragePlace<Pheet, TaskStorage, ParentTaskStoragePlace, Strat
 pop(BaseItem* boundary)
 {
 	Item* boundary_item = reinterpret_cast<Item*>(boundary);
+
 	VAIt best_it = insert->peek();
+	Item* best_item = nullptr;
+	if (best_it.validItem()) {
+		best_item = *best_it;
+	}
 	Block* best_block = insert;
 	//iterate through all blocks
 	Block* block = insert;
@@ -347,6 +352,12 @@ pop(BaseItem* boundary)
 			block->set_dead(true);
 		} else {
 			//block is not dead.
+			//We found a new best item
+			if (!best_item ||
+			        top_it->strategy()->prioritize(*best_item->strategy())) {
+				best_block = block;
+				best_item = *top_it;
+			}
 			if (block != last) {
 				//Reduce the lvl of block if possible. Note that before this operation,
 				//we know that block->prev()->lvl() > block->lvl() > block->next()->lvl.
@@ -361,29 +372,23 @@ pop(BaseItem* boundary)
 			//of the same lvl as block.
 			merge_from(block);
 		}
-		//We found a new best item
-		if (!best_it.validItem()  || (top_it.validItem() &&
-		                              top_it->strategy()->prioritize(*(best_it)->strategy()))) {
-			best_block = block;
-			best_it = top_it;
-		}
 	}
 
 	//drop dead blocks at the end of the list, if any
 	last = drop_dead_blocks_at_end(last);
 
 	//if the boundary item was taken in the meantime, pop has to return null...
-	if (boundary_item->is_taken() || !best_it.validItem()) {
+	if (boundary_item->is_taken() || !best_item) {
 		return nullable_traits<T>::null_value;
 	}
 	//..otherwise a best item (and the block it is stored in) has to exist
 	pheet_assert(best_block);
-	pheet_assert(best_it.validItem());
+	pheet_assert(best_item);
 
 	// take the item and check if it cotains a task. If take did not succeed,
 	// best_item was taken by another thread in the meantime. Try popping again,
 	// but only if the boundary item is still active.
-	T pop_item = best_block->take(best_it);
+	T pop_item = best_block->take(best_item);
 	if (pop_item != nullable_traits<T>::null_value) {
 		return pop_item;
 	}

@@ -242,15 +242,11 @@ public:
 	 * An item that is taken is marked for deletion/reuse and will not be returned
 	 * via a call to peek() anymore.
 	 */
-	T take(VAIt item)
+	T take(Item* item)
 	{
-		pheet_assert(*item);
+		pheet_assert(item);
 		m_best_it.invalidate();
 		T data = item->take();
-		/* Set the Item to nullptr in the VirtualArray so other threads
-		   and operations don't see it any more. Memory manager will take care of
-		   deleting the Item */
-		*item = nullptr;
 		return data;
 	}
 
