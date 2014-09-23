@@ -166,13 +166,15 @@ public:
 		m_best_it = find_best();
 		//only happens if no more item that is not null is in current partition
 		//thus, fall back to previous partition, if possible
+		size_t cnt = m_pivots->size();
 		if (!m_best_it.validItem() && m_partitionpointers->fall_back()) {
-			//repartition the new right-most partition (if neccessary)
+			//repartition the new right-most partition (if neccessary), but only
+			//if we do not use the same pivot element as before!
 			VAIt start_it = m_partitionpointers->last();
 			VAIt end_it = m_partitionpointers->dead_partition() < m_partitionpointers->end()
 			              ? m_partitionpointers->dead_partition() : m_partitionpointers->end();
 			pheet_assert(end_it.index() >= start_it.index());
-			if (end_it.index() - start_it.index() > MAX_PARTITION_SIZE) {
+			if (end_it.index() - start_it.index() > MAX_PARTITION_SIZE && m_pivots->size() < cnt) {
 				--end_it;
 				partition(m_partitionpointers->size() - 1, start_it, end_it);
 			}
