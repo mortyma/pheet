@@ -108,10 +108,10 @@ inline bool
 Strategy2ParetoStrategy<Pheet, TaskStorageT>::
 prioritize(Self& other) const
 {
-	/* TODOMK The linear comibination of weight vector values is only possible
-	 * because we are using non-negative ints for each dimension, since
+	/* The linear comibination of weight vector values is only possible if
+	 * we are using non-negative ints for each dimension, since
 	 * this->weight_sum > other->weight_sum => this != dominates other
-	 * This would not be possible for a more general weight vector with different
+	 * This is not possible for a more general weight vector with different
 	 * domains and priority function for each dimension.
 	 */
 	//return this->path->weight_sum() <= other.path->weight_sum();
@@ -177,7 +177,6 @@ inline bool
 Strategy2ParetoStrategy<Pheet, TaskStorageT>::
 can_call(TaskStoragePlace*)
 {
-	//TODOMK: allowing call conversion leads to strange errors
 	return false;
 }
 

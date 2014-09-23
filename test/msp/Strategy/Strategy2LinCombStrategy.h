@@ -82,7 +82,7 @@ inline bool
 Strategy2LinCombStrategy<Pheet, TaskStorageT>::
 prioritize(Self& other) const
 {
-	/* TODOMK The linear comibination of weight vector values is only possible
+	/* The linear comibination of weight vector values is only possible
 	 * because we are using non-negative ints for each dimension, since
 	 * this->weight_sum > other->weight_sum => this != dominates other
 	 * This would not be possible for a more general weight vector with different
@@ -104,7 +104,7 @@ inline bool
 Strategy2LinCombStrategy<Pheet, TaskStorageT>::
 can_call(TaskStoragePlace*)
 {
-	//TODOMK: allowing call conversion leads to strange errors
+	//we don't call conversion, as this might lead to stack overflows
 	return false;
 }
 

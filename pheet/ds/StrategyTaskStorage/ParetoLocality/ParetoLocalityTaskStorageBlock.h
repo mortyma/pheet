@@ -424,7 +424,6 @@ private:
 					VAIt dead = m_partitionpointers->decrease_dead();
 					swap_to_dead(left, dead);
 					//if now right == dead, advance right
-					//TODOMK: do we really need this?
 					if (dead == right) {
 						--right;
 					}
