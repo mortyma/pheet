@@ -202,9 +202,18 @@ public:
 		}
 		m_capacity += next()->capacity();
 
+		//swap all dead tasks from this block into the new dead section
+		VAIt dead1 = dead();
+		VAIt dead2 = next()->dead();
+		while (dead1 < end() && end() < dead2) {
+			--dead2;
+			swap(dead1, dead2);
+			dead1++;
+		}
+
 		//update end and dead partition pointers
-		m_partitionpointers->reinitialize(next()->dead(), next()->end());
-		//TODOMK: we could just swap all dead tasks from this block into the new dead section
+		m_partitionpointers->reinitialize(dead2, next()->end());
+
 
 		//splice out next
 		Block* tmp  = next();
