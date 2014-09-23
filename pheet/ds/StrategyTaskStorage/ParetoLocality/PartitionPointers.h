@@ -29,6 +29,19 @@ public:
 
 	~PartitionPointers()
 	{
+		clear();
+	}
+
+	void reinitialize(VAIt dead, VAIt end)
+	{
+		clear();
+		m_last = m_start;
+		m_dead = dead;
+		m_end = end;
+	}
+
+	void clear()
+	{
 		while (m_partitions.size() > 1) {
 			m_pivot_queue->release(m_partitions.back().second);
 			m_partitions.pop_back();
@@ -118,6 +131,7 @@ public:
 		m_last = it;
 	}
 
+	//TODOMK: remove debug code
 	std::pair<VAIt, PivotElement*> get(size_t idx)
 	{
 		assert(idx < m_partitions.size());

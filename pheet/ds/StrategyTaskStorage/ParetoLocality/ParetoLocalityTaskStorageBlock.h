@@ -49,9 +49,9 @@ public:
 	 * 0 block, the end pointer may be set to any value in [0, MAX_PARTITION_SIZE];
 	 * otherwise, it is implicitly set to MAX_PARTITION_SIZE.
 	 */
-	ParetoLocalityTaskStorageBlock(VA& array, PivotQueue* pivots, size_t offset,
+	ParetoLocalityTaskStorageBlock(VA& array, VAIt start_it, PivotQueue* pivots,
 	                               size_t lvl, bool is_dead, int end = -1)
-		: m_lvl(lvl), m_data(array), m_offset(offset), m_is_dead(is_dead),
+		: m_lvl(lvl), m_data(array), m_is_dead(is_dead),
 		  m_next(nullptr), m_pivots(pivots), m_failed_attempts(0)
 	{
 		pheet_assert(lvl == 0 || end == -1);
@@ -60,7 +60,10 @@ public:
 		if (end == -1) {
 			end = m_capacity;
 		}
-		create_partition_pointers(0, m_capacity, end);
+
+		auto dead_it = m_data.iterator_to(start_it, start_it.index() + m_capacity);
+		auto end_it = m_data.iterator_to(start_it, start_it.index() + end);
+		m_partitionpointers = new PartitionPointers<Item>(m_pivots, start_it, dead_it, end_it);
 	}
 
 	~ParetoLocalityTaskStorageBlock()
@@ -72,14 +75,13 @@ public:
 	{
 		pheet_assert(m_lvl == 0);
 		m_best_it.invalidate();
-		delete m_partitionpointers;
-		create_partition_pointers(0, m_capacity, 0);
+		reinit_pp(0);
 		m_is_dead = false;
 	}
 
 	bool try_put(Item* item)
 	{
-		if (m_partitionpointers->end().index(m_offset) == m_capacity) {
+		if (end_idx() - start_idx() == m_capacity) {
 			return false;
 		}
 		put(item);
@@ -88,7 +90,7 @@ public:
 
 	void put(Item* item)
 	{
-		pheet_assert(m_partitionpointers->end().index(m_offset) < m_capacity);
+		pheet_assert(end_idx() - start_idx() < m_capacity);
 		//we only put data in a lvl 0 block
 		pheet_assert(m_lvl == 0);
 		//no CAS needed, since only the owning thread writes to local VirtualArray
@@ -187,8 +189,8 @@ public:
 		pheet_assert(m_is_dead || next()->lvl() == m_lvl);
 
 		//we only merge full blocks
-		pheet_assert(m_partitionpointers->end().index(m_offset) == m_capacity);
-		pheet_assert(next()->end().index(m_offset + m_capacity) == next()->capacity());
+		pheet_assert(end_idx() == start_idx() + m_capacity);
+		pheet_assert(next()->end_idx() == next()->start_idx() + next()->capacity());
 
 		//the successor block must not be a dead block
 		pheet_assert(!next()->is_dead());
@@ -199,12 +201,10 @@ public:
 			m_lvl++;
 		}
 		m_capacity += next()->capacity();
-		//update end pointer
-		VAIt it = m_data.iterator_to(m_partitionpointers->end(), m_offset + m_capacity);
-		m_partitionpointers->end(it);
 
-		//set the pointer to the dead partition
-		m_partitionpointers->dead_partition(next()->dead());
+		//update end and dead partition pointers
+		m_partitionpointers->reinitialize(next()->dead(), next()->end());
+		//TODOMK: we could just swap all dead tasks from this block into the new dead section
 
 		//splice out next
 		Block* tmp  = next();
@@ -226,9 +226,7 @@ public:
 		m_best_it.invalidate();
 
 		//drop the old partition pointers and create new ones
-		//m_partitionpointers->check_partitions();
-		delete m_partitionpointers;
-		create_partition_pointers(0,  m_capacity, m_capacity);
+		reinit_pp(m_capacity);
 
 		//partition the whole block
 		auto left = m_partitionpointers->start();
@@ -250,52 +248,6 @@ public:
 		return data;
 	}
 
-	size_t lvl() const
-	{
-		return m_lvl;
-	}
-
-	size_t capacity() const
-	{
-		return m_capacity;
-	}
-
-	size_t offset() const
-	{
-		return m_offset;
-	}
-
-	bool is_dead() const
-	{
-		return m_is_dead;
-	}
-
-	void set_dead(bool dead)
-	{
-		m_is_dead = dead;
-	}
-
-
-	ParetoLocalityTaskStorageBlock* prev() const
-	{
-		return m_prev;
-	}
-
-	void prev(ParetoLocalityTaskStorageBlock* b)
-	{
-		m_prev = b;
-	}
-
-	ParetoLocalityTaskStorageBlock* next() const
-	{
-		return m_next;
-	}
-
-	void next(ParetoLocalityTaskStorageBlock* b)
-	{
-		m_next = b;
-	}
-
 	/**
 	 * Try to reduce the level of this block by 1.
 	 *
@@ -309,8 +261,7 @@ public:
 			return false;
 		}
 		//check if we can reduce the logical level of this block
-		if (m_partitionpointers->dead_partition().index(m_offset) <=
-		        MAX_PARTITION_SIZE * pow(2, m_lvl) / 2) {
+		if (dead_idx() - offset() <= MAX_PARTITION_SIZE * pow(2, m_lvl) / 2) {
 			//reduce lvl and capacity
 			--m_lvl;
 			return true;
@@ -335,13 +286,58 @@ public:
 		}
 		//update end pointer if block was shrunk
 		if (shrunk_by) {
-			VAIt it = m_data.iterator_to(m_partitionpointers->start(), m_offset + m_capacity);
+			VAIt it = iterator_to(m_capacity);
 			m_partitionpointers->end(it);
 		}
-		pheet_assert(m_capacity == m_partitionpointers->end().index()
-		             - m_partitionpointers->start().index());
+		pheet_assert(m_capacity == end_idx() - start_idx());
 		return shrunk_by;
 	}
+
+	size_t lvl() const
+	{
+		return m_lvl;
+	}
+
+	size_t capacity() const
+	{
+		return m_capacity;
+	}
+
+	size_t offset() const
+	{
+		return start().index();
+	}
+
+	bool is_dead() const
+	{
+		return m_is_dead;
+	}
+
+	void set_dead(bool dead)
+	{
+		m_is_dead = dead;
+	}
+
+	ParetoLocalityTaskStorageBlock* prev() const
+	{
+		return m_prev;
+	}
+
+	size_t start_idx() const
+	{
+		return start().index();
+	}
+
+	size_t end_idx() const
+	{
+		return end().index();
+	}
+
+	size_t dead_idx() const
+	{
+		return dead().index();
+	}
+
 
 	VAIt start() const
 	{
@@ -358,16 +354,33 @@ public:
 		return m_partitionpointers->dead_partition();
 	}
 
+	void prev(ParetoLocalityTaskStorageBlock* b)
+	{
+		m_prev = b;
+	}
+
+	ParetoLocalityTaskStorageBlock* next() const
+	{
+		return m_next;
+	}
+
+	void next(ParetoLocalityTaskStorageBlock* b)
+	{
+		m_next = b;
+	}
+
 private:
 
-	void create_partition_pointers(size_t start, size_t dead, size_t end)
+	VAIt iterator_to(size_t idx)
 	{
-		pheet_assert(start <= dead);
-		pheet_assert(start <= end);
-		auto start_it = m_data.iterator_to(m_offset + start);
-		auto dead_it = m_data.iterator_to(start_it, m_offset + dead);
-		auto end_it = m_data.iterator_to(start_it, m_offset + end);
-		m_partitionpointers = new PartitionPointers<Item>(m_pivots, start_it, dead_it, end_it);
+		return m_data.iterator_to(start(), start().index() + idx);
+	}
+
+	void reinit_pp(size_t end)
+	{
+		auto dead_it = iterator_to(m_capacity);
+		auto end_it = iterator_to(end);
+		m_partitionpointers->reinitialize(dead_it, end_it);
 	}
 
 	void partition(size_t depth, VAIt& left, VAIt& right)
@@ -752,7 +765,6 @@ private:
 	size_t m_capacity;
 
 	VirtualArray<Item*>& m_data;
-	size_t m_offset;
 	bool m_is_dead;
 
 	ParetoLocalityTaskStorageBlock* m_next;

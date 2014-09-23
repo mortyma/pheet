@@ -147,10 +147,10 @@ public:
 			return (m_idx_in_block < that.m_idx_in_block);
 		}
 
-		size_t index(size_t offset = 0) const
+		size_t index() const
 		{
 			pheet_assert(m_block);
-			size_t idx = m_block->nr() * DATA_BLOCK_SIZE + m_idx_in_block - offset;
+			size_t idx = m_block->nr() * DATA_BLOCK_SIZE + m_idx_in_block;
 			pheet_assert(idx >= 0);
 			return idx;
 		}

@@ -232,7 +232,7 @@ ParetoLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place)
 {
 	//increase capacity of virtual array
 	m_array.increase_capacity(MAX_PARTITION_SIZE);
-	last = new Block(m_array, &m_pivots, 0, 0, false, 0);
+	last = new Block(m_array, m_array.iterator_to(0), &m_pivots, 0, false, 0);
 	insert = last;
 	task_storage = TaskStorage::get(this, parent_place->get_central_task_storage(),
 	                                created_task_storage);
@@ -298,8 +298,7 @@ put(Item& item)
 		m_array.increase_capacity(MAX_PARTITION_SIZE);
 
 		//create new block
-		size_t nb_offset = last->offset() + last->capacity();
-		Block* nb = new Block(m_array, &m_pivots, nb_offset, 0, true);
+		Block* nb = new Block(m_array, last->end(), &m_pivots, 0, true);
 		if (last != insert) {
 			nb->prev(last);
 		}
