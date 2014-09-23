@@ -215,13 +215,7 @@ public:
 		return iterator_to(end_idx() - 1);
 	}
 
-	Ref operator[](size_t idx)
-	{
-		pheet_assert(idx < end_idx());
 
-		Block* block = find_block(idx, m_first);
-		return (*block)[idx % block_size()];
-	}
 
 	size_t capacity() const
 	{
@@ -266,7 +260,6 @@ public:
 	}
 
 private:
-
 	/**
 	 * Get the block that contains the item at position idx.
 	 *
