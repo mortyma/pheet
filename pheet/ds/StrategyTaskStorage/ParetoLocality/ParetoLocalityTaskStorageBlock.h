@@ -683,7 +683,7 @@ private:
 			size_t attempts_to_sample = 0;
 			std::vector<Item*> samples;
 			while (samples.size() < NR_SAMPLES_FOR_PIVOT_GENERATION) {
-				item = *(m_data.iterator_to(dist_e(rng)));
+				item = *(m_data.iterator_to(left, dist_e(rng)));
 				if (item && !item->is_taken_or_dead()) {
 					samples.push_back(item);
 				}
