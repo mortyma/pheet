@@ -60,9 +60,8 @@ public:
 		if (end == -1) {
 			end = m_capacity;
 		}
-
-		auto dead_it = m_data.iterator_to(start_it, start_it.index() + m_capacity);
-		auto end_it = m_data.iterator_to(start_it, start_it.index() + end);
+		auto dead_it = start_it.advance_cmp(m_capacity);
+		auto end_it = start_it.advance_cmp(end);
 		m_partitionpointers = new PartitionPointers<Item>(m_pivots, start_it, dead_it, end_it);
 	}
 
@@ -81,7 +80,8 @@ public:
 
 	bool try_put(Item* item)
 	{
-		if (end_idx() - start_idx() == m_capacity) {
+		pheet_assert(m_lvl == 0);
+		if (start().advance_cmp(m_capacity) == end()) {
 			return false;
 		}
 		put(item);
@@ -90,7 +90,7 @@ public:
 
 	void put(Item* item)
 	{
-		pheet_assert(end_idx() - start_idx() < m_capacity);
+		pheet_assert(start().nr_items_to(end()) < m_capacity);
 		//we only put data in a lvl 0 block
 		pheet_assert(m_lvl == 0);
 		//no CAS needed, since only the owning thread writes to local VirtualArray
@@ -170,13 +170,12 @@ public:
 		if (!m_best_it.validItem() && m_partitionpointers->fall_back()) {
 			//repartition the new right-most partition (if neccessary), but only
 			//if we do not use the same pivot element as before!
-			VAIt start_it = m_partitionpointers->last();
-			VAIt end_it = m_partitionpointers->dead_partition() < m_partitionpointers->end()
-			              ? m_partitionpointers->dead_partition() : m_partitionpointers->end();
-			pheet_assert(end_it.index() >= start_it.index());
-			if (end_it.index() - start_it.index() > MAX_PARTITION_SIZE && m_pivots->size() < cnt) {
-				--end_it;
-				partition(m_partitionpointers->size() - 1, start_it, end_it);
+			VAIt left_it = m_partitionpointers->last();
+			VAIt right_it = m_partitionpointers->dead_partition();
+			pheet_assert(right_it.index() >= left_it.index());
+			if (left_it.nr_items_to(right_it) > MAX_PARTITION_SIZE && m_pivots->size() < cnt) {
+				--right_it;
+				partition(m_partitionpointers->size() - 1, left_it, right_it);
 			}
 			//call peek() again
 			m_best_it = peek();
@@ -191,8 +190,8 @@ public:
 		pheet_assert(m_is_dead || next()->lvl() == m_lvl);
 
 		//we only merge full blocks
-		pheet_assert(end_idx() == start_idx() + m_capacity);
-		pheet_assert(next()->end_idx() == next()->start_idx() + next()->capacity());
+		//pheet_assert(end() == start().advance_tmp(m_capacity));
+		//pheet_assert(next()->end() == next()->start().advance_tmp(next()->capacity()));
 
 		//the successor block must not be a dead block
 		pheet_assert(!next()->is_dead());
@@ -231,6 +230,17 @@ public:
 		return this;
 	}
 
+	/** Partition the block and reduce its level, if possible
+	 *
+	 * The level of the block after the merge is:
+	 * 1) 0, OR
+	 * 2) equal to the level of the successor block, if it exists, OR
+	 * 3) s.t. less than half of the elemets covered by a block of given level
+	 * are dead.
+	 *
+	 * Note that if 2) is the case, the block might need to be merged with its
+	 * successor.
+	 */
 	void partition()
 	{
 		pheet_assert(!is_dead());
@@ -243,6 +253,14 @@ public:
 		auto left = m_partitionpointers->start();
 		auto right = --(m_partitionpointers->end());
 		partition(0, left, right);
+
+		//reduce level as much as possible
+		reduce_lvl();
+		//splice out some Virtual array blocks if possible
+		size_t shrunk_by = m_data.delete_range(dead(), end());
+		m_capacity -= shrunk_by;
+		size_t diff = start().nr_items_to(end());
+		pheet_assert(m_capacity == diff);
 	}
 
 	/**
@@ -260,21 +278,27 @@ public:
 	}
 
 	/**
-	 * Try to reduce the level of this block by 1.
+	 * Reduce the logical level as far as possible.
 	 *
-	 * If the dead partition of this block is >= half the capacity of a block
-	 * of level lvl, we can reduce the level of the block by 1 (i.e., half its size).
+	 * Reduces the logical level of this block s.t.
+	 * 1) Less than half of the elements covered by the block are dead; OR
+	 * 2) The sucessor block's (if it exists) level is equal to the level of this block (they will then need to be merged), OR
+	 * 3) The blocks level is 0.
 	 */
-	bool try_reduce_lvl()
+	bool reduce_lvl()
 	{
-		//can't shrink a block of lvl 0
 		if (m_lvl == 0) {
 			return false;
 		}
-		//check if we can reduce the logical level of this block
-		if (dead_idx() - offset() <= MAX_PARTITION_SIZE * pow(2, m_lvl) / 2) {
-			//reduce lvl and capacity
+
+		if (next() && next()->lvl() == m_lvl) {
+			return false;
+		}
+		pheet_assert(! next() || next()->lvl() < m_lvl);
+
+		if (start().nr_items_to(dead()) <= MAX_PARTITION_SIZE * pow(2, m_lvl - 1)) {
 			--m_lvl;
+			reduce_lvl();
 			return true;
 		}
 		return false;
@@ -290,17 +314,18 @@ public:
 	size_t shrink()
 	{
 		pheet_assert(next() == nullptr);
-		size_t shrunk_by = 0;
-		while (try_reduce_lvl()) {
-			m_capacity >>= 1;
-			shrunk_by += m_capacity;
+		size_t old_cap = m_capacity;
+		if (reduce_lvl()) {
+			m_capacity = MAX_PARTITION_SIZE * pow(2, m_lvl);
 		}
+		pheet_assert(old_cap >= m_capacity);
+		size_t shrunk_by = old_cap - m_capacity;
 		//update end pointer if block was shrunk
 		if (shrunk_by) {
-			VAIt it = iterator_to(m_capacity);
+			VAIt it = start().advance_cmp(m_capacity);
 			m_partitionpointers->end(it);
 		}
-		pheet_assert(m_capacity == end_idx() - start_idx());
+		pheet_assert(m_capacity == start().nr_items_to(end()));
 		return shrunk_by;
 	}
 
@@ -384,7 +409,8 @@ private:
 
 	VAIt iterator_to(size_t idx)
 	{
-		return m_data.iterator_to(start(), start().index() + idx);
+		//return m_data.iterator_to(start(), start_idx() + idx);
+		return start().advance_cmp(idx);
 	}
 
 	void reinit_pp(size_t end)
@@ -426,7 +452,7 @@ private:
 				} else {
 					/* left is dead. Note that left+1==dead may never occur while
 					 * left < right, since right < dead holds. */
-					pheet_assert(left.index() + 1 < m_partitionpointers->dead_partition().index());
+					pheet_assert(left.advance_cmp(1) < dead());
 					/* swap left with rightmost non-dead element. This may swap
 					 * an element >=pivot to left, but we will not advance left.
 					 * Progress is made by putting one dead element into it'S final
@@ -455,7 +481,7 @@ private:
 					}
 				} else {
 					VAIt dead = m_partitionpointers->decrease_dead();
-					if (dead.index() - right.index()  == 0) {
+					if (dead == right) {
 						//element after right is dead too. Dead was decremented above,
 						//right is decremented below. This is safe since left < right
 						drop_dead_item(right);
@@ -484,7 +510,7 @@ private:
 		/* Partitioning finished when left <= right. Left == right +1 is the case
 		 * if the last swap was on indices s.t. left + 1 == right and both items
 		 * were not dead. */
-		pheet_assert(left == right || left.index() == right.index() + 1);
+		pheet_assert(left == right || left == right.advance_cmp(1));
 
 		pheet_assert(left < m_partitionpointers->dead_partition());
 
@@ -503,12 +529,12 @@ private:
 				swap_to_dead(left, dead);
 			}
 		}
-		pheet_assert(left.index() <= m_partitionpointers->dead_partition().index());
+		pheet_assert(left.index() <= dead_idx());
 
 		//*2: check if item at left belongs to left or right partition
 		if (*left && !was_taken_or_dead && left->strategy()->less_priority(p_dim, p_val)) {
 			left++;
-			pheet_assert(left.index() <= m_partitionpointers->dead_partition().index());
+			pheet_assert(left.index() <= dead_idx());
 		}
 
 		//check if the last partitioning step needs to be redone
@@ -529,7 +555,7 @@ private:
 		}
 
 		VAIt dead = m_partitionpointers->dead_partition();
-		if ((dead.index() - left.index() > MAX_PARTITION_SIZE)
+		if ((left.nr_items_to(dead) > MAX_PARTITION_SIZE)
 		        && m_failed_attempts < MAX_ATTEMPTS_TO_PARTITION) {
 			/* If partitioning succeeded but the resulting right-most (excluding
 			 * dead) partition is >MAX_PARTITION_SIZE, partition recursively */
@@ -562,14 +588,14 @@ private:
 	 */
 	bool partition_failed(PivotElement* pivot, VAIt& left)
 	{
-		if (left.index() != m_partitionpointers->dead_partition().index()) {
+		if (left.index() != dead_idx()) {
 			/* if rightmost partition contains at least 1 item, add a partition
 			   pointer */
 			m_partitionpointers->add(left, pivot);
 			return false;
 		}
 		/* all items were partitioned into left or dead partition. Thus, our
-		 * rightmost non- empty partition is [old_left, dead[. In other words:
+		 * rightmost non-empty partition is [old_left, dead[. In other words:
 		 * [left, dead[ is an empty partition. Thus, we can release the pivot
 		 * element.
 		 */
@@ -665,7 +691,8 @@ private:
 		seed = 42;
 #endif
 		rng.seed(seed);
-		std::uniform_int_distribution<std::mt19937::result_type> dist_e(left.index(), right.index());
+		size_t size = left.nr_items_to(right);
+		std::uniform_int_distribution<std::mt19937::result_type> dist_e(0, size);
 
 		size_t upper = left->strategy()->nr_dimensions() - 1;
 		std::uniform_int_distribution<std::mt19937::result_type> dist_d(0, upper);
@@ -681,7 +708,7 @@ private:
 			size_t attempts_to_sample = 0;
 			std::vector<Item*> samples;
 			while (samples.size() < NR_SAMPLES_FOR_PIVOT_GENERATION) {
-				item = *(m_data.iterator_to(left, dist_e(rng)));
+				item = *(left.advance_cmp(dist_e(rng)));
 				if (item && !item->is_taken_or_dead()) {
 					samples.push_back(item);
 				}

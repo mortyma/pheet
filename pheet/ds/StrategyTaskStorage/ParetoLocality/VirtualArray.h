@@ -13,7 +13,7 @@
 
 #include "VirtualArrayBlock.h"
 
-#define DATA_BLOCK_SIZE (100)
+#define DATA_BLOCK_SIZE (128)
 
 namespace pheet
 {
@@ -92,6 +92,52 @@ public:
 			return *this;
 		}
 
+		VirtualArrayIterator& advance(size_t cnt)
+		{
+			if (m_idx_in_block + cnt < m_block->capacity()) {
+				m_idx_in_block += cnt;
+			} else {
+				cnt -= (m_block->capacity() - m_idx_in_block);
+				m_block = m_block->next;
+				pheet_assert(m_block);
+				m_idx_in_block = 0;
+				while (cnt >= m_block->capacity()) {
+					m_block = m_block->next;
+					pheet_assert(m_block);
+					cnt -= m_block->capacity();
+				}
+				pheet_assert(cnt < m_block->capacity());
+				m_idx_in_block = cnt;
+			}
+			pheet_assert(m_idx_in_block < m_block->capacity());
+			return *this;
+		}
+
+		VirtualArrayIterator retreat(size_t cnt)
+		{
+			if (m_idx_in_block >= cnt) {
+				m_idx_in_block -= cnt;
+			} else {
+				cnt -= m_idx_in_block;
+				m_block = m_block->prev;
+				pheet_assert(m_block);
+				m_idx_in_block = m_block->capacity();
+				while (cnt >= m_block->capacity()) {
+					m_block = m_block->prev;
+					pheet_assert(m_block);
+					cnt -= m_block->capacity();
+				}
+				m_idx_in_block -= cnt;
+			}
+			return *this;
+		}
+
+		VirtualArrayIterator advance_cmp(const size_t cnt)
+		{
+			VirtualArrayIterator that(*this);
+			return that.advance(cnt);
+		}
+
 		/**
 		 * Invalidate the iterator.
 		 *
@@ -152,6 +198,32 @@ public:
 			return (m_idx_in_block < that.m_idx_in_block);
 		}
 
+		/**
+		 * Calculate how many items there are in the range from this to that.
+		 * Assumes that this <= that
+		 *
+		 */
+		size_t nr_items_to(VirtualArrayIterator that)
+		{
+			size_t diff = 0;
+			pheet_assert(this->m_block->nr() < that.m_block->nr()
+			             || this->m_idx_in_block <= that.m_idx_in_block);
+			if (that.m_block == m_block) {
+				diff = that.m_idx_in_block - m_idx_in_block;
+			} else {
+				diff += m_block->capacity() - m_idx_in_block;
+				diff += that.m_idx_in_block;
+				Block* tmp = m_block->next;
+				while (tmp != that.m_block) {
+					diff += m_block->capacity();
+					pheet_assert(tmp);
+					tmp = tmp->next;
+					pheet_assert(tmp);
+				}
+			}
+			return diff;
+		}
+
 		size_t index() const
 		{
 			pheet_assert(m_block);
@@ -166,13 +238,21 @@ public:
 	};
 
 	VirtualArray()
-		: m_end_idx(1)
 	{
 		m_last = m_first = new Block(0);
+		VirtualArrayIterator* it = new VirtualArrayIterator();
+		it->m_block = m_first;
+		it->m_idx_in_block = 1;
+		end_it.store(it);
 	}
 
 	~VirtualArray()
 	{
+		delete end_it.load(std::memory_order_relaxed);
+		while (!m_spliced_out.empty()) {
+			delete m_spliced_out.back();
+			m_spliced_out.pop_back();
+		}
 		while (m_first->next != nullptr) {
 			m_first = m_first->next;
 			delete m_first->prev;
@@ -182,49 +262,31 @@ public:
 
 	VirtualArrayIterator begin() const
 	{
-		return iterator_to(0);
-	}
-
-	/**
-	 * Get an iterator to the element at idx.
-	 */
-	VirtualArrayIterator iterator_to(const size_t idx) const
-	{
-		pheet_assert(idx < end_idx());
-		Block* block = find_block(idx, m_first);
 		VirtualArrayIterator it;
-		it.m_block = block;
-		it.m_idx_in_block = idx % block_size();
+		it.m_block = m_first;
+		it.m_idx_in_block = 0;
 		return it;
 	}
 
-	/**
-	 * Get an iterator to the element at idx. The search for this element is
-	 * started at the block containing the item start_it points to.
-	 */
-	VirtualArrayIterator iterator_to(VirtualArrayIterator start_it, const size_t idx) const
-	{
-		pheet_assert(start_it.index() <= idx);
-		pheet_assert(idx < end_idx());
-		Block* block = find_block(idx, start_it.m_block);
-		VirtualArrayIterator it;
-		it.m_block = block;
-		it.m_idx_in_block = idx % block_size();
-		return it;
-	}
+
 
 
 	/** The iterator returned by end() points to the last accessible element */
-	VirtualArrayIterator end() const
+	VirtualArrayIterator* end() const
 	{
-		return iterator_to(end_idx() - 1);
+		pheet_assert(end_it.load(std::memory_order_relaxed)->m_block);
+		return end_it.load(std::memory_order_relaxed);
 	}
 
-
+	void end(VirtualArrayIterator* it)
+	{
+		pheet_assert(it->m_block);
+		end_it.store(it, std::memory_order_relaxed);
+	}
 
 	size_t capacity() const
 	{
-		return end_idx();
+		return  end()->index();
 	}
 
 	constexpr size_t block_size() const
@@ -240,12 +302,20 @@ public:
 	 */
 	void increase_capacity(size_t value)
 	{
-		size_t free = block_size() - (end_idx() % block_size() + 1);
+		size_t free = block_size() - (capacity() % block_size() + 1);
 		while (free < value) {
-			add_block();
+			if (m_last->next) {
+				m_last = m_last->next;
+			} else {
+				add_block();
+			}
 			free += block_size();
 		}
-		end_idx(end_idx() + value);
+		VirtualArrayIterator* it = new VirtualArrayIterator(*end());
+		it->advance(value);
+		VirtualArrayIterator* tmp = end();
+		end(it);
+		delete tmp;
 	}
 
 	/**
@@ -257,11 +327,32 @@ public:
 	 */
 	void decrease_capacity(size_t value)
 	{
-		pheet_assert(value < end_idx());
-		end_idx(end_idx() - value);
+		if (value == 0) {
+			return;
+		}
+		VirtualArrayIterator* it = new VirtualArrayIterator(*end());
+		it->retreat(value);
+		VirtualArrayIterator* tmp = end();
+		end(it);
+		delete tmp;
 		/* We do not reduce/free the blocks since another thread might currently
 		 * access them. Just keep them for later reusage. They are eventually
 		 * fred in the destructor. */
+	}
+
+	size_t delete_range(VirtualArrayIterator left, VirtualArrayIterator right)
+	{
+		size_t shrunk_by = 0;
+		while (left.m_block != right.m_block && left.m_block->next != right.m_block) {
+			Block* tmp = left.m_block;
+			m_spliced_out.push_back(tmp->next);
+			size_t ends_at = (1 + tmp->next.load()->nr()) * block_size();
+			pheet_assert(ends_at <= capacity());
+			tmp->next.store(tmp->next.load()->next);
+			tmp->next.load()->prev = tmp;
+			shrunk_by += block_size();
+		}
+		return shrunk_by;
 	}
 
 private:
@@ -275,17 +366,19 @@ private:
 	Block* find_block(size_t idx, Block* start_block) const
 	{
 		pheet_assert(start_block->nr() * block_size() <= idx);
-		pheet_assert(idx < end_idx());
+		pheet_assert(idx < capacity());
 
 		//find block that stores element at location idx
 		Block* tmp = start_block;
 		size_t cnt = (start_block->nr() + 1) * block_size();
 		//TODOMK: reduce asymptotic complexity
-		while (cnt <= idx && tmp != nullptr) {
+		while (cnt <= idx) {
 			tmp = tmp->next;
-			cnt += block_size();
+			pheet_assert(tmp != nullptr);
+			cnt += block_size() * (tmp->nr() - tmp->prev->nr());
 		}
 		pheet_assert(tmp);
+		pheet_assert((tmp->nr()) * block_size() <= idx);
 		return tmp;
 	}
 
@@ -297,21 +390,11 @@ private:
 		m_last = tmp;
 	}
 
-	size_t end_idx() const
-	{
-		return m_end_idx.load(std::memory_order_relaxed);
-	}
-
-	void  end_idx(size_t idx)
-	{
-		m_end_idx.store(idx, std::memory_order_relaxed);
-	}
-
 private:
-	/** the last accessible item in the virtual array is at (m_end_idx - 1) */
-	std::atomic<size_t> m_end_idx;
 	Block* m_first; /** the first block in the doubly-linked list of blocks */
 	Block* m_last; /** the last block in the doubly-linked list of blocks */
+	std::vector<Block*> m_spliced_out;
+	std::atomic<VirtualArrayIterator*> end_it;
 };
 
 } /* namespace pheet */

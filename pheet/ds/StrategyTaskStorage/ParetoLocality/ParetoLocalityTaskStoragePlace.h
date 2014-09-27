@@ -87,16 +87,8 @@ private:
 			merged = true;
 		}
 		if (merged) {
-			//repartition block that resulted from merge
+			// Repartition block that resulted from merge.
 			block->partition();
-			if (last == block) {
-				//shrink the last block, if possible
-				size_t shrunk_by = last->shrink();
-				if (shrunk_by > 0) {
-					m_array.decrease_capacity(shrunk_by);
-				}
-			}
-			//Shrinking non-last blocks might result in another merge
 		}
 		pheet_assert(!last->next());
 		pheet_assert(!last->is_dead());
@@ -151,10 +143,9 @@ private:
 			delete last->next();
 			last->next(nullptr);
 		}
-		if (last != insert) {
-			shrink_by += last->shrink();
+		if (shrink_by) {
+			m_array.decrease_capacity(shrink_by);
 		}
-		m_array.decrease_capacity(shrink_by);
 		return last;
 	}
 
@@ -184,7 +175,7 @@ ParetoLocalityTaskStoragePlace(ParentTaskStoragePlace* parent_place)
 {
 	//increase capacity of virtual array
 	m_array.increase_capacity(MAX_PARTITION_SIZE);
-	last = new Block(m_array, m_array.iterator_to(0), &m_pivots, 0, false, 0);
+	last = new Block(m_array, m_array.begin(), &m_pivots, 0, false, 0);
 	insert = last;
 	task_storage = TaskStorage::get(this, parent_place->get_central_task_storage(),
 	                                created_task_storage);
@@ -309,24 +300,17 @@ pop(BaseItem* boundary)
 				best_block = block;
 				best_item = *top_it;
 			}
-			if (block != last) {
-				//Reduce the lvl of block if possible. Note that before this operation,
-				//we know that block->prev()->lvl() > block->lvl() > block->next()->lvl.
-				//If block == last, we can simply shrink it. Otherwise, we reduce
-				//its level; afterwards, we may have block->lvl() == block->next()->lvl.
-				//In that case we have to merge block and block->prev().
-				block->try_reduce_lvl();
-				pheet_assert(block->capacity() == block->end().index() - block->start().index());
-			}
 			//Merge with previous blocks if neccessary,
-			//i.e., if a sequence of previous blocks is all dead blocks or
-			//of the same lvl as block.
 			merge_from(block);
 		}
 	}
 
 	//drop dead blocks at the end of the list, if any
 	last = drop_dead_blocks_at_end(last);
+	//check if the last block can be shrunk
+	if (last->lvl() != 0) {
+		last->shrink();
+	}
 
 	//if the boundary item was taken in the meantime, pop has to return null...
 	if (boundary_item->is_taken() || !best_item) {
@@ -374,7 +358,7 @@ steal(BaseItem* boundary)
 		size_t this_cap = this->array().capacity();
 		if (other_cap > 2 * this_cap) {
 			auto it = other_place->array().begin();
-			auto end = other_place->array().end();
+			auto end = *(other_place->array().end());
 
 			//TODOMK: this works, but may not be very efficient
 			for (; it.valid() && it < end; it++) {
