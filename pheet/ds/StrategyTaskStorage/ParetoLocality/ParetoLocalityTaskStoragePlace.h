@@ -158,54 +158,6 @@ private:
 		return last;
 	}
 
-private: //methods to check internal consistency
-
-	bool check_linked_list()
-	{
-		//iterate through all the blocks in the linked list, checking basic properties
-		Block* it = insert;
-		while (it) {
-			if (!it->prev()) {
-				pheet_assert(it == insert || it == insert->next());
-			} else {
-				pheet_assert(it->prev()->next() == it);
-				pheet_assert(it->prev()->offset() + it->prev()->capacity() == it->offset());
-			}
-			if (!it->next()) {
-				pheet_assert(it == last);
-			} else {
-				if (it == insert) {
-					pheet_assert(it->next()->prev() == nullptr);
-				} else {
-					pheet_assert(it->next()->prev() == it);
-				}
-			}
-			it = it->next();
-		}
-		return true;
-	}
-
-	bool check_blocks()
-	{
-		return check_blocks(nullptr);
-	}
-
-	bool check_blocks(Block* stop_at)
-	{
-		Block* prev;
-		//iterate through all the blocks in the linked list, starting at the end
-		Block* it = last;
-		while (it != stop_at) {
-			prev = it->prev();
-			if (prev && prev != stop_at) {
-				//the predecessor of a block has to be larger than the block
-				pheet_assert(prev->lvl() >= it->lvl());
-			}
-			it = prev;
-		}
-		return true;
-	}
-
 private:
 	ParentTaskStoragePlace* parent_place;
 	TaskStorage* task_storage;

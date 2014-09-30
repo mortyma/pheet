@@ -396,7 +396,6 @@ private:
 
 	void partition(size_t depth, VAIt& left, VAIt& right)
 	{
-		check_correctness();
 		pheet_assert(left.index() < right.index());
 		const auto old_left = left;
 
@@ -541,7 +540,6 @@ private:
 			partition(depth, left, dead);
 		}
 		m_failed_attempts = 0;
-		check_correctness();
 	}
 
 	/**
@@ -708,65 +706,6 @@ private:
 			++attempts_to_generate_pivot;
 		}
 		return nullptr;
-	}
-
-private: //methods to test correctness of data structure
-
-	/**
-	 * Check if the block is in a valid state.
-	 */
-	void check_correctness()
-	{
-#ifdef PHEET_DEBUG_MODE
-		for (size_t i = 1; i < m_partitionpointers->size(); i++) {
-			auto start = m_partitionpointers->get(i - 1).first;
-			PivotElement* pivot = m_partitionpointers->get(i).second;
-			auto pp = m_partitionpointers->get(i).first;
-			auto end = m_partitionpointers->dead_partition();
-			check_partition(pivot, start, pp, end);
-		}
-		check_dead();
-#endif
-	}
-
-	/**
-	 * Check a partition of this block for correctness.
-	 *
-	 * In detail:
-	 * - In [start, pp[, all elements have to be > pivot (i.e., the pivot element is <
-	 *  than any element in the given range (for the dimension given by the pivot)
-	 * - In [pp, end[, all elements have to be <= pivot
-	 */
-	void check_partition(PivotElement* pivot, VAIt& start, VAIt& pp, VAIt& end)
-	{
-		Item* item;
-		for (; start != pp; start++) {
-			item = *start;
-			assert(!item || item->strategy()->less_priority(pivot->dimension(), pivot->value()));
-		}
-		for (; pp != end; pp++) {
-			item = *pp;
-			assert(!item || !item->strategy()->less_priority(pivot->dimension(), pivot->value()));
-		}
-	}
-
-	/**
-	 * Check the "dead" partition of this block for correctness.
-	 *
-	 * In detail:
-	 * - check that all items in the "dead" partition are either null.
-	 */
-	void check_dead()
-	{
-		auto it = m_partitionpointers->dead_partition();
-		const auto end_it = m_partitionpointers->end();
-		for (; it != end_it; it++) {
-			if (*it == nullptr) {
-				continue;
-			}
-			//should never get here
-			assert(false);
-		}
 	}
 
 private:
