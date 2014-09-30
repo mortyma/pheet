@@ -52,7 +52,6 @@ template <class Pheet>
 class MspTask : public Pheet::Task
 {
 public:
-	typedef StrategyMspStrategy<Pheet> Strategy;
 	typedef MspPerformanceCounters<Pheet> PerformanceCounters;
 	typedef typename Pheet::Environment::BaseStrategy BaseStrategy;
 
@@ -64,7 +63,6 @@ public:
 
 	virtual void spawn(sp::PathPtr& p) = 0;
 
-	static void set_k(size_t k);
 	static void print_name();
 
 protected:
@@ -129,14 +127,6 @@ operator()()
 	}
 }
 
-template <class Pheet>
-void
-MspTask<Pheet>::
-set_k(size_t k)
-{
-	Strategy::default_k = k;
-}
-
 /**
  * Using StrategyMspStrategy
  */
@@ -197,6 +187,11 @@ public:
 	{
 		Pheet::template spawn_s<Self>(Strategy(p), p,
 		                              MspTask<Pheet>::sets, MspTask<Pheet>::pc);
+	}
+
+	static void set_k(size_t k)
+	{
+		Strategy::default_k = k;
 	}
 };
 
