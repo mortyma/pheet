@@ -11,7 +11,7 @@
 #include "Less.h"
 #include "pheet/ds/StrategyTaskStorage/ParetoLocality/PriorityVector.h"
 
-#define NR_DIMENSIONS (3)
+#define NR_DIMENSIONS (5)
 
 namespace pheet
 {
