@@ -9,7 +9,7 @@ from  subprocess import Popen, PIPE, STDOUT
 import sys
 
 
-REPETITIONS = 10
+REPETITIONS = 30
 
 ALGORITHMS = [ 'sequential', 'strategy', 's2klsm', 's2lsm', 's2pareto' ]
 
