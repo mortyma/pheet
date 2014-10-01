@@ -10,8 +10,6 @@
 #include "lib/ShortestPath/Path.h"
 #include "Less.h"
 
-#define NR_DIMENSIONS (3)
-
 namespace pheet
 {
 
