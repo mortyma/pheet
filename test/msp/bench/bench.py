@@ -18,7 +18,7 @@ ALGORITHMS = [ 'sequential', 'strategy', 's2klsm', 's2lsm', 's2pareto' ]
 #    - [1-8]
 #    - all powers of 2
 #    - all multiples of 5
-CPUS = [ 1, 2, 3, 4, 5, 6, 7, 8, 10, 15, 16, 20, 25, 30, 32, 35, 40, 45, 50, 55, 60, 64, 65, 70, 75, 80 ]
+CPUS = [ 1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80 ]
 
 MAX_CPUS = 80
 
