@@ -377,7 +377,7 @@ steal(BaseItem* boundary)
 			auto end = other_place->array().end();
 
 			//TODOMK: this works, but may not be very efficient
-			for (; it != end; it++) {
+			for (; it.valid() && it < end; it++) {
 				Item* item = *it;
 				if (item && !item->is_taken_or_dead()) {
 					put(*item);

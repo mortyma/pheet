@@ -102,6 +102,11 @@ public:
 			m_block = nullptr;
 		}
 
+		bool valid() const
+		{
+			return m_block;
+		}
+
 		/**
 		 * Returns true iff the iterator points to a valid, i.e., accessible and
 		 * non-null Item.
